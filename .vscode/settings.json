@@ -1,0 +1,39 @@
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "never"
+  },
+  "editor.rulers": [80, 100, 120],
+
+  "eslint.validate": [
+    "javascript",
+    "typescript",
+    "javascriptreact",
+    "typescriptreact"
+  ],
+  "eslint.run": "onSave",
+
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "files.exclude": {
+    "**/.git": true,
+    "**/node_modules": true
+  },
+
+  "search.exclude": {
+    "**/build": true,
+    "**/coverage": true,
+    "**/dist": true,
+    "**/docs-site": true,
+    "**/node_modules": true,
+    "pnpm-lock.yaml": true
+  },
+
+  "eslint.workingDirectories": [{ "mode": "auto" }],
+  "commentTranslate.targetLanguage": "en",
+  "css.lint.unknownAtRules": "ignore",
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
+}
