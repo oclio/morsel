@@ -4,5 +4,5 @@ export default {
   dictionaries: ['node', 'npm', 'softwareTerms', 'typescript'],
   ignorePaths: ignores,
   language: 'en,fr',
-  words: ['oclio'],
+  words: ['myapp', 'oclio', 'oclka'],
 };
