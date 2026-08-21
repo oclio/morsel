@@ -1,21 +1,49 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
-  "ui": "tui",
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**"]
+      "outputs": ["dist/**"]
     },
+    "check:all": {
+      "dependsOn": ["check:fast", "build", "check:build", "check:size"]
+    },
+    "check:build": {
+      "dependsOn": ["build"]
+    },
+    "check:fast": {
+      "dependsOn": ["check:types", "lint:fix", "test:coverage"]
+    },
+    "check:one": {
+      "dependsOn": ["^build"]
+    },
+    "check:size": {
+      "dependsOn": ["build"]
+    },
+    "check:types": {
+      "dependsOn": ["^check:types", "^build"]
+    },
+    "format": {},
     "lint": {
       "dependsOn": ["^lint"]
     },
-    "check-types": {
-      "dependsOn": ["^check-types"]
+    "lint:fix": {
+      "dependsOn": ["^lint:fix"]
     },
-    "dev": {
-      "cache": false,
-      "persistent": true
+    "test": {
+      "dependsOn": ["^build"]
+    },
+    "test:coverage": {
+      "dependsOn": ["^build"]
+    },
+    "test:e2e": {
+      "dependsOn": ["^build"]
+    },
+    "test:mutate": {
+      "dependsOn": ["test", "^build"]
+    },
+    "test:unit": {
+      "dependsOn": ["^build"]
     }
   }
 }

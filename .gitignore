@@ -1,5 +1,12 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+AGENTS.md
+.agents
+.dev
+.ops
+.temp/
+**/mutants.txt
+
 # Dependencies
 node_modules
 .pnp
@@ -14,6 +21,8 @@ node_modules
 
 # Testing
 coverage
+reports
+.stryker-tmp
 
 # Turbo
 .turbo
@@ -27,6 +36,11 @@ out/
 build
 dist
 
+# vscode
+.vscode/*
+!.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
 
 # Debug
 npm-debug.log*
