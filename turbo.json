@@ -1,18 +1,19 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
+  "globalEnv": ["PATH"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
     "check:all": {
-      "dependsOn": ["check:fast", "build", "check:build", "check:size"]
+      "dependsOn": ["^build"]
     },
     "check:build": {
       "dependsOn": ["build"]
     },
     "check:fast": {
-      "dependsOn": ["check:types", "lint:fix", "test:coverage"]
+      "dependsOn": ["^build"]
     },
     "check:one": {
       "dependsOn": ["^build"]
@@ -21,14 +22,14 @@
       "dependsOn": ["build"]
     },
     "check:types": {
-      "dependsOn": ["^check:types", "^build"]
+      "dependsOn": ["^build"]
     },
     "format": {},
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": ["^build"]
     },
     "lint:fix": {
-      "dependsOn": ["^lint:fix"]
+      "dependsOn": ["^build"]
     },
     "test": {
       "dependsOn": ["^build"]
@@ -40,7 +41,7 @@
       "dependsOn": ["^build"]
     },
     "test:mutate": {
-      "dependsOn": ["test", "^build"]
+      "dependsOn": ["^build"]
     },
     "test:unit": {
       "dependsOn": ["^build"]

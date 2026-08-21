@@ -14,7 +14,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "check:all": "turbo run check:all && pnpm knip && pnpm check:secrets && pnpm check:spell && pnpm check:md && true",
+    "check:all": "turbo run check:all && pnpm lint:fix && pnpm knip && pnpm check:secrets && pnpm check:spell && pnpm check:md && true",
     "check:build": "turbo run check:build",
     "check:fast": "turbo run check:fast",
     "check:md": "markdownlint '**/*.md' --fix --ignore **/node_modules/** --ignore **/dist/**",

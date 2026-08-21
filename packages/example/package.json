@@ -50,7 +50,7 @@
     "test:e2e": "vitest run --project e2e",
     "test:focus": "node ../../scripts/test-focus.mjs",
     "test:mutate": "stryker run",
-    "test:unit": "vitest run --project unit"
+    "test:unit": "vitest run --project unit --coverage"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
