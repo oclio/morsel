@@ -101,7 +101,7 @@ importers:
         specifier: ^4.1.11
         version: 4.1.11(@types/node@26.2.0)(@vitest/coverage-v8@4.1.11)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))
 
-  packages/example:
+  packages/core:
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: ^0.18.5

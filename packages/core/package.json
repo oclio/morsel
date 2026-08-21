@@ -1,7 +1,7 @@
 {
-  "name": "@oclio/example",
-  "version": "0.0.0",
-  "description": "Example package",
+  "name": "@oclio/morsel",
+  "version": "0.1.0",
+  "description": "The only zero-dep config loader that does discovery, hierarchical merge, live-reload, and plugins.",
   "keywords": [
     "example"
   ],
@@ -9,7 +9,7 @@
   "author": {
     "name": "oclio",
     "email": "hello@oclka.dev",
-    "url": "https://oclio.dev"
+    "url": "https://oclka.dev"
   },
   "type": "module",
   "main": "./dist/index.mjs",
