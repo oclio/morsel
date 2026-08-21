@@ -1,0 +1,197 @@
+import { resolveGlobalDirectory } from '@/paths/resolve-paths';
+import { jsonPlugin } from '@/plugins/json-plugin';
+import { resolveOptions } from '@/store/assert-name';
+
+vi.mock('@/paths/resolve-paths', () => ({
+  resolveGlobalDirectory: vi.fn(),
+}));
+
+describe('resolveOptions', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.spyOn(process, 'cwd').mockReturnValue('/fake/cwd');
+    vi.stubEnv('NODE_ENV', 'test');
+  });
+
+  afterEach(() => {
+    vi.mocked(process.cwd).mockRestore();
+  });
+
+  it.each([
+    { name: 'missing', options: {} as never },
+    { name: 'empty string', options: { name: '' } },
+    { name: 'not a string', options: { name: 123 } as never },
+  ])('throws TypeError when name is $name', ({ options }) => {
+    expect(() => resolveOptions(options)).toThrow('morsel: name is required');
+  });
+
+  it.each([
+    { name: 'non-alphanumeric characters', input: 'my-app' },
+    { name: 'spaces', input: 'my app' },
+    { name: 'underscores', input: 'my_app' },
+  ])('throws TypeError when name contains $name', ({ input }) => {
+    expect(() => resolveOptions({ name: input })).toThrow(
+      'morsel: name must be alphanumeric',
+    );
+  });
+
+  it('resolves with defaults for all optional fields', () => {
+    vi.mocked(resolveGlobalDirectory).mockReturnValue('/fake/global');
+
+    const result = resolveOptions({ name: 'myapp' });
+
+    expect(result.name).toBe('myapp');
+    expect(result.cwd).toBe('/fake/cwd');
+    expect(result.defaults).toEqual({});
+    expect(result.overrides).toEqual({});
+    expect(result.globalDir).toBe('/fake/global');
+    expect(result.arrayMerge).toBe('replace');
+    expect(result.envName).toBe('test');
+    expect(result.configMutability).toBe('frozen');
+    expect(result.verbose).toBe(false);
+    expect(result.onDebug).toBeInstanceOf(Function);
+    expect(result.onDebug('test')).toBeUndefined();
+    expect(result.formatPlugins).toEqual([jsonPlugin]);
+    expect(result.validationPlugins).toEqual([]);
+    expect(result.hooks).toEqual([]);
+  });
+
+  it('uses provided formatPlugins and validationPlugins', () => {
+    vi.mocked(resolveGlobalDirectory).mockReturnValue('/fake/global');
+
+    const formatPlugins = [jsonPlugin];
+    const validationPlugins = [
+      { name: 'zod', validate: (c: Record<string, unknown>) => c },
+    ];
+
+    const result = resolveOptions({
+      name: 'myapp',
+      formatPlugins,
+      validationPlugins,
+    });
+
+    expect(result.formatPlugins).toBe(formatPlugins);
+    expect(result.validationPlugins).toBe(validationPlugins);
+  });
+
+  it('uses provided hooks', () => {
+    vi.mocked(resolveGlobalDirectory).mockReturnValue('/fake/global');
+
+    const hooks = [
+      { name: 'env', lifecycle: 'before:defaults' as const, load: () => ({}) },
+    ];
+
+    const result = resolveOptions({ name: 'myapp', hooks });
+
+    expect(result.hooks).toBe(hooks);
+  });
+
+  it('uses provided cwd over process.cwd()', () => {
+    const result = resolveOptions({ name: 'myapp', cwd: '/custom/cwd' });
+
+    expect(result.cwd).toBe('/custom/cwd');
+  });
+
+  it('uses provided defaults and overrides', () => {
+    vi.mocked(resolveGlobalDirectory).mockReturnValue('/fake/global');
+
+    const result = resolveOptions({
+      name: 'myapp',
+      defaults: { a: 1 },
+      overrides: { b: 2 },
+    });
+
+    expect(result.defaults).toEqual({ a: 1 });
+    expect(result.overrides).toEqual({ b: 2 });
+  });
+
+  it('uses provided globalDir over resolveGlobalDirectory', () => {
+    vi.mocked(resolveGlobalDirectory).mockReturnValue('/fake/global');
+
+    const result = resolveOptions({
+      name: 'myapp',
+      globalDir: '/custom/global',
+    });
+
+    expect(result.globalDir).toBe('/custom/global');
+    expect(resolveGlobalDirectory).not.toHaveBeenCalled();
+  });
+
+  it('uses provided arrayMerge strategy', () => {
+    vi.mocked(resolveGlobalDirectory).mockReturnValue('/fake/global');
+
+    const result = resolveOptions({
+      name: 'myapp',
+      arrayMerge: 'concat',
+    });
+
+    expect(result.arrayMerge).toBe('concat');
+  });
+
+  it('uses provided envName over NODE_ENV', () => {
+    vi.mocked(resolveGlobalDirectory).mockReturnValue('/fake/global');
+
+    const result = resolveOptions({
+      name: 'myapp',
+      envName: 'production',
+    });
+
+    expect(result.envName).toBe('production');
+  });
+
+  it('uses undefined envName when NODE_ENV is not set', () => {
+    vi.stubEnv('NODE_ENV', undefined);
+    vi.mocked(resolveGlobalDirectory).mockReturnValue('/fake/global');
+
+    const result = resolveOptions({ name: 'myapp' });
+
+    expect(result.envName).toBeUndefined();
+  });
+
+  it('uses provided configMutability', () => {
+    vi.mocked(resolveGlobalDirectory).mockReturnValue('/fake/global');
+
+    const result = resolveOptions({
+      name: 'myapp',
+      configMutability: 'mutable',
+    });
+
+    expect(result.configMutability).toBe('mutable');
+  });
+
+  it('uses provided verbose flag', () => {
+    vi.mocked(resolveGlobalDirectory).mockReturnValue('/fake/global');
+
+    const result = resolveOptions({
+      name: 'myapp',
+      verbose: true,
+    });
+
+    expect(result.verbose).toBe(true);
+  });
+
+  it('uses provided onDebug callback', () => {
+    vi.mocked(resolveGlobalDirectory).mockReturnValue('/fake/global');
+    const onDebug = (): void => {};
+
+    const result = resolveOptions({ name: 'myapp', onDebug });
+
+    expect(result.onDebug).toBe(onDebug);
+  });
+
+  it('passes name to resolveGlobalDirectory', () => {
+    vi.mocked(resolveGlobalDirectory).mockReturnValue('/fake/global');
+
+    resolveOptions({ name: 'myapp' });
+
+    expect(resolveGlobalDirectory).toHaveBeenCalledWith({ name: 'myapp' });
+  });
+
+  it('accepts single-character alphanumeric name', () => {
+    vi.mocked(resolveGlobalDirectory).mockReturnValue('/fake/global');
+
+    const result = resolveOptions({ name: 'a' });
+
+    expect(result.name).toBe('a');
+  });
+});

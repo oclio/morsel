@@ -1,0 +1,21 @@
+{
+  "name": "@oclio/morsel-e2e-helpers",
+  "version": "0.1.0",
+  "description": "E2E test helpers for @oclio/morsel",
+  "license": "MIT",
+  "author": {
+    "name": "oclio",
+    "email": "hello@oclka.dev",
+    "url": "https://oclka.dev"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts"
+    }
+  },
+  "devDependencies": {
+    "@config/typescript": "workspace:*",
+    "@types/node": "^26.2.0"
+  }
+}

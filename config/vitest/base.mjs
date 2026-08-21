@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config';
 
 import ignores from '../../ignores.mjs';
+import testExclude from '../../test-exclude.mjs';
 
 export default defineConfig({
   resolve: {
@@ -13,7 +14,7 @@ export default defineConfig({
       reporter: ['text', 'json', 'html', 'lcov'],
       all: false,
       include: ['src/**/*.ts'],
-      exclude: ['dist', 'node_modules'],
+      exclude: [...ignores, ...testExclude],
     },
     projects: [
       {
@@ -34,6 +35,7 @@ export default defineConfig({
           environment: 'node',
           testTimeout: 30_000,
           include: ['src/**/*.e2e-spec.ts'],
+          setupFiles: ['src/__e2e__/_setup.ts'],
           sequence: {
             concurrent: false,
           },

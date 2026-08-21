@@ -1,0 +1,13 @@
+{
+  "extends": "@config/typescript/base",
+  "compilerOptions": {
+    "ignoreDeprecations": "6.0",
+    "types": ["node", "vitest/globals"],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@oclio/morsel-e2e-helpers": ["../e2e-helpers/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

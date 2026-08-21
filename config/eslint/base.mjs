@@ -102,6 +102,7 @@ const eslintConfig = defineConfig([
       'sonarjs/no-clear-text-protocols': 'off',
       'sonarjs/no-duplicate-string': 'off',
       'sonarjs/no-hardcoded-ip': 'off',
+      'turbo/no-undeclared-env-vars': 'off',
       'unicorn/consistent-function-scoping': 'off',
       'unicorn/filename-case': 'off',
       'unicorn/no-null': 'off',
