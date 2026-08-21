@@ -1,0 +1,12 @@
+{
+  "extends": "@config/typescript/base",
+  "compilerOptions": {
+    "ignoreDeprecations": "6.0",
+    "types": ["node", "vitest/globals"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
