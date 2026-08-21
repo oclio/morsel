@@ -115,6 +115,9 @@ importers:
       '@config/vitest':
         specifier: workspace:*
         version: link:../../config/vitest
+      '@oclio/morsel-e2e-helpers':
+        specifier: workspace:*
+        version: link:../e2e-helpers
       '@size-limit/preset-small-lib':
         specifier: ^13.0.3
         version: 13.0.3(size-limit@13.0.3)
@@ -145,6 +148,19 @@ importers:
       vitest:
         specifier: ^4.1.11
         version: 4.1.11(@types/node@26.2.0)(@vitest/coverage-v8@4.1.11)(vite@8.2.2(@types/node@26.2.0)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.9.0))
+
+  packages/e2e-helpers:
+    dependencies:
+      '@oclio/morsel':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@config/typescript':
+        specifier: workspace:*
+        version: link:../../config/typescript
+      '@types/node':
+        specifier: ^26.2.0
+        version: 26.2.0
 
 packages:
 
