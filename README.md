@@ -1,4 +1,4 @@
-# @oclio/morsel-monorepo
+# @oclio/morsel
 
 ## License
 
