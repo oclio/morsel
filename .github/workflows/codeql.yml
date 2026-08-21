@@ -1,0 +1,38 @@
+name: CodeQL
+
+on:
+  pull_request:
+  schedule:
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: 🔒 Analyze
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    steps:
+      - name: ⬇️ Checkout Repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: 🔒 Initialize CodeQL
+        uses: github/codeql-action/init@e40d079dd9dd4a5c74f625cecd83867c8208aa71 # v4.37.4
+        with:
+          languages: javascript-typescript
+          build-mode: none
+
+      - name: 🔒 Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@e40d079dd9dd4a5c74f625cecd83867c8208aa71 # v4.37.4
+        with:
+          category: '/language:javascript-typescript'

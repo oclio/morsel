@@ -1,0 +1,12 @@
+[
+  {
+    "path": "dist/index.mjs",
+    "limit": "10 KB",
+    "ignore": ["child_process", "crypto", "fs", "node:*", "os", "path"]
+  },
+  {
+    "path": "dist/index.cjs",
+    "limit": "10 KB",
+    "ignore": ["child_process", "crypto", "fs", "node:*", "os", "path"]
+  }
+]

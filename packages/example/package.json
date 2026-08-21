@@ -1,0 +1,75 @@
+{
+  "name": "@oclio/example",
+  "version": "0.0.0",
+  "description": "Example package",
+  "keywords": [
+    "example"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "oclio",
+    "email": "hello@oclka.dev",
+    "url": "https://oclio.dev"
+  },
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "LICENSE",
+    "README.md",
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts",
+    "check:all": "pnpm check:fast && pnpm check:spell && pnpm check:md && pnpm build && pnpm check:build && pnpm check:size && true",
+    "check:build": "publint && attw --pack",
+    "check:fast": "pnpm check:types && pnpm lint:fix && pnpm test:coverage && true",
+    "check:md": "markdownlint '**/*.md' --fix --ignore node_modules --ignore dist --ignore docs/api",
+    "check:one": "node ../../scripts/check-one.mjs",
+    "check:spell": "cspell '**/*.{ts,md,json,yml,yaml}' --no-progress --gitignore",
+    "check:size": "size-limit",
+    "check:types": "tsc --noEmit",
+    "format": "prettier . --write",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "vitest run --project e2e",
+    "test:focus": "node ../../scripts/test-focus.mjs",
+    "test:mutate": "stryker run",
+    "test:unit": "vitest run --project unit --coverage"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@config/eslint": "workspace:*",
+    "@config/typescript": "workspace:*",
+    "@config/vitest": "workspace:*",
+    "@size-limit/preset-small-lib": "^13.0.3",
+    "@stryker-mutator/core": "^10.0.0",
+    "@stryker-mutator/typescript-checker": "^10.0.0",
+    "@stryker-mutator/vitest-runner": "^10.0.0",
+    "@types/node": "^26.2.0",
+    "@vitest/coverage-v8": "^4.1.11",
+    "publint": "^0.3.24",
+    "size-limit": "^13.0.3",
+    "tsup": "^8.5.1",
+    "vitest": "^4.1.11"
+  },
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  }
+}

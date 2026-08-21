@@ -1,0 +1,10 @@
+{
+  "name": "@config/vitest",
+  "version": "0.0.0",
+  "exports": {
+    "./base": "./base.mjs"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.11"
+  }
+}

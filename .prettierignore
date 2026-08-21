@@ -1,0 +1,10 @@
+.agents/**
+.dev/**
+.ops/**
+.temp/**
+node_modules/**
+CHANGELOG.md
+pnpm-lock.yaml
+
+
+**/node_modules/**

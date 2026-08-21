@@ -1,0 +1,15 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "yoavbls.pretty-ts-errors",
+    "vitest.explorer",
+    "stkb.rewrap",
+    "EditorConfig.EditorConfig",
+    "intellsmi.comment-translate",
+    "usernamehw.errorlens",
+    "eamodio.gitlens",
+    "mikestead.dotenv",
+    "wix.vscode-import-cost"
+  ]
+}
