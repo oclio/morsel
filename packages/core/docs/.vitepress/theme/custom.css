@@ -1,0 +1,50 @@
+/* Hero — logo spacing */
+.VPHero .VPImage {
+  margin-bottom: 1.5rem;
+}
+
+.VPHero .name {
+  margin-bottom: 0.5rem;
+}
+
+/* Claim — "Come for the lean. Stay for the watch." */
+.VPHero .text {
+  font-size: 20px !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+  margin-top: 0 !important;
+}
+
+@media (min-width: 640px) {
+  .VPHero .text {
+    font-size: 22px !important;
+  }
+}
+
+@media (min-width: 960px) {
+  .VPHero .text {
+    font-size: 24px !important;
+  }
+}
+
+/* Description — la longue phrase */
+.VPHero .tagline {
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  line-height: 1.6 !important;
+  max-width: 560px !important;
+  margin-top: 0.75rem !important;
+  color: var(--vp-c-text-2) !important;
+}
+
+@media (min-width: 640px) {
+  .VPHero .tagline {
+    font-size: 18px !important;
+  }
+}
+
+@media (min-width: 960px) {
+  .VPHero .tagline {
+    font-size: 20px !important;
+  }
+}

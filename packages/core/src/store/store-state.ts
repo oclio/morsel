@@ -2,9 +2,7 @@ import path from 'node:path';
 
 import { isPlainObject } from '@/merge/merge-helpers';
 import type { ResolvedOptions } from '@/store/assert-name';
-import type { Listener, MorselLayer } from '@/store/types';
-
-type ConfigRecord = Record<string, unknown>;
+import type { ConfigRecord, Listener, MorselLayer } from '@/store/types';
 
 /**
  * Internal mutable state shared by the store, proxy, re-merge, and watcher modules.

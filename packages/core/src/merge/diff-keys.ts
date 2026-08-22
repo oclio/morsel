@@ -1,7 +1,6 @@
 import { flatten } from '@/merge/flatten';
 import { isPlainObject } from '@/merge/merge-helpers';
-
-type ConfigRecord = Record<string, unknown>;
+import type { ConfigRecord } from '@/store/types';
 
 /**
  * Category of a detected key change between two configs.

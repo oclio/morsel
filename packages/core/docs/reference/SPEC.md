@@ -2,8 +2,8 @@
 
 | Metadata            | Value                                                            |
 | :------------------ | :--------------------------------------------------------------- |
-| **Package**         | `@oclkadev/morsel`                                               |
-| **Author**          | @oclkadev                                                        |
+| **Package**         | `@oclio/morsel`                                               |
+| **Author**          | @oclio                                                        |
 | **Status**          | `STABLE`                                                         |
 | **Spec version**    | `1.0.0`                                                          |
 | **Created**         | 2026-08-22                                                       |
@@ -213,6 +213,8 @@ export type DebugCallback = (
   message: string,
   context?: Record<string, unknown>,
 ) => void;
+
+export type ConfigRecord = Record<string, unknown>;
 ```
 
 ---
@@ -220,8 +222,6 @@ export type DebugCallback = (
 ### 4.2 Normative Internal Interfaces
 
 ```typescript
-export type ConfigRecord = Record<string, unknown>;
-
 /**
  * Discriminated union indicating whether a file was found and parsed on disk.
  */
@@ -293,6 +293,8 @@ export interface WatcherEntry {
   stores: Set<StoreState>;
   retryTimer: NodeJS.Timeout | undefined;
 }
+
+export type WatcherRegistry = Map<string, WatcherEntry>;
 ```
 
 ---

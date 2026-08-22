@@ -1,6 +1,6 @@
 # Architecture & Design Rationale — morsel
 
-> Design and architecture document for `@oclkadev/morsel`.
+> Design and architecture document for `@oclio/morsel`.
 > Explains the _why_ behind technical choices, design philosophy, glossary, and execution flows.
 >
 > For normative API contracts and exhaustive specifications, see [`SPEC.md`](./SPEC.md).
@@ -186,6 +186,7 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `KeyChange` — structure of a change `{ next, prev, category }`.
 - `Listener` — event callback `(next: unknown, prev: unknown) => void`.
 - `DebugCallback` — custom debug sink.
+- `ConfigRecord` — generic configuration object record (`Record<string, unknown>`).
 
 ### Public Functions
 
@@ -209,6 +210,7 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `ResolvedOptions` — complete validated options with default values applied.
 - `StoreState` — internal mutable shared state of a reactive store.
 - `WatcherEntry` — `WatcherRegistry` entry (`watcher`, `refCount`, `stores`, `retryTimer`).
+- `WatcherRegistry` — global registry mapping directory paths to `WatcherEntry` (`Map<string, WatcherEntry>`).
 - `buildLayers` / `buildLayersSync` — orchestration of the 4 core layers and hooks resolution.
 - `resolveExtends` / `resolveExtendsSync` — recursive resolution of the local inheritance chain.
 - `handleWatchEvent` — filtering and dispatching of `fs.watch` events to concerned stores.

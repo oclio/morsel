@@ -1,7 +1,5 @@
 import { deepMerge } from '@/merge/deep-merge';
-import type { MorselOptions } from '@/store/types';
-
-type ConfigRecord = Record<string, unknown>;
+import type { ConfigRecord, MorselOptions } from '@/store/types';
 
 /**
  * Type helper — infers `T` from `defaults`.
