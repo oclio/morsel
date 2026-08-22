@@ -1,5 +1,11 @@
 # @oclio/morsel
 
+## 0.3.1
+
+### Patch Changes
+
+- 9b4b086: Fix README image paths to use absolute GitHub raw URLs so logos and demo GIF render correctly on npm.
+
 ## 0.3.0
 
 ### Minor Changes
