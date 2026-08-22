@@ -14,11 +14,12 @@ interface DisplayEvent {
 
 const initialGlobal = JSON.stringify(
   {
-    port: 3000,
-    host: 'localhost',
-    database: {
-      port: 5432,
+    promptVersion: 'v2.4',
+    model: {
+      maxTokens: 4096,
+      temperature: 0.7,
     },
+    stream: true,
   },
   null,
   2,
@@ -26,10 +27,11 @@ const initialGlobal = JSON.stringify(
 
 const initialProject = JSON.stringify(
   {
-    port: 8080,
-    prompt: 'v2.4',
-    model: 'gh4-xrd',
-    temperature: 0.7,
+    model: {
+      maxTokens: 8192,
+      temperature: 0.2,
+    },
+    debug: true,
   },
   null,
   2,
@@ -37,16 +39,26 @@ const initialProject = JSON.stringify(
 
 const globalText = ref(initialGlobal);
 const projectText = ref(initialProject);
-const globalError = ref<string | null>(null);
-const projectError = ref<string | null>(null);
+const globalError = ref(false);
+const projectError = ref(false);
 
 const mergedConfig = ref<ConfigRecord>({});
 const mergedFormatted = ref('');
 const events = ref<DisplayEvent[]>([]);
+const isUpdated = ref(false);
 
 let eventCounter = 0;
 let lastMerged: ConfigRecord = {};
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+let updateFlashTimer: ReturnType<typeof setTimeout> | undefined;
+
+function triggerFlash() {
+  isUpdated.value = true;
+  if (updateFlashTimer) clearTimeout(updateFlashTimer);
+  updateFlashTimer = setTimeout(() => {
+    isUpdated.value = false;
+  }, 400);
+}
 
 function formatVal(val: unknown): string {
   if (val === undefined) return 'undefined';
@@ -92,17 +104,17 @@ function runMerge(emitEvents = true) {
 
   try {
     parsedGlobal = JSON.parse(globalText.value || '{}');
-    globalError.value = null;
-  } catch (err) {
-    globalError.value = (err as Error).message;
+    globalError.value = false;
+  } catch {
+    globalError.value = true;
     return;
   }
 
   try {
     parsedProject = JSON.parse(projectText.value || '{}');
-    projectError.value = null;
-  } catch (err) {
-    projectError.value = (err as Error).message;
+    projectError.value = false;
+  } catch {
+    projectError.value = true;
     return;
   }
 
@@ -126,6 +138,7 @@ function runMerge(emitEvents = true) {
 
     if (newEvents.length > 0) {
       events.value = [...newEvents, ...events.value].slice(0, 30);
+      triggerFlash();
     }
   }
 
@@ -162,8 +175,7 @@ onMounted(() => {
     <div class="demo-card">
       <div class="demo-header">
         <div class="demo-header-brand">
-          <span class="demo-title">@oclio/morsel</span>
-          <span class="demo-tagline-header">Come for the lean. Stay for the watch.</span>
+          <span class="demo-title">morsel</span>
         </div>
         <span class="demo-live">
           <span class="demo-live-dot"></span>
@@ -174,7 +186,7 @@ onMounted(() => {
       <div class="demo-grid">
         <!-- Top Left: Global Config -->
         <div class="demo-panel">
-          <div class="demo-panel-header demo-panel-header-editable">
+          <div class="demo-panel-header demo-panel-header-editable" :class="{ 'demo-panel-header-error': globalError }">
             <span class="demo-panel-title">~/config/your-app/your-app.json</span>
             <span class="demo-panel-subtitle">Base Config</span>
           </div>
@@ -185,13 +197,12 @@ onMounted(() => {
               spellcheck="false"
               placeholder="Global JSON..."
             ></textarea>
-            <div v-if="globalError" class="demo-error">{{ globalError }}</div>
           </div>
         </div>
 
         <!-- Top Right: Project Config -->
         <div class="demo-panel">
-          <div class="demo-panel-header demo-panel-header-editable">
+          <div class="demo-panel-header demo-panel-header-editable" :class="{ 'demo-panel-header-error': projectError }">
             <span class="demo-panel-title">./your-app.json</span>
             <span class="demo-panel-subtitle">Local Config</span>
           </div>
@@ -202,7 +213,6 @@ onMounted(() => {
               spellcheck="false"
               placeholder="Project JSON..."
             ></textarea>
-            <div v-if="projectError" class="demo-error">{{ projectError }}</div>
           </div>
         </div>
 
@@ -223,13 +233,12 @@ onMounted(() => {
               <span class="demo-event-arrow">→</span>
               <span class="demo-event-prev">{{ ev.prev }}</span>
               <span class="demo-event-next">{{ ev.next }}</span>
-              <span class="demo-event-cat">{{ ev.category.charAt(0).toUpperCase() + ev.category.slice(1) }}</span>
             </div>
           </div>
         </div>
 
         <!-- Bottom Right: Merged Output -->
-        <div class="demo-panel demo-panel-output">
+        <div class="demo-panel demo-panel-output" :class="{ 'demo-panel-flash': isUpdated }">
           <div class="demo-panel-header demo-panel-header-accent">
             <span class="demo-panel-title">Your Merged Config</span>
           </div>
@@ -242,7 +251,7 @@ onMounted(() => {
 
 <style scoped>
 .demo-wrapper {
-  margin: 3.5rem auto 5rem;
+  margin: 1.5rem auto 5rem;
   max-width: 960px;
   padding: 0 1rem;
 }
@@ -272,7 +281,7 @@ onMounted(() => {
 
 .demo-card {
   border: 1px solid var(--vp-c-divider, #e2e2e3);
-  border-radius: 12px;
+  border-radius: 6px;
   overflow: hidden;
 }
 
@@ -315,14 +324,14 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: var(--vp-c-text-2);
 }
 
 .demo-live-dot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: #ef4444;
   animation: pulse 2s ease-in-out infinite;
@@ -356,10 +365,11 @@ onMounted(() => {
 .demo-panel {
   background: var(--vp-c-bg, #ffffff);
   border: 1px solid var(--vp-c-divider, #e2e2e3);
-  border-radius: 8px;
+  border-radius: 4px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  height: 275px;
 }
 
 .demo-panel-header {
@@ -395,6 +405,14 @@ onMounted(() => {
   color: #ffffff;
 }
 
+.demo-panel-header-error {
+  background: #c0392b !important;
+}
+
+:global(.dark) .demo-panel-header-error {
+  background: #922b21 !important;
+}
+
 .demo-panel-title {
   font-family: var(--vp-font-family-mono, monospace);
   color: var(--vp-c-text-1, #213547);
@@ -425,16 +443,15 @@ onMounted(() => {
 .demo-editor-wrap {
   position: relative;
   flex: 1;
-  min-height: 140px;
+  min-height: 0;
 }
 
 .demo-textarea {
   width: 100%;
   height: 100%;
-  min-height: 140px;
   padding: 0.75rem;
   border: none;
-  resize: vertical;
+  resize: none;
   font-family: var(--vp-font-family-mono, monospace);
   font-size: 0.85rem;
   line-height: 1.4;
@@ -448,25 +465,11 @@ onMounted(() => {
   background: var(--vp-c-bg-soft);
 }
 
-.demo-error {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 0.1rem 0.5rem;
-  background: var(--vp-c-danger-soft, #fee2e2);
-  color: var(--vp-c-danger-1, #991b1b);
-  font-size: 0.65rem;
-  font-family: var(--vp-font-family-mono, monospace);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .demo-events-list {
   padding: 0.5rem;
-  min-height: 160px;
-  max-height: 220px;
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
   overflow-y: auto;
   font-family: var(--vp-font-family-mono, monospace);
   font-size: 0.8rem;
@@ -483,10 +486,11 @@ onMounted(() => {
 }
 
 .demo-event-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 135px 20px 1fr 1fr;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.1rem 0.5rem;
+  padding: 0.15rem 0.5rem;
   border-radius: 4px;
   background: var(--vp-c-bg-mute);
   animation: fadeIn 0.3s ease;
@@ -506,27 +510,32 @@ onMounted(() => {
 .demo-event-key {
   font-weight: 600;
   color: var(--vp-c-text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .demo-event-arrow {
   color: var(--vp-c-text-3);
+  text-align: center;
+  margin-right: 0.25rem;
 }
 
 .demo-event-prev {
-  color: #f7931e;
-  text-decoration: line-through;
-  margin-right: 0.5rem;
+  color: #ea580c;
+  opacity: 0.85;
+  padding-left: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .demo-event-next {
   color: #10b981;
   font-weight: 600;
-}
-
-.demo-event-cat {
-  margin-left: auto;
-  font-size: 0.6rem;
-  color: var(--vp-c-text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .demo-events-count {
@@ -540,11 +549,33 @@ onMounted(() => {
   font-family: var(--vp-font-family-mono, monospace);
   font-size: 0.85rem;
   line-height: 1.4;
-  min-height: 160px;
-  max-height: 220px;
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
   overflow-y: auto;
   background: transparent;
   color: var(--vp-c-text-1);
+  transition: background-color 0.4s ease;
+}
+
+.demo-panel-output {
+  transition: border-color 0.35s ease;
+}
+
+.demo-panel-output.demo-panel-flash {
+  border-color: var(--vp-c-brand-1, #3e5aa2);
+}
+
+.demo-panel-output.demo-panel-flash .demo-output-code {
+  background: rgba(62, 90, 162, 0.08);
+}
+
+:global(.dark .demo-panel-output.demo-panel-flash) {
+  border-color: #5b7fc7;
+}
+
+:global(.dark .demo-panel-output.demo-panel-flash .demo-output-code) {
+  background: rgba(91, 127, 199, 0.12);
 }
 
 .demo-footer {

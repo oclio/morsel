@@ -28,7 +28,7 @@
 <br/>
 
 <div align="center">
-  <img src="./docs/images/morsel_live_dark.gif" alt="Live demo" width="800" />
+  <img src="./docs/images/morsel_live.gif" alt="Live demo" width="800" />
 </div>
 
 <div align="center">
