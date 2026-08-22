@@ -25,6 +25,16 @@
   <strong>Come for the lean. Stay for the watch.</strong>
 </div>
 
+<br/>
+
+<div align="center">
+  <img src="./docs/images/morsel_live_dark.gif" alt="Live demo" width="800" />
+</div>
+
+<div align="center">
+  <a href="https://oclio.github.io/morsel/">The live demo is here</a>
+</div>
+
 ## The Problem
 
 Every Node.js config loader forces a trade-off: zero-dep but no watching, or feature-rich but bloated. morsel breaks that compromise.

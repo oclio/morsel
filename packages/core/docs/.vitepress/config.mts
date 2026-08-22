@@ -1,6 +1,14 @@
+import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vitepress';
 
 export default defineConfig({
+  vite: {
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('../../src', import.meta.url)),
+      },
+    },
+  },
   title: 'morsel',
   description:
     'The only zero-dep config loader that does discovery, hierarchical merge, live-reload, and plugins.',
