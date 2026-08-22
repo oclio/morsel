@@ -1,10 +1,10 @@
 <div align="center">
   <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./docs/images/morsel_logo_dark.svg">
-  <img src="./docs/images/morsel_logo.svg" alt="Logo" width="60" />
+  <img src="./docs/images/morsel_logo.svg" alt="Logo" width="90" />
 </picture>
   <h1>morsel</h1>
-  <strong>The only zero-dep config loader that does discovery, hierarchical merge, live-reload, and plugins.</strong>
+  <p>The only zero-dep config loader that does discovery, hierarchical merge, live-reload, and plugins.</p>
 </div>
 
 <br/>
@@ -28,7 +28,7 @@
 <br/>
 
 <div align="center">
-  <img src="./docs/images/morsel_live_dark.gif" alt="Live demo" width="800" />
+  <img src="./docs/images/morsel_live.gif" alt="Live demo" width="800" />
 </div>
 
 <div align="center">
