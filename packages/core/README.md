@@ -1,7 +1,7 @@
 <div align="center">
   <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./docs/images/morsel_logo_dark.svg">
-  <img src="./docs/images/morsel_logo.svg" alt="Logo" width="90" />
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/oclio/morsel/main/packages/core/docs/images/morsel_logo_dark.svg">
+  <img src="https://raw.githubusercontent.com/oclio/morsel/main/packages/core/docs/images/morsel_logo.svg" alt="Logo" width="90" />
 </picture>
   <h1>morsel</h1>
   <p>The only zero-dep config loader that does discovery, hierarchical merge, live-reload, and plugins.</p>
@@ -28,7 +28,7 @@
 <br/>
 
 <div align="center">
-  <img src="./docs/images/morsel_live.gif" alt="Live demo" width="800" />
+  <img src="https://raw.githubusercontent.com/oclio/morsel/main/packages/core/docs/images/morsel_live.gif" alt="Live demo" width="800" />
 </div>
 
 <div align="center">
@@ -129,7 +129,7 @@ Contributions are welcome! See [`CONTRIBUTING.md`](../../.github/CONTRIBUTING.md
 [MIT](LICENSE)
 
 <p align="center">
-  <img src="docs/images/oclio_logo.svg" alt="oclio logo" width="48" />
+  <img src="https://raw.githubusercontent.com/oclio/morsel/main/docs/images/oclio_logo.svg" alt="oclio logo" width="48" />
 </p>
 
 <p align="center">
