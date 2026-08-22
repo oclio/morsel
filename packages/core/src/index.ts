@@ -25,6 +25,7 @@ export type {
 } from '@/plugins/types';
 export { loadConfig, loadConfigSync } from '@/store/load-config';
 export type {
+  ConfigRecord,
   ConfigResult,
   Listener,
   MorselLayer,
@@ -35,4 +36,5 @@ export type {
 export { watchConfig } from '@/store/watch-config';
 export { defineConfig, mergeConfig } from '@/utils/define-config';
 export { initConfig } from '@/utils/init-config';
+export type { WatcherEntry, WatcherRegistry } from '@/watch/watcher-registry';
 export { clearRegistry, getRegistry } from '@/watch/watcher-registry';

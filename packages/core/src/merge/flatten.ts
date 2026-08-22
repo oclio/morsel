@@ -1,6 +1,5 @@
 import { isPlainObject } from '@/merge/merge-helpers';
-
-type ConfigRecord = Record<string, unknown>;
+import type { ConfigRecord } from '@/store/types';
 
 /**
  * Flatten a config object into a Map of dotted keys to scalar/array values.

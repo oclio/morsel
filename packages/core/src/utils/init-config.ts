@@ -4,9 +4,7 @@ import path from 'node:path';
 import { MorselError } from '@/errors/morsel-error';
 import { resolvePaths, resolveProjectPathSync } from '@/paths/resolve-paths';
 import { resolveOptions } from '@/store/assert-name';
-import type { MorselOptions } from '@/store/types';
-
-type ConfigRecord = Record<string, unknown>;
+import type { ConfigRecord, MorselOptions } from '@/store/types';
 
 /**
  * Bootstrap a project config file if it doesn't exist.

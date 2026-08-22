@@ -17,7 +17,7 @@
     "check:all": "turbo run check:all && pnpm lint:fix && pnpm knip && pnpm check:secrets && pnpm check:spell && pnpm check:md && true",
     "check:build": "turbo run check:build",
     "check:fast": "turbo run check:fast",
-    "check:md": "markdownlint '**/*.md' --fix --ignore **/node_modules/** --ignore **/dist/**",
+    "check:md": "markdownlint '**/*.md' --fix --ignore **/node_modules/** --ignore **/dist/** --ignore **/docs/api/** --ignore **/docs/.vitepress/cache/**",
     "check:one": "turbo run check:one",
     "check:secrets": "gitleaks protect --staged --verbose",
     "check:size": "turbo run check:size",

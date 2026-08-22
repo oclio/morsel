@@ -1,0 +1,127 @@
+/* Hero — logo sizing & alignment */
+.VPHero .image {
+  margin: 0 auto 1.5rem !important;
+  display: flex;
+  justify-content: center;
+}
+
+.VPHero .VPImage {
+  margin-bottom: 0;
+}
+
+.VPHero .image-container {
+  width: auto !important;
+  height: auto !important;
+  transform: none !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+.VPHero .image-src {
+  position: static !important;
+  transform: none !important;
+  width: 120px !important;
+  height: 120px !important;
+  max-width: 120px !important;
+  max-height: 120px !important;
+  margin: 0 auto;
+}
+
+@media (min-width: 640px) {
+  .VPHero .image {
+    margin: 0 auto 2rem !important;
+  }
+
+  .VPHero .image-src {
+    width: 150px !important;
+    height: 150px !important;
+    max-width: 150px !important;
+    max-height: 150px !important;
+  }
+}
+
+@media (min-width: 960px) {
+  .VPHero .image {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding-top: 8px;
+    padding-right: 0;
+    margin-left: auto;
+  }
+
+  .VPHero .image-container {
+    transform: none !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: flex-end !important;
+    margin-right: 0 !important;
+  }
+
+  .VPHero .image-src {
+    width: 180px !important;
+    height: 180px !important;
+    max-width: 180px !important;
+    max-height: 180px !important;
+    margin-right: 0 !important;
+    margin-left: auto !important;
+  }
+}
+
+.VPHero .name {
+  margin-bottom: 0.5rem;
+}
+
+/* Fix title morsel color in dark mode - keep morsel blue */
+:root {
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: -webkit-linear-gradient(120deg, #3e5aa2 30%, #5b7fc7);
+}
+
+.dark {
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: -webkit-linear-gradient(120deg, #5b7fc7 30%, #8ca9e6);
+}
+
+/* Claim — "Come for the lean. Stay for the watch." */
+.VPHero .text {
+  font-size: 20px !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+  margin-top: 0 !important;
+}
+
+@media (min-width: 640px) {
+  .VPHero .text {
+    font-size: 22px !important;
+  }
+}
+
+@media (min-width: 960px) {
+  .VPHero .text {
+    font-size: 24px !important;
+  }
+}
+
+/* Description — la longue phrase */
+.VPHero .tagline {
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  line-height: 1.6 !important;
+  max-width: 560px !important;
+  margin-top: 0.75rem !important;
+  color: var(--vp-c-text-2) !important;
+}
+
+@media (min-width: 640px) {
+  .VPHero .tagline {
+    font-size: 18px !important;
+  }
+}
+
+@media (min-width: 960px) {
+  .VPHero .tagline {
+    font-size: 20px !important;
+  }
+}

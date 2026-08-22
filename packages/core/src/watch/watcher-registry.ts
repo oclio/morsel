@@ -7,6 +7,8 @@ import { handleWatchEvent } from '@/watch/handle-event';
 /**
  * Registry entry for a watched directory — holds the `fs.watch` handle,
  * a ref-count of stores sharing it, and an optional retry timer for recovery.
+ *
+ * @internal
  */
 export interface WatcherEntry {
   watcher: FSWatcher | undefined;
@@ -15,7 +17,12 @@ export interface WatcherEntry {
   retryTimer: NodeJS.Timeout | undefined;
 }
 
-type WatcherRegistry = Map<string, WatcherEntry>;
+/**
+ * Global watcher registry mapping directory paths to {@link WatcherEntry}.
+ *
+ * @internal
+ */
+export type WatcherRegistry = Map<string, WatcherEntry>;
 
 const registry: WatcherRegistry = new Map();
 
@@ -193,6 +200,8 @@ export function releaseWatcher(directoryPath: string, store: StoreState): void {
 
 /**
  * Get the global watcher registry (for testing).
+ *
+ * @internal
  */
 export function getRegistry(): WatcherRegistry {
   return registry;
@@ -200,6 +209,8 @@ export function getRegistry(): WatcherRegistry {
 
 /**
  * Clear the global watcher registry (for testing).
+ *
+ * @internal
  */
 export function clearRegistry(): void {
   for (const entry of registry.values()) {

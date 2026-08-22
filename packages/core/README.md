@@ -25,6 +25,16 @@
   <strong>Come for the lean. Stay for the watch.</strong>
 </div>
 
+<br/>
+
+<div align="center">
+  <img src="./docs/images/morsel_live_dark.gif" alt="Live demo" width="800" />
+</div>
+
+<div align="center">
+  <a href="https://oclio.github.io/morsel/">The live demo is here</a>
+</div>
+
 ## The Problem
 
 Every Node.js config loader forces a trade-off: zero-dep but no watching, or feature-rich but bloated. morsel breaks that compromise.
@@ -98,7 +108,7 @@ const { config } = loadConfigSync(myApp); // same API, synchronous
 
 ## Contributing
 
-Contributions are welcome! See [`CONTRIBUTING.md`](CONTRIBUTING.md) for guidelines and [`.github/CODING_RULES.md`](.github/CODING_RULES.md) for coding conventions.
+Contributions are welcome! See [`CONTRIBUTING.md`](../../.github/CONTRIBUTING.md) for guidelines and [`CODING_RULES.md`](../../.github/CODING_RULES.md) for coding conventions.
 
 ## Support the project
 

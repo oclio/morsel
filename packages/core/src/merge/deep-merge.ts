@@ -1,4 +1,5 @@
 import { isPlainObject } from '@/merge/merge-helpers';
+import type { ConfigRecord } from '@/store/types';
 
 /**
  * Array merge strategy for `deepMerge`.
@@ -7,8 +8,6 @@ import { isPlainObject } from '@/merge/merge-helpers';
  * - `'concat'`: the override array is concatenated to the base array.
  */
 export type ArrayMergeStrategy = 'replace' | 'concat';
-
-type ConfigRecord = Record<string, unknown>;
 
 function mergeArray(
   base: unknown[],

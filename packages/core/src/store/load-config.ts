@@ -13,9 +13,7 @@ import {
 } from '@/paths/resolve-paths';
 import { resolveOptions } from '@/store/assert-name';
 import { toMorselLayer } from '@/store/morsel-layer';
-import type { ConfigResult, MorselOptions } from '@/store/types';
-
-type ConfigRecord = Record<string, unknown>;
+import type { ConfigRecord, ConfigResult, MorselOptions } from '@/store/types';
 
 /**
  * Load and merge config synchronously.

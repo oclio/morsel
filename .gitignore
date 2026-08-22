@@ -48,6 +48,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Generated API docs (typedoc output)
+packages/core/docs/api
+
 # Misc
 .DS_Store
 *.pem

@@ -8,6 +8,11 @@ import type {
 } from '@/plugins/types';
 
 /**
+ * Generic configuration object record with unknown values.
+ */
+export type ConfigRecord = Record<string, unknown>;
+
+/**
  * Callback invoked when a watched dotted key changes.
  */
 export type Listener = (next: unknown, prev: unknown) => void;

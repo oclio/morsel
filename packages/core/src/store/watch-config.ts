@@ -7,11 +7,9 @@ import { toMorselLayer } from '@/store/morsel-layer';
 import { createMorselStore } from '@/store/morsel-store';
 import { createRemerge } from '@/store/remerge-runner';
 import { createStoreState } from '@/store/store-state';
-import type { MorselStore, WatchOptions } from '@/store/types';
+import type { ConfigRecord, MorselStore, WatchOptions } from '@/store/types';
 import { collectWatchedFiles, setupWatchers } from '@/store/watcher-setup';
 import { releaseWatcher } from '@/watch/watcher-registry';
-
-type ConfigRecord = Record<string, unknown>;
 
 /**
  * Load config, watch files, and emit key-level events on change.
