@@ -98,7 +98,7 @@ const { config } = loadConfigSync(myApp); // same API, synchronous
 
 ## Contributing
 
-Contributions are welcome! See [`CONTRIBUTING.md`](CONTRIBUTING.md) for guidelines and [`.github/CODING_RULES.md`](.github/CODING_RULES.md) for coding conventions.
+Contributions are welcome! See [`CONTRIBUTING.md`](../../.github/CONTRIBUTING.md) for guidelines and [`CODING_RULES.md`](../../.github/CODING_RULES.md) for coding conventions.
 
 ## Support the project
 
