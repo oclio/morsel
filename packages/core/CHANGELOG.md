@@ -1,5 +1,11 @@
 # @oclio/morsel
 
+## 0.3.0
+
+### Minor Changes
+
+- b1f831d: Redesign documentation homepage and READMEs with interactive demo refinements: timeless config examples, fixed panel heights, flash effect on merge, red header on JSON parse error, and updated demo GIF.
+
 ## 0.2.0
 
 ### Minor Changes
