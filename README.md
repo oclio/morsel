@@ -28,7 +28,7 @@
 | Package                                             | Description                                           | Status                |
 | --------------------------------------------------- | ----------------------------------------------------- | --------------------- |
 | **Core**                                            |                                                       |                       |
-| [`@oclio/morsel`](packages/core)                    | Config loader: discovery, merge, live-reload, plugins | ✅ 0.3.0 (unreleased) |
+| [`@oclio/morsel`](packages/core)                    | Config loader: discovery, merge, live-reload, plugins | ✅ 0.3.0               |
 | **Format Plugins**                                  |                                                       |                       |
 | `jsonPlugin`                                        | `.json`                                               | ✅ Built-in           |
 | `@oclio/morsel-json5`                               | `.json5`                                              | 📋 Planned            |
