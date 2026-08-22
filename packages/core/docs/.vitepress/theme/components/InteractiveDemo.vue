@@ -168,7 +168,8 @@ onMounted(() => {
     <div class="demo-intro">
       <h2 class="demo-intro-title">Interactive Playground</h2>
       <p class="demo-intro-desc">
-        Edit the base or local configuration files to see hierarchical merging and live events in real-time.
+        Edit the base or local configuration files to see hierarchical merging
+        and live events in real-time.
       </p>
     </div>
 
@@ -186,8 +187,13 @@ onMounted(() => {
       <div class="demo-grid">
         <!-- Top Left: Global Config -->
         <div class="demo-panel">
-          <div class="demo-panel-header demo-panel-header-editable" :class="{ 'demo-panel-header-error': globalError }">
-            <span class="demo-panel-title">~/config/your-app/your-app.json</span>
+          <div
+            class="demo-panel-header demo-panel-header-editable"
+            :class="{ 'demo-panel-header-error': globalError }"
+          >
+            <span class="demo-panel-title"
+              >~/config/your-app/your-app.json</span
+            >
             <span class="demo-panel-subtitle">Base Config</span>
           </div>
           <div class="demo-editor-wrap">
@@ -202,7 +208,10 @@ onMounted(() => {
 
         <!-- Top Right: Project Config -->
         <div class="demo-panel">
-          <div class="demo-panel-header demo-panel-header-editable" :class="{ 'demo-panel-header-error': projectError }">
+          <div
+            class="demo-panel-header demo-panel-header-editable"
+            :class="{ 'demo-panel-header-error': projectError }"
+          >
             <span class="demo-panel-title">./your-app.json</span>
             <span class="demo-panel-subtitle">Local Config</span>
           </div>
@@ -238,7 +247,10 @@ onMounted(() => {
         </div>
 
         <!-- Bottom Right: Merged Output -->
-        <div class="demo-panel demo-panel-output" :class="{ 'demo-panel-flash': isUpdated }">
+        <div
+          class="demo-panel demo-panel-output"
+          :class="{ 'demo-panel-flash': isUpdated }"
+        >
           <div class="demo-panel-header demo-panel-header-accent">
             <span class="demo-panel-title">Your Merged Config</span>
           </div>

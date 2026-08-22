@@ -76,12 +76,20 @@
 /* Fix title morsel color in dark mode - keep morsel blue */
 :root {
   --vp-home-hero-name-color: transparent;
-  --vp-home-hero-name-background: -webkit-linear-gradient(120deg, #3e5aa2 30%, #5b7fc7);
+  --vp-home-hero-name-background: -webkit-linear-gradient(
+    120deg,
+    #3e5aa2 30%,
+    #5b7fc7
+  );
 }
 
 .dark {
   --vp-home-hero-name-color: transparent;
-  --vp-home-hero-name-background: -webkit-linear-gradient(120deg, #5b7fc7 30%, #8ca9e6);
+  --vp-home-hero-name-background: -webkit-linear-gradient(
+    120deg,
+    #5b7fc7 30%,
+    #8ca9e6
+  );
 }
 
 /* Claim — "Come for the lean. Stay for the watch." */
