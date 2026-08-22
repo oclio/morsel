@@ -6,9 +6,9 @@
 
 Format plugins extend morsel with new file format parsers.
 
-| Package                  | Extensions            | Status          |
-| ------------------------ | --------------------- | --------------- |
-| `jsonPlugin`             | `.json`               | **Built-in**    |
+| Package               | Extensions            | Status          |
+| --------------------- | --------------------- | --------------- |
+| `jsonPlugin`          | `.json`               | **Built-in**    |
 | `@oclio/morsel-json5` | `.json5`              | 📋 October 2026 |
 | `@oclio/morsel-yaml`  | `.yaml`, `.yml`       | 📋 October 2026 |
 | `@oclio/morsel-toml`  | `.toml`               | 📋 October 2026 |
@@ -20,8 +20,8 @@ Format plugins extend morsel with new file format parsers.
 
 Validation plugins validate and transform the merged configuration post-merge.
 
-| Package                    | Wrapper           | Status          |
-| -------------------------- | ----------------- | --------------- |
+| Package                 | Wrapper           | Status          |
+| ----------------------- | ----------------- | --------------- |
 | `@oclio/morsel-zod`     | zod               | 📋 October 2026 |
 | `@oclio/morsel-ajv`     | ajv (JSON Schema) | 📋 October 2026 |
 | `@oclio/morsel-yup`     | yup               | 📋 October 2026 |
@@ -31,8 +31,8 @@ Validation plugins validate and transform the merged configuration post-merge.
 
 ## Store Extensions
 
-| Package                        | Role                     | Status          |
-| ------------------------------ | ------------------------ | --------------- |
+| Package                     | Role                     | Status          |
+| --------------------------- | ------------------------ | --------------- |
 | `@oclio/morsel-accessors`   | get, all, set, delete    | 📋 October 2026 |
 | `@oclio/morsel-wildcard`    | wildcard event listeners | 📋 October 2026 |
 | `@oclio/morsel-keyed-array` | keyed array access       | 📋 October 2026 |
@@ -41,8 +41,8 @@ Validation plugins validate and transform the merged configuration post-merge.
 
 Hooks inject dynamic configuration at 8 lifecycle points in the pipeline.
 
-| Package                  | Role                    | Status          |
-| ------------------------ | ----------------------- | --------------- |
+| Package               | Role                    | Status          |
+| --------------------- | ----------------------- | --------------- |
 | `@oclio/morsel-env`   | process.env / .env file | 📋 October 2026 |
 | `@oclio/morsel-vault` | HashiCorp Vault secrets | 📋 October 2026 |
 

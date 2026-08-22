@@ -20,14 +20,14 @@ export class MorselError extends Error {
 
 ### Supported Error Codes
 
-| Code            | Error Type         | Cause / Trigger                                          | Behavior                                                  |
-| :-------------- | :----------------- | :------------------------------------------------------- | :-------------------------------------------------------- |
-| **`EIO`**       | Filesystem I/O     | `EACCES`, `EBUSY`, disk full, permission denied          | Throws in one-shot; logs in watch re-merge.               |
-| **`EPARSE`**    | Syntax Error       | Malformed JSON/YAML/TOML in an existing file             | Throws in one-shot; preserves previous state in watch.    |
+| Code            | Error Type         | Cause / Trigger                                          | Behavior                                               |
+| :-------------- | :----------------- | :------------------------------------------------------- | :----------------------------------------------------- |
+| **`EIO`**       | Filesystem I/O     | `EACCES`, `EBUSY`, disk full, permission denied          | Throws in one-shot; logs in watch re-merge.            |
+| **`EPARSE`**    | Syntax Error       | Malformed JSON/YAML/TOML in an existing file             | Throws in one-shot; preserves previous state in watch. |
 | **`ENOPLUGIN`** | Missing Plugin     | File extension found on disk without a registered parser | Throws with install hints (e.g. `@oclio/morsel-yaml`). |
-| **`EVALIDATE`** | Validation Failure | Schema rejection by a `MorselValidationPlugin`           | Throws `MorselValidationError` with issues map.           |
-| **`ECYCLE`**    | Circular Extends   | Circular `extends` reference or depth > 10               | Throws immediately to prevent infinite recursion.         |
-| **`EHOOK`**     | Hook Failure       | Unhandled exception thrown inside `hook.load()`          | Throws in one-shot; logs in watch re-merge.               |
+| **`EVALIDATE`** | Validation Failure | Schema rejection by a `MorselValidationPlugin`           | Throws `MorselValidationError` with issues map.        |
+| **`ECYCLE`**    | Circular Extends   | Circular `extends` reference or depth > 10               | Throws immediately to prevent infinite recursion.      |
+| **`EHOOK`**     | Hook Failure       | Unhandled exception thrown inside `hook.load()`          | Throws in one-shot; logs in watch re-merge.            |
 
 > **Note**: `ENOENT` (file not found) is **not an error**. Missing files are normal in layered configuration — they produce `exists: false` and an empty config layer `{}`.
 

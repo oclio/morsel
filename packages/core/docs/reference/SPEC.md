@@ -2,8 +2,8 @@
 
 | Metadata            | Value                                                            |
 | :------------------ | :--------------------------------------------------------------- |
-| **Package**         | `@oclio/morsel`                                               |
-| **Author**          | @oclio                                                        |
+| **Package**         | `@oclio/morsel`                                                  |
+| **Author**          | @oclio                                                           |
 | **Status**          | `STABLE`                                                         |
 | **Spec version**    | `1.0.0`                                                          |
 | **Created**         | 2026-08-22                                                       |
