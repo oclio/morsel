@@ -55,7 +55,7 @@ morsel starts from the premise that a configuration loader must be **lean, robus
 
 #### Cascade + discovery integrated
 
-- 4 stacked layers: `defaults` (code) → `global` (`~/.config/morsel/<name>.config.*`) → `project` (`./<name>.config.*`) → `overrides` (code). Deep merge by increasing priority.
+- 4 stacked layers: `defaults` (code) → `global` (`~/.config/<name>/<name>.config.*`) → `project` (`./<name>.config.*`) → `overrides` (code). Deep merge by increasing priority.
 - Multi-extension discovery — `resolveProjectPath` tests extensions of `formatPlugins` in order.
 - Local `extends` (string and string[]) — inheritance between configurations, resolved per layer before inter-layer merge.
 - `$env` overrides — environment specialization, applied per file before extends merge.
@@ -114,7 +114,7 @@ before:defaults → defaults → after:defaults
 ### 2.1 Cascade by increasing priority
 
 4 stacked layers from lowest to highest priority:
-`defaults` (code) → `global` (`~/.config/morsel/<name>.config.*`) → `project` (`./<name>.config.*`) → `overrides` (code). Each layer overrides the previous layer's keys via deep merge.
+`defaults` (code) → `global` (`~/.config/<name>/<name>.config.*`) → `project` (`./<name>.config.*`) → `overrides` (code). Each layer overrides the previous layer's keys via deep merge.
 
 ### 2.2 Per-layer resolution before inter-layer merge
 

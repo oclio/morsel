@@ -33,7 +33,7 @@
 
 ### Step 0 — Validation
 
-`assertName(opts.name)` — throws `TypeError('morsel: name is required')` if missing, `TypeError('morsel: name must be alphanumeric')` if invalid. `resolveOptions(opts)` applies defaults (`cwd = process.cwd()`, `globalDir = ~/.config/morsel`, `arrayMerge = 'replace'`, `configMutability = 'frozen'`, `envName = process.env.NODE_ENV`). If `NODE_ENV` is not set in the environment, `envName` becomes `undefined` — this is a legitimate case (local dev without env management). If a file contains `$env` in this case, morsel warns via `onDebug` (or stderr if `onDebug` is not provided) and ignores the `$env` block.
+`assertName(opts.name)` — throws `TypeError('morsel: name is required')` if missing, `TypeError('morsel: name must start with a letter and contain only letters, digits, dashes, or underscores')` if invalid. `resolveOptions(opts)` applies defaults (`cwd = process.cwd()`, `globalDir = ~/.config/<name>`, `arrayMerge = 'replace'`, `configMutability = 'frozen'`, `envName = process.env.NODE_ENV`). If `NODE_ENV` is not set in the environment, `envName` becomes `undefined` — this is a legitimate case (local dev without env management). If a file contains `$env` in this case, morsel warns via `onDebug` (or stderr if `onDebug` is not provided) and ignores the `$env` block.
 
 ### Step 1 — Layer Resolution
 
@@ -70,6 +70,7 @@ Layers resolved independently, with hooks interleaved (4 core layers + hook laye
 ### 3.1 Used APIs
 
 - `node:fs`: `readFile`, `readFileSync`, `access`, `existsSync`, `watch`, `writeFileSync`, `mkdirSync`, `renameSync`
+- `node:fs/promises`: `readFile`, `access`, `writeFile`, `mkdir`, `rename`
 - `node:path`: `resolve`, `dirname`, `extname`, `basename`
 - `node:os`: `homedir`
 
@@ -348,7 +349,7 @@ export interface StoreState<T extends ConfigRecord = ConfigRecord> {
  * Entry in the global watcher registry (ref-counting and retry timer).
  */
 export interface WatcherEntry {
-  watcher: fs.FSWatcher;
+  watcher: fs.FSWatcher | undefined;
   refCount: number;
   stores: Set<StoreState>;
   retryTimer: NodeJS.Timeout | undefined;
@@ -379,7 +380,9 @@ export function resolvePaths(
   formatPlugins?: readonly MorselFormatPlugin[],
 ): ResolvedPaths;
 
-export function initConfig(options: {
+export function initConfig<
+  T extends Record<string, unknown> = Record<string, unknown>,
+>(options: {
   name: string;
   cwd?: string;
   content?: Record<string, unknown>;
@@ -390,7 +393,7 @@ export function initConfig(options: {
 export function deepMerge(
   base: Record<string, unknown>,
   override: Record<string, unknown>,
-  strategy?: ArrayMergeStrategy,
+  strategy: ArrayMergeStrategy,
 ): Record<string, unknown>;
 
 export function diffKeys(
@@ -429,7 +432,7 @@ export function clearRegistry(): void;
 
 #### `stop()`
 
-`stop()` is async (`Promise<void>`). `stopped = true` is assigned **synchronously** at the start, before any `await`. Watchers whose `refCount` reaches zero are closed. `store.config` and `store.layers` remain readable after stop at the last known state. Any subsequent call to `store.on()` throws `Error('morsel: store is stopped')`.
+`stop()` is async (`Promise<void>`). `stopped = true` is assigned **synchronously** at the start, before any `await`. Watchers whose `refCount` reaches zero are closed. All registered listeners are cleared. `store.config` and `store.layers` remain readable after stop at the last known state. Any subsequent call to `store.on()` throws `Error('morsel: store is stopped')`.
 
 ---
 

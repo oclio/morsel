@@ -1,6 +1,7 @@
-import type { MorselHook } from '@/hooks/types';
+import type { MorselHook, MorselWatchableHook } from '@/hooks/types';
 import type { ConfigMutability } from '@/load/merge-layers';
 import type { DebugCallback } from '@/load/resolve-env';
+import type { LayerSource } from '@/load/resolve-layer';
 import type { ArrayMergeStrategy } from '@/merge/deep-merge';
 import type {
   MorselFormatPlugin,
@@ -34,11 +35,11 @@ export interface MorselOptions<
   /**
   Layer 1 — lowest priority. Raw object, no extends or $env.
   */
-  readonly defaults?: T;
+  readonly defaults?: Partial<T> | Record<string, unknown>;
   /**
   Layer 4 — highest priority. Raw object, no extends or $env.
   */
-  readonly overrides?: T;
+  readonly overrides?: Partial<T> | Record<string, unknown>;
   /**
   Default: ~/.config/morsel
   */
@@ -68,21 +69,21 @@ export interface MorselOptions<
   Order = match priority by extension.
   First plugin whose extensions include path.extname(filePath) wins.
   */
-  readonly formatPlugins?: MorselFormatPlugin[];
+  readonly formatPlugins?: readonly MorselFormatPlugin[];
   /**
   Validation plugins. Default: [].
   Applied on the final config (post-merge), in order.
   Each plugin can validate and transform the config (coercion, defaults, strip).
   If a plugin throws → MorselValidationError. Boot: throw. Re-merge: catch + keep previous.
   */
-  readonly validationPlugins?: MorselValidationPlugin[];
+  readonly validationPlugins?: readonly MorselValidationPlugin[];
   /**
    * Hooks inserted into the pipeline at their lifecycle point.
    * Each hook produces a Record that becomes a layer.
    * Async hooks (Promise) → TypeError in loadConfigSync.
    * MorselWatchableHook → watchPaths watched by the core.
    */
-  readonly hooks?: MorselHook[];
+  readonly hooks?: readonly (MorselHook | MorselWatchableHook)[];
 }
 
 /**
@@ -96,11 +97,6 @@ export interface WatchOptions<
   */
   readonly watchDebounce?: number;
 }
-
-/**
- * Identifies the origin layer of a configuration value.
- */
-type LayerSource = 'defaults' | 'global' | 'project' | 'overrides' | 'hook';
 
 /**
  * Target layer for set and mutate operations.
@@ -138,7 +134,7 @@ export interface ConfigResult<
   T extends Record<string, unknown> = Record<string, unknown>,
 > {
   readonly config: T;
-  readonly layers: MorselLayer[];
+  readonly layers: readonly MorselLayer[];
 }
 
 /**
@@ -148,7 +144,7 @@ export interface MorselStore<
   T extends Record<string, unknown> = Record<string, unknown>,
 > {
   readonly config: T;
-  readonly layers: MorselLayer[];
+  readonly layers: readonly MorselLayer[];
   /**
   Listen to a flat key (dotted notation). Returns unsubscribe.
   */
