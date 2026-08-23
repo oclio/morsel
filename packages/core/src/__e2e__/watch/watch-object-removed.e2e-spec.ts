@@ -16,20 +16,20 @@ describe('watch-object-removed — remove entire object', () => {
     });
 
     const callOrder: string[] = [];
-    store!.on('server', (next, prev) => {
+    store!.on('server', (event) => {
       callOrder.push('server');
-      expect(next).toBeUndefined();
-      expect(prev).toEqual({ host: '0.0.0.0', port: 8080 });
+      expect(event.next).toBeUndefined();
+      expect(event.prev).toEqual({ host: '0.0.0.0', port: 8080 });
     });
-    store!.on('server.host', (next, prev) => {
+    store!.on('server.host', (event) => {
       callOrder.push('server.host');
-      expect(next).toBeUndefined();
-      expect(prev).toBe('0.0.0.0');
+      expect(event.next).toBeUndefined();
+      expect(event.prev).toBe('0.0.0.0');
     });
-    store!.on('server.port', (next, prev) => {
+    store!.on('server.port', (event) => {
       callOrder.push('server.port');
-      expect(next).toBeUndefined();
-      expect(prev).toBe(8080);
+      expect(event.next).toBeUndefined();
+      expect(event.prev).toBe(8080);
     });
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });

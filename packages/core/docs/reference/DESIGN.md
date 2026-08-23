@@ -185,7 +185,8 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `ConfigMutability` — `'frozen' | 'mutable'`.
 - `ChangeCategory` — `'added' | 'modified' | 'removed'`.
 - `KeyChange` — structure of a change `{ next, prev, category }`.
-- `Listener` — event callback `(next: unknown, prev: unknown) => void`.
+- `MorselChangeEvent` — event object `{ keyPath, type, next, prev }` passed to listeners.
+- `Listener` — event callback `(event: MorselChangeEvent) => void`.
 - `DebugCallback` — custom debug sink.
 - `ConfigRecord` — generic configuration object record (`Record<string, unknown>`).
 

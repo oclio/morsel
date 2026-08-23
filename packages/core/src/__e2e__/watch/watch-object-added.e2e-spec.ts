@@ -16,20 +16,20 @@ describe('watch-object-added — add entire object', () => {
     });
 
     const callOrder: string[] = [];
-    store!.on('server', (next, prev) => {
+    store!.on('server', (event) => {
       callOrder.push('server');
-      expect(next).toEqual({ host: '0.0.0.0', port: 8080 });
-      expect(prev).toBeUndefined();
+      expect(event.next).toEqual({ host: '0.0.0.0', port: 8080 });
+      expect(event.prev).toBeUndefined();
     });
-    store!.on('server.host', (next, prev) => {
+    store!.on('server.host', (event) => {
       callOrder.push('server.host');
-      expect(next).toBe('0.0.0.0');
-      expect(prev).toBeUndefined();
+      expect(event.next).toBe('0.0.0.0');
+      expect(event.prev).toBeUndefined();
     });
-    store!.on('server.port', (next, prev) => {
+    store!.on('server.port', (event) => {
       callOrder.push('server.port');
-      expect(next).toBe(8080);
-      expect(prev).toBeUndefined();
+      expect(event.next).toBe(8080);
+      expect(event.prev).toBeUndefined();
     });
 
     await writeConfig(projectDirectory, 'myapp.config.json', {

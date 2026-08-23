@@ -18,7 +18,15 @@ export interface ConfigResultLike {
 export interface StoreLike {
   readonly config: ConfigRecord;
   readonly layers: readonly MinimalLayer[];
-  on(key: string, listener: (next: unknown, prev: unknown) => void): () => void;
+  on(
+    key: string,
+    listener: (event: {
+      readonly keyPath: string;
+      readonly type: string;
+      readonly next: unknown;
+      readonly prev: unknown;
+    }) => void,
+  ): () => void;
   stop(): Promise<void>;
 }
 

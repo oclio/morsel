@@ -697,7 +697,12 @@ describe('store-mutator', () => {
 
       await pushKey(state, 'tags', 'b', undefined, 'mutable');
 
-      expect(listener).toHaveBeenCalledWith('b', undefined);
+      expect(listener).toHaveBeenCalledWith({
+        keyPath: 'tags.1',
+        type: 'added',
+        next: 'b',
+        prev: undefined,
+      });
     });
   });
 

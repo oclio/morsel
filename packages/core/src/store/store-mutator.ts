@@ -162,7 +162,7 @@ function emitIndexListener(
   const listeners = state.listeners.get(indexKey);
   if (listeners !== undefined) {
     for (const listener of listeners) {
-      listener(next, prev);
+      listener({ keyPath: indexKey, type: 'added', next, prev });
     }
   }
 }

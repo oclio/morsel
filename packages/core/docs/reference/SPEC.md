@@ -275,7 +275,14 @@ export interface KeyChange {
   readonly category: ChangeCategory;
 }
 
-export type Listener = (next: unknown, prev: unknown) => void;
+export interface MorselChangeEvent {
+  readonly keyPath: string;
+  readonly type: ChangeCategory;
+  readonly next: unknown;
+  readonly prev: unknown;
+}
+
+export type Listener = (event: MorselChangeEvent) => void;
 export type DebugCallback = (
   message: string,
   context?: Record<string, unknown>,

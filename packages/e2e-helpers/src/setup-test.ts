@@ -49,7 +49,15 @@ export interface SetupTestOptions {
 export interface MinimalStore {
   readonly config: Record<string, unknown>;
   readonly layers: readonly MinimalLayer[];
-  on(key: string, listener: (next: unknown, prev: unknown) => void): () => void;
+  on(
+    key: string,
+    listener: (event: {
+      readonly keyPath: string;
+      readonly type: string;
+      readonly next: unknown;
+      readonly prev: unknown;
+    }) => void,
+  ): () => void;
   stop(): Promise<void>;
 }
 

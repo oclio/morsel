@@ -19,8 +19,8 @@ describe('watch-array-replace-vs-concat — arrayMerge affects diff', () => {
     expect(store!.config).toEqual({ tags: ['a', 'b', 'c'] });
 
     const events: { next: unknown; prev: unknown }[] = [];
-    store!.on('tags', (next, prev) => {
-      events.push({ next, prev });
+    store!.on('tags', (event) => {
+      events.push({ next: event.next, prev: event.prev });
     });
 
     await writeConfig(projectDirectory, 'myapp.config.json', {

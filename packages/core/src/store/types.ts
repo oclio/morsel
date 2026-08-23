@@ -3,6 +3,7 @@ import type { ConfigMutability } from '@/load/merge-layers';
 import type { DebugCallback } from '@/load/resolve-env';
 import type { LayerSource } from '@/load/resolve-layer';
 import type { ArrayMergeStrategy } from '@/merge/deep-merge';
+import type { ChangeCategory } from '@/merge/diff-keys';
 import type {
   MorselFormatPlugin,
   MorselValidationPlugin,
@@ -14,9 +15,19 @@ import type {
 export type ConfigRecord = Record<string, unknown>;
 
 /**
+ * Event object passed to a listener when a watched dotted key changes.
+ */
+export interface MorselChangeEvent {
+  readonly keyPath: string;
+  readonly type: ChangeCategory;
+  readonly next: unknown;
+  readonly prev: unknown;
+}
+
+/**
  * Callback invoked when a watched dotted key changes.
  */
-export type Listener = (next: unknown, prev: unknown) => void;
+export type Listener = (event: MorselChangeEvent) => void;
 
 /**
  * User-facing options for `loadConfig` and `watchConfig`.

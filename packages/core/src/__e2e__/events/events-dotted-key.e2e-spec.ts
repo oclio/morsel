@@ -16,8 +16,8 @@ describe('events-dotted-key — on("tools.eslint", cb) fires on nested change', 
     });
 
     const events: { next: unknown; prev: unknown }[] = [];
-    store!.on('tools.eslint', (next, prev) => {
-      events.push({ next, prev });
+    store!.on('tools.eslint', (event) => {
+      events.push({ next: event.next, prev: event.prev });
     });
 
     await writeConfig(projectDirectory, 'myapp.config.json', {

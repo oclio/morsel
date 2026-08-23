@@ -36,6 +36,7 @@ export type {
   ConfigRecord,
   ConfigResult,
   Listener,
+  MorselChangeEvent,
   MorselLayer,
   MorselOptions,
   MorselStore,

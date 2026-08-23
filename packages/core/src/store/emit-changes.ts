@@ -1,5 +1,5 @@
 import { diffKeys } from '@/merge/diff-keys';
-import type { Listener } from '@/store/types';
+import type { Listener, MorselChangeEvent } from '@/store/types';
 
 type ConfigRecord = Record<string, unknown>;
 
@@ -47,16 +47,28 @@ export function emitChanges(
   for (const [key, change] of removed) {
     const set = listeners.get(key);
     if (set === undefined) continue;
+    const event: MorselChangeEvent = {
+      keyPath: key,
+      type: change.category,
+      next: change.next,
+      prev: change.prev,
+    };
     for (const listener of set) {
-      listener(change.next, change.prev);
+      listener(event);
     }
   }
 
   for (const [key, change] of addedOrModified) {
     const set = listeners.get(key);
     if (set === undefined) continue;
+    const event: MorselChangeEvent = {
+      keyPath: key,
+      type: change.category,
+      next: change.next,
+      prev: change.prev,
+    };
     for (const listener of set) {
-      listener(change.next, change.prev);
+      listener(event);
     }
   }
 }

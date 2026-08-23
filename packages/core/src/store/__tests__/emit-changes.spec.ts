@@ -21,7 +21,12 @@ describe('emitChanges', () => {
 
     emitChanges({ foo: 1 }, { foo: 2 }, listeners);
 
-    expect(listener).toHaveBeenCalledWith(2, 1);
+    expect(listener).toHaveBeenCalledWith({
+      keyPath: 'foo',
+      type: 'modified',
+      next: 2,
+      prev: 1,
+    });
   });
 
   it('emits to multiple listeners for the same key', () => {
@@ -35,8 +40,18 @@ describe('emitChanges', () => {
 
     emitChanges({ bar: 'old' }, { bar: 'new' }, listeners);
 
-    expect(listener1).toHaveBeenCalledWith('new', 'old');
-    expect(listener2).toHaveBeenCalledWith('new', 'old');
+    expect(listener1).toHaveBeenCalledWith({
+      keyPath: 'bar',
+      type: 'modified',
+      next: 'new',
+      prev: 'old',
+    });
+    expect(listener2).toHaveBeenCalledWith({
+      keyPath: 'bar',
+      type: 'modified',
+      next: 'new',
+      prev: 'old',
+    });
   });
 
   it('skips keys with no registered listeners', () => {
@@ -53,7 +68,12 @@ describe('emitChanges', () => {
     emitChanges({ foo: 1, bar: 3 }, { foo: 2, bar: 4 }, listeners);
 
     expect(listener).toHaveBeenCalledTimes(1);
-    expect(listener).toHaveBeenCalledWith(2, 1);
+    expect(listener).toHaveBeenCalledWith({
+      keyPath: 'foo',
+      type: 'modified',
+      next: 2,
+      prev: 1,
+    });
   });
 
   it('skips removed keys with no registered listeners', () => {
@@ -70,7 +90,30 @@ describe('emitChanges', () => {
     emitChanges({ gone: 1, kept: 1 }, { kept: 2 }, listeners);
 
     expect(listener).toHaveBeenCalledTimes(1);
-    expect(listener).toHaveBeenCalledWith(2, 1);
+    expect(listener).toHaveBeenCalledWith({
+      keyPath: 'kept',
+      type: 'modified',
+      next: 2,
+      prev: 1,
+    });
+  });
+
+  it('emits removed key event with correct payload', () => {
+    vi.mocked(diffKeys).mockReturnValue(
+      new Map([['gone', { next: undefined, prev: 42, category: 'removed' }]]),
+    );
+
+    const listener = vi.fn() as unknown as Listener;
+    const listeners = new Map([['gone', new Set([listener])]]);
+
+    emitChanges({ gone: 42 }, {}, listeners);
+
+    expect(listener).toHaveBeenCalledWith({
+      keyPath: 'gone',
+      type: 'removed',
+      next: undefined,
+      prev: 42,
+    });
   });
 
   it('emits removed keys bottom-up first, then added/modified top-down', () => {

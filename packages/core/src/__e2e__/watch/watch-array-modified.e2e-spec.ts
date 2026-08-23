@@ -16,11 +16,11 @@ describe('watch-array-modified — array change emits parent only', () => {
     });
 
     const events: { next: unknown; prev: unknown }[] = [];
-    store!.on('tags', (next, prev) => {
-      events.push({ next, prev });
+    store!.on('tags', (event) => {
+      events.push({ next: event.next, prev: event.prev });
     });
-    store!.on('tags.0', (next, prev) => {
-      events.push({ next, prev });
+    store!.on('tags.0', (event) => {
+      events.push({ next: event.next, prev: event.prev });
     });
 
     await writeConfig(projectDirectory, 'myapp.config.json', {
