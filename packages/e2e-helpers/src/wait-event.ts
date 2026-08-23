@@ -7,6 +7,7 @@ export interface EventObservable {
       readonly next: unknown;
       readonly prev: unknown;
     }) => void,
+    options?: Record<string, never>,
   ): () => void;
 }
 

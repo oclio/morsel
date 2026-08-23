@@ -25,6 +25,16 @@ export interface MorselChangeEvent {
 }
 
 /**
+ * Options for future use by `store.on()`.
+ *
+ * Reserved but not yet implemented. Future options may include:
+ * - `once: true` — auto-unsubscribe after first event
+ * - `signal: AbortSignal` — unsubscribe via AbortController
+ * - `includeChildren: boolean` — emit for child key changes
+ */
+export type MorselListenerOptions = Record<string, never>;
+
+/**
  * Callback invoked when a watched dotted key changes.
  */
 export type Listener = (event: MorselChangeEvent) => void;
@@ -159,7 +169,11 @@ export interface MorselStore<
   /**
   Listen to a flat key (dotted notation). Returns unsubscribe.
   */
-  on(key: string, listener: Listener): () => void;
+  on(
+    key: string,
+    listener: Listener,
+    options?: MorselListenerOptions,
+  ): () => void;
   /**
   Read a value by dot or bracket path, returning defaultValue if undefined.
   */

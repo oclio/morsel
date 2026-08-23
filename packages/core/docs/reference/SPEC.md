@@ -122,7 +122,11 @@ export interface MorselStore<
 > {
   readonly config: T;
   readonly layers: readonly MorselLayer[];
-  on(keyPath: string, listener: Listener): () => void;
+  on(
+    keyPath: string,
+    listener: Listener,
+    options?: MorselListenerOptions,
+  ): () => void;
   get<V = unknown>(
     path: string | readonly (string | number)[],
     defaultValue?: V,
@@ -281,6 +285,8 @@ export interface MorselChangeEvent {
   readonly next: unknown;
   readonly prev: unknown;
 }
+
+export type MorselListenerOptions = Record<string, never>;
 
 export type Listener = (event: MorselChangeEvent) => void;
 export type DebugCallback = (
@@ -528,16 +534,16 @@ When `unset` or `deleteKey` is called with `target: 'all'` (the default), the de
 
 ### 4.5 Events & Two-Phase Ordering
 
-Events are computed via `diffKeys` and emitted via `store.on(keyPath, listener)`:
+Events are computed via `diffKeys` and emitted via `store.on(keyPath, listener, options?)`:
 
-- **Scalar modified**: `(next: value, prev: oldValue)`.
-- **Scalar added**: `(next: value, prev: undefined)`.
-- **Scalar removed**: `(next: undefined, prev: oldValue)`.
+- **Scalar modified**: `event = { keyPath, type: 'modified', next: value, prev: oldValue }`.
+- **Scalar added**: `event = { keyPath, type: 'added', next: value, prev: undefined }`.
+- **Scalar removed**: `event = { keyPath, type: 'removed', next: undefined, prev: oldValue }`.
 - **Object → object (same type)**: recursive descent, emits modified child scalars.
-- **Object replaced by scalar**: `(next: scalar, prev: oldObject)` on the parent + all child scalars as removed.
-- **Scalar replaced by object**: `(next: newObject, prev: scalar)` on the parent + all child scalars as added.
+- **Object replaced by scalar**: `event = { keyPath, type: 'modified', next: scalar, prev: oldObject }` on the parent + all child scalars as removed.
+- **Scalar replaced by object**: `event = { keyPath, type: 'modified', next: newObject, prev: scalar }` on the parent + all child scalars as added.
 - **Object added / removed**: emits on the parent + all child scalars.
-- **Array modified**: `(next: newArray, prev: oldArray)` on the parent (atomic replacement, no per-index diff). Array mutators (`push`, `unshift`, `pop`, `shift`, `splice`) delegate to `mutateKey` with the full replacement array. `push` additionally emits on `path.<newIndex>` for the newly added element. Type mismatch (target is not an array) throws `MorselError` (`EVALIDATE`).
+- **Array modified**: `event = { keyPath, type: 'modified', next: newArray, prev: oldArray }` on the parent (atomic replacement, no per-index diff). Array mutators (`push`, `unshift`, `pop`, `shift`, `splice`) delegate to `mutateKey` with the full replacement array. `push` additionally emits on `path.<newIndex>` for the newly added element. Type mismatch (target is not an array) throws `MorselError` (`EVALIDATE`).
 
 #### Two-Phase Ordering Invariant
 

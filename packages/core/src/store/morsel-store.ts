@@ -17,6 +17,7 @@ import type {
   DeleteTarget,
   Listener,
   MorselLayer,
+  MorselListenerOptions,
   MorselStore,
   StoreTarget,
 } from '@/store/types';
@@ -46,7 +47,11 @@ export function createMorselStore<T extends ConfigRecord>(
     get layers(): MorselLayer[] {
       return [...state._layers];
     },
-    on(key: string, listener: Listener): () => void {
+    on(
+      key: string,
+      listener: Listener,
+      _options?: MorselListenerOptions,
+    ): () => void {
       if (state.stopped) {
         throw new Error('morsel: store is stopped');
       }

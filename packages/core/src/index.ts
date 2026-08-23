@@ -38,6 +38,7 @@ export type {
   Listener,
   MorselChangeEvent,
   MorselLayer,
+  MorselListenerOptions,
   MorselOptions,
   MorselStore,
   WatchOptions,
