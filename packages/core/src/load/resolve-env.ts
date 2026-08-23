@@ -1,5 +1,6 @@
 import { deepMerge } from '@/merge/deep-merge';
 import { isPlainObject } from '@/merge/merge-helpers';
+import { noop } from '@/store/assert-name';
 
 type ConfigRecord = Record<string, unknown>;
 
@@ -64,7 +65,7 @@ export function resolveEnv(
 }
 
 function logDebug(onDebug: DebugCallback | undefined, message: string): void {
-  if (onDebug === undefined) {
+  if (onDebug === undefined || onDebug === noop) {
     console.error(message);
   } else {
     onDebug(message);

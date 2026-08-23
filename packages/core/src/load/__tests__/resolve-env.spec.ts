@@ -1,5 +1,6 @@
 import { resolveEnv } from '@/load/resolve-env';
 import { deepMerge } from '@/merge/deep-merge';
+import { noop } from '@/store/assert-name';
 
 vi.mock('@/merge/deep-merge', () => ({
   deepMerge: vi.fn(
@@ -84,6 +85,22 @@ describe('resolveEnv', () => {
     expect(consoleSpy).not.toHaveBeenCalled();
     expect(onDebug).toHaveBeenCalledTimes(1);
     expect(onDebug.mock.calls[0]?.[0]).toContain(
+      '$env present but envName is undefined',
+    );
+  });
+
+  it('logs to console.error when onDebug is default noop', () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const config = { foo: 'bar', $env: { dev: { baz: 'qux' } } };
+
+    const result = resolveEnv(config, {
+      envName: undefined,
+      onDebug: noop,
+    });
+
+    expect(result).toEqual({ foo: 'bar' });
+    expect(consoleSpy).toHaveBeenCalledTimes(1);
+    expect(consoleSpy.mock.calls[0]?.[0]).toContain(
       '$env present but envName is undefined',
     );
   });
