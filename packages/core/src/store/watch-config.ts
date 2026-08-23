@@ -38,7 +38,9 @@ export async function watchConfig<T extends ConfigRecord = ConfigRecord>(
   const merged = mergeLayers(layers, resolved.arrayMerge);
   const validated = applyValidation(merged, resolved.validationPlugins);
   const config = applyMutability(validated, resolved.configMutability) as T;
-  const morselLayers = layers.map((layer) => toMorselLayer(layer));
+  const morselLayers = layers.map((layer) =>
+    toMorselLayer(layer, resolved.name),
+  );
 
   const debounceMs = options.watchDebounce ?? 300;
   const remerge = createRemerge<T>();

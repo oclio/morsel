@@ -117,7 +117,8 @@ describe('createRemerge', () => {
     vi.mocked(buildLayers).mockResolvedValue(layers);
     vi.mocked(mergeLayers).mockReturnValue({ merged: true });
     vi.mocked(applyMutability).mockReturnValue({ frozen: true });
-    vi.mocked(toMorselLayer).mockImplementation((layer) => ({
+    vi.mocked(toMorselLayer).mockImplementation((layer, configName) => ({
+      configName,
       source: layer.source,
       path: layer.path,
       config: layer.config,

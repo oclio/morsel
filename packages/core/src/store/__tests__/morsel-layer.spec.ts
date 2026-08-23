@@ -11,11 +11,12 @@ describe('toMorselLayer', () => {
       extendsPaths: [],
     };
 
-    const result = toMorselLayer(layer);
+    const result = toMorselLayer(layer, 'myapp');
 
     expect(result.source).toBe('global');
     expect(result.path).toBe('/path/to/config.json');
     expect(result.exists).toBe(true);
+    expect(result.configName).toBe('myapp');
   });
 
   it('freezes the config object', () => {
@@ -27,7 +28,7 @@ describe('toMorselLayer', () => {
       extendsPaths: [],
     };
 
-    const result = toMorselLayer(layer);
+    const result = toMorselLayer(layer, 'myapp');
 
     expect(Object.isFrozen(result.config)).toBe(true);
   });
@@ -41,7 +42,7 @@ describe('toMorselLayer', () => {
       extendsPaths: [],
     };
 
-    const result = toMorselLayer(layer);
+    const result = toMorselLayer(layer, 'myapp');
 
     expect(Object.isFrozen(result.config)).toBe(true);
     expect(Object.isFrozen(result.config['nested'])).toBe(true);
@@ -61,7 +62,7 @@ describe('toMorselLayer', () => {
       extendsPaths: [],
     };
 
-    const result = toMorselLayer(layer);
+    const result = toMorselLayer(layer, 'myapp');
 
     expect(result.config['foo']).toBe(null);
     expect(Object.isFrozen(result.config)).toBe(true);
@@ -76,7 +77,7 @@ describe('toMorselLayer', () => {
       extendsPaths: [],
     };
 
-    const result = toMorselLayer(layer);
+    const result = toMorselLayer(layer, 'myapp');
 
     expect(Object.isFrozen(result.config)).toBe(true);
     expect(Object.isFrozen(result.config['items'])).toBe(true);
@@ -91,7 +92,7 @@ describe('toMorselLayer', () => {
       extendsPaths: [],
     };
 
-    const result = toMorselLayer(layer);
+    const result = toMorselLayer(layer, 'myapp');
 
     expect(result.config['num']).toBe(42);
     expect(result.config['str']).toBe('hello');
@@ -108,7 +109,7 @@ describe('toMorselLayer', () => {
       extendsPaths: [],
     };
 
-    const result = toMorselLayer(layer);
+    const result = toMorselLayer(layer, 'myapp');
 
     expect(typeof result.config['fn']).toBe('function');
     expect(Object.isFrozen(result.config['fn'])).toBe(false);
@@ -124,7 +125,7 @@ describe('toMorselLayer', () => {
       extendsPaths: [],
     };
 
-    const result = toMorselLayer(layer);
+    const result = toMorselLayer(layer, 'myapp');
 
     expect(Object.isFrozen(result.config)).toBe(true);
     expect(Object.isFrozen(result.config['nested'])).toBe(true);
@@ -142,7 +143,7 @@ describe('toMorselLayer', () => {
       extendsPaths: [],
     };
 
-    const result = toMorselLayer(layer);
+    const result = toMorselLayer(layer, 'myapp');
     expect(Object.isFrozen(result.config)).toBe(true);
     // Circular ref preserved — self points back to the original config object
     expect(Object.isFrozen(result.config['self'])).toBe(true);
@@ -158,7 +159,7 @@ describe('toMorselLayer', () => {
       extendsPaths: [],
     };
 
-    const result = toMorselLayer(layer);
+    const result = toMorselLayer(layer, 'myapp');
 
     expect(result.config).not.toBe(originalConfig);
     expect(result.config).toEqual({ foo: 'bar' });
@@ -174,7 +175,7 @@ describe('toMorselLayer', () => {
       extendsPaths: [],
     };
 
-    const result = toMorselLayer(layer);
+    const result = toMorselLayer(layer, 'myapp');
 
     expect(result.config).toEqual({});
     expect(Object.isFrozen(result.config)).toBe(true);
@@ -189,7 +190,7 @@ describe('toMorselLayer', () => {
       extendsPaths: [],
     };
 
-    const result = toMorselLayer(layer);
+    const result = toMorselLayer(layer, 'myapp');
 
     expect(result.exists).toBe(false);
   });
@@ -203,7 +204,7 @@ describe('toMorselLayer', () => {
       extendsPaths: [],
     };
 
-    const result = toMorselLayer(layer);
+    const result = toMorselLayer(layer, 'myapp');
 
     expect(result.config['foo']).toBe(undefined);
     expect(Object.isFrozen(result.config)).toBe(true);
@@ -219,7 +220,7 @@ describe('toMorselLayer', () => {
       extendsPaths: [],
     };
 
-    const result = toMorselLayer(layer);
+    const result = toMorselLayer(layer, 'myapp');
 
     expect(result.source).toBe('hook');
     expect(result.hookName).toBe('env');
@@ -234,7 +235,7 @@ describe('toMorselLayer', () => {
       extendsPaths: [],
     };
 
-    const result = toMorselLayer(layer);
+    const result = toMorselLayer(layer, 'myapp');
 
     expect(result).not.toHaveProperty('hookName');
   });
@@ -248,7 +249,7 @@ describe('toMorselLayer', () => {
       extendsPaths: ['/base.json', '/shared.json'],
     };
 
-    const result = toMorselLayer(layer);
+    const result = toMorselLayer(layer, 'myapp');
 
     expect(result.extendsPaths).toEqual(['/base.json', '/shared.json']);
   });
@@ -262,7 +263,7 @@ describe('toMorselLayer', () => {
       extendsPaths: ['/base.json'],
     };
 
-    const result = toMorselLayer(layer);
+    const result = toMorselLayer(layer, 'myapp');
 
     expect(Object.isFrozen(result.extendsPaths)).toBe(true);
   });

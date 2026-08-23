@@ -87,7 +87,8 @@ describe('loadConfigSync', () => {
     );
     vi.mocked(mergeLayers).mockReturnValue({ merged: true });
     vi.mocked(applyMutability).mockReturnValue({ merged: true });
-    vi.mocked(toMorselLayer).mockImplementation((layer) => ({
+    vi.mocked(toMorselLayer).mockImplementation((layer, configName) => ({
+      configName,
       source: layer.source,
       path: layer.path,
       config: layer.config,
@@ -242,7 +243,8 @@ describe('loadConfigSync', () => {
       .mockReturnValueOnce(createResolvedLayer('project', { p: 1 }))
       .mockReturnValueOnce(createResolvedLayer('overrides', { b: 2 }));
     vi.mocked(applyMutability).mockReturnValue({ final: true });
-    vi.mocked(toMorselLayer).mockImplementation((layer) => ({
+    vi.mocked(toMorselLayer).mockImplementation((layer, configName) => ({
+      configName,
       source: layer.source,
       path: layer.path,
       config: { ...layer.config },
@@ -304,7 +306,8 @@ describe('loadConfig', () => {
     );
     vi.mocked(mergeLayers).mockReturnValue({ merged: true });
     vi.mocked(applyMutability).mockReturnValue({ merged: true });
-    vi.mocked(toMorselLayer).mockImplementation((layer) => ({
+    vi.mocked(toMorselLayer).mockImplementation((layer, configName) => ({
+      configName,
       source: layer.source,
       path: layer.path,
       config: layer.config,
@@ -459,7 +462,8 @@ describe('loadConfig', () => {
       .mockResolvedValueOnce(createResolvedLayer('project', { p: 1 }))
       .mockResolvedValueOnce(createResolvedLayer('overrides', { b: 2 }));
     vi.mocked(applyMutability).mockReturnValue({ final: true });
-    vi.mocked(toMorselLayer).mockImplementation((layer) => ({
+    vi.mocked(toMorselLayer).mockImplementation((layer, configName) => ({
+      configName,
       source: layer.source,
       path: layer.path,
       config: { ...layer.config },

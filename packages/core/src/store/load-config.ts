@@ -61,7 +61,7 @@ export function loadConfigSync<T extends ConfigRecord = ConfigRecord>(
 
   return {
     config,
-    layers: layers.map((layer) => toMorselLayer(layer)),
+    layers: layers.map((layer) => toMorselLayer(layer, resolved.name)),
   };
 }
 
@@ -118,6 +118,6 @@ export async function loadConfig<T extends ConfigRecord = ConfigRecord>(
 
   return {
     config,
-    layers: layers.map((layer) => toMorselLayer(layer)),
+    layers: layers.map((layer) => toMorselLayer(layer, resolved.name)),
   };
 }

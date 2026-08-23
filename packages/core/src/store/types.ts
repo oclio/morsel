@@ -133,6 +133,7 @@ export type DeleteTarget = 'all' | 'global' | 'project';
  * Immutable snapshot of a single resolved config layer.
  */
 export interface MorselLayer {
+  readonly configName: string;
   readonly source: LayerSource;
   /**
   Present only if source === 'hook'. Name of the hook.

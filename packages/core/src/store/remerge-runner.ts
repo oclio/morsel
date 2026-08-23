@@ -119,7 +119,9 @@ export function createRemerge<T extends ConfigRecord>(): (
         validated,
         options_.configMutability,
       ) as T;
-      const newMorselLayers = newLayers.map((layer) => toMorselLayer(layer));
+      const newMorselLayers = newLayers.map((layer) =>
+        toMorselLayer(layer, store.options.name),
+      );
 
       // Apply config state first — watchers update only after re-merge success (spec §2.2).
       store.lastConfig = newLastConfig;
