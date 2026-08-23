@@ -2,6 +2,7 @@ export type { MorselErrorCode } from '@/errors/morsel-error';
 export { MorselError } from '@/errors/morsel-error';
 export { MorselNoPluginError } from '@/errors/no-plugin-error';
 export { MorselValidationError } from '@/errors/validation-error';
+export { MorselWriteError } from '@/errors/write-error';
 export type {
   HookContext,
   HookLifecycle,

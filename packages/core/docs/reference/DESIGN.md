@@ -171,6 +171,7 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `MorselErrorCode` — union of error codes (`'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK' | 'EWRITE'`).
 - `MorselNoPluginError` — thrown when no extension matches a plugin (`ENOPLUGIN`).
 - `MorselValidationError` — thrown on schema validation failure (`EVALIDATE`).
+- `MorselWriteError` — thrown on write/mutation failure (`EWRITE`, + `filePath`, + `mutation`).
 - `MorselFormatPlugin` — format plugin contract (raw parsing → object).
 - `MorselValidationPlugin` — post-merge validation/transformation plugin contract.
 - `MorselHook` — lifecycle hook contract.
