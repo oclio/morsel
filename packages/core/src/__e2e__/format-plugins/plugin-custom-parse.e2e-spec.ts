@@ -45,6 +45,7 @@ describe('plugin-custom-parse — custom plugin parses factice format', () => {
         }
         return result;
       },
+      serialize: () => '',
     };
 
     const { config } = await loadConfig({

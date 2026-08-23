@@ -109,22 +109,6 @@ describe('writeConfigFile', () => {
       expect(content).toEqual({ a: 1 });
     });
 
-    it('uses JSON.stringify fallback when plugin has no serialize', async () => {
-      const pluginWithoutSerialize: MorselFormatPlugin = {
-        name: 'json-no-serialize',
-        extensions: ['.json'],
-        parse: jsonPlugin.parse,
-      };
-      const filePath = path.join(temporaryDirectory, 'app.config.json');
-
-      await writeConfigFile(filePath, { path: 'a', value: 1 }, [
-        pluginWithoutSerialize,
-      ]);
-
-      const content = await fs.readFile(filePath, 'utf8');
-      expect(content).toBe(JSON.stringify({ a: 1 }, undefined, 2) + '\n');
-    });
-
     it('passes string content to plugin parse, not Buffer', async () => {
       const strictPlugin: MorselFormatPlugin = {
         name: 'strict-json',
@@ -182,6 +166,7 @@ describe('writeConfigFile', () => {
         parse: () => {
           throw 'not an Error';
         },
+        serialize: () => '',
       };
       const filePath = path.join(temporaryDirectory, 'app.config.json');
       await fs.writeFile(filePath, JSON.stringify({ a: 1 }), 'utf8');

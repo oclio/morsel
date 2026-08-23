@@ -30,6 +30,7 @@ describe('plugin-no-json-in-core — no JSON.parse outside jsonPlugin', () => {
         wasParseCalled = true;
         return JSON.parse(content) as Record<string, unknown>;
       },
+      serialize: () => '',
     };
 
     const { config } = await loadConfig({

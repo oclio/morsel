@@ -214,7 +214,7 @@ export interface MorselFormatPlugin {
   readonly name: string;
   readonly extensions: readonly string[];
   parse(content: string, filePath: string): Record<string, unknown>;
-  serialize?(data: Record<string, unknown>): string;
+  serialize(data: Record<string, unknown>): string;
 }
 
 export interface MorselValidationPlugin {
@@ -520,7 +520,7 @@ export function clearRegistry(): void;
 1. Reads the existing file content. If the file does not exist (ENOENT), treats the content as empty and proceeds — the file will be created.
 2. Parses the existing content via the matching format plugin (or `{}` if empty).
 3. Applies the mutation (`set` or `delete`) to the parsed config.
-4. Serializes the result via the plugin's `serialize` method (or `JSON.stringify` fallback).
+4. Serializes the result via the plugin's `serialize` method.
 5. Writes to a temporary file (`<path>.tmp`), then atomically renames to the target path.
 6. Writes are serialized per file path via a promise queue — concurrent mutations to the same file are queued.
 

@@ -26,12 +26,14 @@ describe('plugin-order-priority — first plugin in array wins for same extensio
       name: 'plugin-a',
       extensions: ['.json'],
       parse: () => ({ source: 'A' }),
+      serialize: () => '',
     };
 
     const pluginB = {
       name: 'plugin-b',
       extensions: ['.json'],
       parse: () => ({ source: 'B' }),
+      serialize: () => '',
     };
 
     const { config } = await loadConfig({

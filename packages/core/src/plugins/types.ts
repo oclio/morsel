@@ -25,7 +25,7 @@ export interface MorselFormatPlugin {
    * Serialize a config record back to string format for file writing.
    * Format plugins only handle structure-to-string transformation.
    */
-  serialize?(data: Record<string, unknown>): string;
+  serialize(data: Record<string, unknown>): string;
 }
 
 /**

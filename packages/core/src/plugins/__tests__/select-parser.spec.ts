@@ -7,6 +7,7 @@ describe('selectParser', () => {
     name: 'yaml',
     extensions: ['.yaml', '.yml'],
     parse: () => ({}),
+    serialize: () => '',
   };
 
   it('returns the plugin matching the file extension', () => {
@@ -20,6 +21,7 @@ describe('selectParser', () => {
       name: 'json2',
       extensions: ['.json'],
       parse: () => ({}),
+      serialize: () => '',
     };
 
     const result = selectParser('/fake/config.json', [

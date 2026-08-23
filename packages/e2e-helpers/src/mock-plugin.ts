@@ -4,6 +4,7 @@ interface MorselFormatPlugin {
   readonly name: string;
   readonly extensions: readonly string[];
   parse(content: string, filePath: string): Record<string, unknown>;
+  serialize(data: Record<string, unknown>): string;
 }
 
 /**
@@ -14,10 +15,13 @@ export function mockPlugin(
   name: string,
   extensions: readonly string[],
   parse: (content: string, filePath: string) => ConfigRecord = () => ({}),
+  serialize: (data: Record<string, unknown>) => string = (data) =>
+    JSON.stringify(data, undefined, 2) + '\n',
 ): MorselFormatPlugin {
   return {
     name,
     extensions,
     parse,
+    serialize,
   };
 }

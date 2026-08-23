@@ -272,6 +272,7 @@ describe('resolveProjectPath — multi-plugin', () => {
     name: 'yaml',
     extensions: ['.yaml', '.yml'],
     parse: () => ({}),
+    serialize: () => '',
   };
 
   beforeEach(() => {
@@ -299,6 +300,7 @@ describe('resolveProjectPath — multi-plugin', () => {
       name: 'json2',
       extensions: ['.json'],
       parse: () => ({}),
+      serialize: () => '',
     };
 
     vi.mocked(access).mockRejectedValue(new Error('ENOENT'));

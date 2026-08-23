@@ -86,11 +86,7 @@ export async function writeConfigFile(
         setPathValue(data, mutation.path, mutation.value);
       }
 
-      const serializeFunction =
-        plugin.serialize ??
-        ((object: Record<string, unknown>) =>
-          JSON.stringify(object, undefined, 2) + '\n');
-      const serialized = serializeFunction(data);
+      const serialized = plugin.serialize(data);
 
       await fs.mkdir(path.dirname(filePath), { recursive: true });
       const temporaryPath = `${filePath}.tmp.${Date.now()}`;
