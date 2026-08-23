@@ -18,7 +18,7 @@ hero:
 
 features:
   - title: Lean & Zero-dep
-    details: JSON parsing and native file watching packed into less than 7 KB gzipped. No transitive dependencies.
+    details: JSON parsing and native file watching packed into less than 8 KB gzipped. No transitive dependencies.
   - title: Reactive
     details: store.on('database.port', callback) — listen to specific keys using dotted notation, not the entire config object.
   - title: Live-reload

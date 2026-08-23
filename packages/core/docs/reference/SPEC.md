@@ -1,12 +1,12 @@
-# SPEC-MORSEL-1.0.0: Pluggable Cascading Config Loader with Watch
+# SPEC-MORSEL-1.1.0: Pluggable Cascading Config Loader with Watch
 
 | Metadata            | Value                                                            |
 | :------------------ | :--------------------------------------------------------------- |
 | **Package**         | `@oclio/morsel`                                                  |
 | **Author**          | @oclio                                                           |
 | **Status**          | `STABLE`                                                         |
-| **Spec version**    | `1.0.0`                                                          |
-| **Created**         | 2026-08-22                                                       |
+| **Spec version**    | `1.1.0`                                                          |
+| **Created**         | 2026-08-23                                                       |
 | **Target runtimes** | Node.js >= 18                                                    |
 | **Architecture**    | See [`DESIGN.md`](./DESIGN.md) for design choices and principles |
 
@@ -22,6 +22,8 @@
 6. **Watch ref-counting**: a single `fs.watch` per directory, shared across all stores. Closed when the last store calls `stop()`. Includes directories of `extends` files and `watchPaths` of watchable hooks — a change in an inherited file triggers a re-merge.
 7. **Parsing / semantics separation**: the plugin parses raw content → `Record<string, unknown>`. Semantic concepts (`extends`, `$env`, cleanup) are core. The plugin knows nothing about `extends` or `$env`.
 8. **Lifecycle hooks**: hooks (`MorselHook`) insert at 8 pipeline points (before/after for each layer). A hook produces a `Record` that becomes a layer in the cascade. Stateless — the core calls the hook on each merge, no state between merges.
+9. **Native path parsing & prototype protection**: the core provides robust path parsing supporting dot notation (`a.b.c`), indexed arrays (`users[0].name`, `users.0.name`), and escaped dots (`app\.config.host`). Any attempt to access or mutate `__proto__`, `constructor`, or `prototype` is rejected (`TypeError`).
+10. **Transactional mutation & optimistic write**: `mutateKey` and `deleteKey` update the in-memory config optimistically, emit key-level change events, and persist changes via atomic read-modify-write on the source layer. Writes are serialized per file path. In case of I/O or serialization failure, the in-memory state is automatically rolled back, revert events are emitted, and a `MorselError` (`EWRITE`) is thrown.
 
 ---
 
@@ -109,10 +111,67 @@ export interface WatchOptions<
   readonly watchDebounce?: number;
 }
 
+export type StoreTarget = 'global' | 'project';
+export type DeleteTarget = 'all' | 'global' | 'project';
+
 export interface MorselStore<T = Record<string, unknown>> {
   readonly config: T;
   readonly layers: readonly MorselLayer[];
   on(keyPath: string, listener: Listener): () => void;
+  get<V = unknown>(
+    path: string | readonly (string | number)[],
+    defaultValue?: V,
+  ): V;
+  has(path: string | readonly (string | number)[]): boolean;
+  set(
+    path: string | readonly (string | number)[],
+    value: unknown,
+    target?: StoreTarget,
+  ): Promise<void>;
+  unset(
+    path: string | readonly (string | number)[],
+    target?: DeleteTarget,
+  ): Promise<boolean>;
+  all(): T;
+  dotify(): Record<string, unknown>;
+  mutateKey(
+    path: string | readonly (string | number)[],
+    value: unknown,
+    target?: StoreTarget,
+  ): Promise<void>;
+  deleteKey(
+    path: string | readonly (string | number)[],
+    target?: DeleteTarget,
+  ): Promise<boolean>;
+  push(
+    path: string | readonly (string | number)[],
+    value: unknown,
+    target?: StoreTarget,
+  ): Promise<number>;
+  unshift(
+    path: string | readonly (string | number)[],
+    value: unknown,
+    target?: StoreTarget,
+  ): Promise<number>;
+  pop(
+    path: string | readonly (string | number)[],
+    target?: StoreTarget,
+  ): Promise<unknown>;
+  shift(
+    path: string | readonly (string | number)[],
+    target?: StoreTarget,
+  ): Promise<unknown>;
+  splice(
+    path: string | readonly (string | number)[],
+    start: number,
+    deleteCount: number,
+    ...items: unknown[]
+  ): Promise<unknown[]>;
+  indexOf(path: string | readonly (string | number)[], value: unknown): number;
+  lastIndexOf(
+    path: string | readonly (string | number)[],
+    value: unknown,
+  ): number;
   stop(): Promise<void>;
 }
 
@@ -132,7 +191,7 @@ export class MorselError extends Error {
 }
 
 export type MorselErrorCode =
-  'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK';
+  'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK' | 'EWRITE';
 
 export class MorselNoPluginError extends MorselError {
   readonly extension: string;
@@ -146,6 +205,7 @@ export interface MorselFormatPlugin {
   readonly name: string;
   readonly extensions: readonly string[];
   parse(content: string, filePath: string): Record<string, unknown>;
+  serialize?(data: Record<string, unknown>): string;
 }
 
 export interface MorselValidationPlugin {
@@ -384,7 +444,7 @@ Events are computed via `diffKeys` and emitted via `store.on(keyPath, listener)`
 - **Object replaced by scalar**: `(next: scalar, prev: oldObject)` on the parent + all child scalars as removed.
 - **Scalar replaced by object**: `(next: newObject, prev: scalar)` on the parent + all child scalars as added.
 - **Object added / removed**: emits on the parent + all child scalars.
-- **Array modified**: `(next: newArray, prev: oldArray)` on the parent (atomic replacement, no per-index diff).
+- **Array modified**: `(next: newArray, prev: oldArray)` on the parent (atomic replacement, no per-index diff). Array mutators (`push`, `unshift`, `pop`, `shift`, `splice`) delegate to `mutateKey` with the full replacement array. `push` additionally emits on `path.<newIndex>` for the newly added element. Type mismatch (target is not an array) throws `MorselError` (`EVALIDATE`).
 
 #### Two-Phase Ordering Invariant
 
@@ -542,3 +602,4 @@ fs.watch fire (after debounce):
 ## 8. Revision History
 
 - **1.0.0** (2026-08-20): Candidate normative specification 1.0.0, integration of the 8 lifecycle hook points, architecture pseudocode, and separation of design into `DESIGN.md`.
+- **1.1.0** (2026-08-23): Native path module (`parsePath`, `validatePath`, `getPathValue`, `setPathValue`, `hasRemovedPathValue`) with dot/bracket notation, array index support, and prototype pollution protection (`__proto__`, `constructor`, `prototype`). Atomic write engine (`writeConfigFile`) with per-file promise queue, temp-file + rename strategy, and `EWRITE` error code. `serialize` method added to `MorselFormatPlugin`. Native accessors on `MorselStore`: `get`, `set`, `has`, `unset`, `all`, `dotify` (aliases of `mutateKey`/`deleteKey` + read/flatten helpers). Optimistic in-memory update with listener notification and automatic rollback on write failure. Concurrent re-merge detection: rollback is skipped if `state._config` has changed during `await writeConfigFile` (watcher re-merge took precedence). Array mutator API on `MorselStore`: `push`, `unshift`, `pop`, `shift`, `splice` (sugar on `mutateKey` with full array replacement) + `indexOf`/`lastIndexOf` read helpers. `EVALIDATE` extended to cover type mismatch (non-array target). `StoreTarget` and `DeleteTarget` types.
