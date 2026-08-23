@@ -31,11 +31,9 @@ Validation plugins validate and transform the merged configuration post-merge.
 
 ## Store Extensions
 
-| Package                     | Role                     | Status          |
-| --------------------------- | ------------------------ | --------------- |
-| `@oclio/morsel-accessors`   | get, all, set, delete    | 📋 October 2026 |
-| `@oclio/morsel-wildcard`    | wildcard event listeners | 📋 October 2026 |
-| `@oclio/morsel-keyed-array` | keyed array access       | 📋 October 2026 |
+| Package                  | Role                     | Status          |
+| ------------------------ | ------------------------ | --------------- |
+| `@oclio/morsel-wildcard` | wildcard event listeners | 📋 October 2026 |
 
 ## Hooks
 

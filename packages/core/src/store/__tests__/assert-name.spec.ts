@@ -26,12 +26,14 @@ describe('resolveOptions', () => {
   });
 
   it.each([
-    { name: 'non-alphanumeric characters', input: 'my-app' },
     { name: 'spaces', input: 'my app' },
-    { name: 'underscores', input: 'my_app' },
+    { name: 'starts with digit', input: '123app' },
+    { name: 'starts with dash', input: '-app' },
+    { name: 'starts with underscore', input: '_app' },
+    { name: 'contains dot', input: 'my.app' },
   ])('throws TypeError when name contains $name', ({ input }) => {
     expect(() => resolveOptions({ name: input })).toThrow(
-      'morsel: name must be alphanumeric',
+      'morsel: name must start with a letter',
     );
   });
 
@@ -187,11 +189,17 @@ describe('resolveOptions', () => {
     expect(resolveGlobalDirectory).toHaveBeenCalledWith({ name: 'myapp' });
   });
 
-  it('accepts single-character alphanumeric name', () => {
+  it.each([
+    { name: 'with dash', input: 'my-app' },
+    { name: 'with underscore', input: 'my_app' },
+    { name: 'with dash and underscore', input: 'my-app_config' },
+    { name: 'with digits', input: 'app2' },
+    { name: 'mixed', input: 'my-app_v2' },
+  ])('accepts name $name', ({ input }) => {
     vi.mocked(resolveGlobalDirectory).mockReturnValue('/fake/global');
 
-    const result = resolveOptions({ name: 'a' });
+    const result = resolveOptions({ name: input });
 
-    expect(result.name).toBe('a');
+    expect(result.name).toBe(input);
   });
 });

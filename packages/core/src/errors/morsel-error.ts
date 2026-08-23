@@ -4,12 +4,13 @@
  * - `EIO` — filesystem errors (EACCES, EBUSY, EMFILE, disk full)
  * - `EPARSE` — invalid content (broken JSON/YAML/etc.)
  * - `ENOPLUGIN` — no format plugin found for the file extension
- * - `EVALIDATE` — validation plugin failure (Zod, Valibot, etc.)
+ * - `EVALIDATE` — validation failure (plugin rejection or type mismatch)
  * - `ECYCLE` — circular `extends` detected
  * - `EHOOK` — hook lifecycle failure (hook.load threw)
+ * - `EWRITE` — write/mutation failure (I/O or serialize error during writeConfig)
  */
 export type MorselErrorCode =
-  'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK';
+  'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK' | 'EWRITE';
 
 /**
  * Base error thrown by morsel on fs, parse, plugin, validation, or cycle failures.

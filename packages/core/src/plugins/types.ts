@@ -21,6 +21,11 @@ export interface MorselFormatPlugin {
    * Does not handle extends or $env — core manages those.
    */
   parse(content: string, filePath: string): Record<string, unknown>;
+  /**
+   * Serialize a config record back to string format for file writing.
+   * Format plugins only handle structure-to-string transformation.
+   */
+  serialize?(data: Record<string, unknown>): string;
 }
 
 /**

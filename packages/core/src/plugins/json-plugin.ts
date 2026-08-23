@@ -23,4 +23,7 @@ export const jsonPlugin: MorselFormatPlugin = {
     }
     return parsed as ConfigRecord;
   },
+  serialize(data: Record<string, unknown>): string {
+    return JSON.stringify(data, undefined, 2) + '\n';
+  },
 };

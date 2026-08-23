@@ -1,4 +1,4 @@
-import type { MorselHook } from '@/hooks/types';
+import type { MorselHook, MorselWatchableHook } from '@/hooks/types';
 import type { ConfigMutability } from '@/load/merge-layers';
 import type { DebugCallback } from '@/load/resolve-env';
 import type { ArrayMergeStrategy } from '@/merge/deep-merge';
@@ -26,25 +26,28 @@ export interface ResolvedOptions {
   readonly configMutability: ConfigMutability;
   readonly verbose: boolean;
   readonly onDebug: DebugCallback;
-  readonly formatPlugins: MorselFormatPlugin[];
-  readonly validationPlugins: MorselValidationPlugin[];
-  readonly hooks: MorselHook[];
+  readonly formatPlugins: readonly MorselFormatPlugin[];
+  readonly validationPlugins: readonly MorselValidationPlugin[];
+  readonly hooks: readonly (MorselHook | MorselWatchableHook)[];
 }
 
-const ALPHANUMERIC = /^[a-zA-Z0-9]+$/;
+const VALID_NAME = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
 
 /**
  * Validate the `name` option.
  *
- * @throws TypeError if name is missing or not alphanumeric.
+ * @throws TypeError if name is missing, empty, or does not start with a letter
+ * and contain only letters, digits, dashes, or underscores.
  * @param name - The name to validate.
  */
 function assertName(name: unknown): asserts name is string {
   if (typeof name !== 'string' || name === '') {
     throw new TypeError('morsel: name is required');
   }
-  if (!ALPHANUMERIC.test(name)) {
-    throw new TypeError('morsel: name must be alphanumeric');
+  if (!VALID_NAME.test(name)) {
+    throw new TypeError(
+      'morsel: name must start with a letter and contain only letters, digits, dashes, or underscores',
+    );
   }
 }
 

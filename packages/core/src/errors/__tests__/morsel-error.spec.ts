@@ -1,34 +1,41 @@
+import type { MorselErrorCode } from '@/errors/morsel-error';
 import { MorselError } from '@/errors/morsel-error';
 
 describe('MorselError', () => {
-  it('sets name to MorselError', () => {
-    const error = new MorselError(
-      '/path/config.json',
-      'EIO',
-      new Error('fail'),
-    );
+  describe('properties', () => {
+    it.each<{
+      name: string;
+      property: 'name' | 'path' | 'code';
+      path: string | undefined;
+      code: MorselErrorCode;
+      expected: unknown;
+    }>([
+      {
+        name: 'sets name to MorselError',
+        property: 'name',
+        path: '/path/config.json',
+        code: 'EIO',
+        expected: 'MorselError',
+      },
+      {
+        name: 'stores path property',
+        property: 'path',
+        path: '/path/config.json',
+        code: 'EIO',
+        expected: '/path/config.json',
+      },
+      {
+        name: 'stores code property',
+        property: 'code',
+        path: '/path/config.json',
+        code: 'EPARSE',
+        expected: 'EPARSE',
+      },
+    ])('$name', ({ property, path, code, expected }) => {
+      const error = new MorselError(path, code, new Error('fail'));
 
-    expect(error.name).toBe('MorselError');
-  });
-
-  it('stores path property', () => {
-    const error = new MorselError(
-      '/path/config.json',
-      'EIO',
-      new Error('fail'),
-    );
-
-    expect(error.path).toBe('/path/config.json');
-  });
-
-  it('stores code property', () => {
-    const error = new MorselError(
-      '/path/config.json',
-      'EPARSE',
-      new Error('fail'),
-    );
-
-    expect(error.code).toBe('EPARSE');
+      expect(error[property]).toBe(expected);
+    });
   });
 
   it('preserves cause as NodeJS.ErrnoException when it has a string code', () => {
@@ -39,35 +46,40 @@ describe('MorselError', () => {
     expect(error.cause).toBeInstanceOf(Error);
   });
 
-  it('formats message with code and cause message and path', () => {
-    const cause = new Error('ENOENT: not found');
-    const error = new MorselError('/path/config.json', 'EIO', cause);
+  describe('message formatting', () => {
+    it.each<{
+      name: string;
+      path: string | undefined;
+      code: MorselErrorCode;
+      causeMessage: string;
+      expected: string;
+    }>([
+      {
+        name: 'formats message with code and cause message and path',
+        path: '/path/config.json',
+        code: 'EIO',
+        causeMessage: 'ENOENT: not found',
+        expected: 'morsel: EIO — ENOENT: not found (/path/config.json)',
+      },
+      {
+        name: 'formats message without path when path is undefined',
+        path: undefined,
+        code: 'EVALIDATE',
+        causeMessage: 'bad config',
+        expected: 'morsel: EVALIDATE — bad config',
+      },
+      {
+        name: 'formats message with cause message and path',
+        path: '/path/config.json',
+        code: 'ECYCLE',
+        causeMessage: 'cycle detected',
+        expected: 'morsel: ECYCLE — cycle detected (/path/config.json)',
+      },
+    ])('$name', ({ path, code, causeMessage, expected }) => {
+      const error = new MorselError(path, code, new Error(causeMessage));
 
-    expect(error.message).toBe(
-      'morsel: EIO — ENOENT: not found (/path/config.json)',
-    );
-  });
-
-  it('formats message without path when path is undefined', () => {
-    const error = new MorselError(
-      undefined,
-      'EVALIDATE',
-      new Error('bad config'),
-    );
-
-    expect(error.message).toBe('morsel: EVALIDATE — bad config');
-  });
-
-  it('formats message with cause message and path', () => {
-    const error = new MorselError(
-      '/path/config.json',
-      'ECYCLE',
-      new Error('cycle detected'),
-    );
-
-    expect(error.message).toBe(
-      'morsel: ECYCLE — cycle detected (/path/config.json)',
-    );
+      expect(error.message).toBe(expected);
+    });
   });
 
   it('is an instance of Error', () => {

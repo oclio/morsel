@@ -8,7 +8,7 @@ If your project currently uses legacy loaders like `cosmiconfig`, `node-config`,
 
 | Feature                       | cosmiconfig | lilconfig | node-config |   conf    |    rc     |              morsel               |
 | :---------------------------- | :---------: | :-------: | :---------: | :-------: | :-------: | :-------------------------------: |
-| **Zero Runtime Dependencies** |     ❌      |    ✅     |     ❌      |    ❌     |    ❌     |          **✅ (<7 KB)**           |
+| **Zero Runtime Dependencies** |     ❌      |    ✅     |     ❌      |    ❌     |    ❌     |          **✅ (<8 KB)**           |
 | **Live-Reload (fs.watch)**    |     ❌      |    ❌     |     ❌      |    ❌     |    ❌     |              **✅**               |
 | **Key-Level Granular Events** |     ❌      |    ❌     |     ❌      |    ❌     |    ❌     |              **✅**               |
 | **Multi-Layer Cascade Merge** |     ❌      |    ❌     |     ✅      |    ❌     |    ✅     |         **✅ (4 layers)**         |

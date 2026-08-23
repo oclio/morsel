@@ -20,7 +20,7 @@ import type { ConfigRecord, MorselOptions } from '@/store/types';
  * @throws MorselError When the write fails.
  */
 export function initConfig<T extends ConfigRecord = ConfigRecord>(
-  options: Pick<MorselOptions<T>, 'name' | 'cwd'> & {
+  options: Pick<MorselOptions<T>, 'name' | 'cwd' | 'formatPlugins'> & {
     readonly content?: T;
     readonly fallbackContent?: T;
   },

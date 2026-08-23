@@ -12,7 +12,7 @@ export class MorselValidationError extends MorselError {
    * Map of dotted key to human-readable message.
    * Example: `tools.eslint` maps to "expected boolean, received string".
    */
-  readonly issues: Record<string, string>;
+  readonly issues: Readonly<Record<string, string>>;
 
   constructor(issues: Record<string, string>) {
     const count = Object.keys(issues).length;

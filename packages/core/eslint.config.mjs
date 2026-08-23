@@ -24,4 +24,18 @@ export default defineConfig([
       'turbo/no-undeclared-env-vars': 'off',
     },
   },
+  {
+    files: ['src/store/store-mutator.ts'],
+    rules: {
+      'unicorn/consistent-boolean-name': 'off',
+    },
+  },
+  // TESTS
+  {
+    files: ['src/**/*.spec.ts', 'src/**/*.e2e-spec.ts'],
+    rules: {
+      'sonarjs/file-permissions': 'off',
+      'unicorn/no-return-array-push': 'off',
+    },
+  },
 ]);

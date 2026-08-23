@@ -16,6 +16,14 @@ export { deepMerge } from '@/merge/deep-merge';
 export type { ChangeCategory, KeyChange } from '@/merge/diff-keys';
 export { diffKeys } from '@/merge/diff-keys';
 export { flatten } from '@/merge/flatten';
+export { dotifyObject } from '@/paths/dotify';
+export type { PathSegment } from '@/paths/parse-path';
+export { parsePath, validatePath } from '@/paths/parse-path';
+export {
+  getPathValue,
+  hasRemovedPathValue,
+  setPathValue,
+} from '@/paths/path-access';
 export type { ResolvedPaths, ResolvePathsOptions } from '@/paths/resolve-paths';
 export { resolvePaths } from '@/paths/resolve-paths';
 export { jsonPlugin } from '@/plugins/json-plugin';

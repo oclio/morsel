@@ -38,23 +38,24 @@ morsel starts from the premise that a configuration loader must be **lean, robus
 
 - `MorselFormatPlugin` — parsing is a contract, not a switch. `jsonPlugin` is injected by default, YAML/TOML/JSON5 are opt-in plugins. The core contains no `JSON.parse` outside of `jsonPlugin`.
 - `MorselValidationPlugin` — validation is a post-merge contract. Zod, Valibot, Yup — the user brings their schema, the core wraps the error in `MorselValidationError`. No validation dependencies in the core.
+- `MorselFormatPlugin.serialize` — pure serialization contract. Format plugins define how data is represented as a string for writes, while core orchestrates atomic I/O and target resolution.
 
 #### Lean by construction
 
 - Zero runtime dependencies — `node:fs`, `node:path`, `node:os` only. No `js-yaml`, no `ajv`, no `typescript` pulled into the bundle. Minimal attack surface.
-- Formats as opt-in plugins — adding YAML does not add 400 KB to the core, but an external plugin. The core bundle stays < 7 KB.
+- Formats as opt-in plugins — adding YAML does not add 400 KB to the core, but an external plugin. The core bundle stays < 8 KB.
 - ESM + CJS first-class — both formats are natively supported.
 
 #### Robust by default
 
-- Throw, never silent — typed `MorselError` (`EIO`, `EPARSE`, `ENOPLUGIN`, `EVALIDATE`, `ECYCLE`, `EHOOK`) with path + cause.
+- Throw, never silent — typed `MorselError` (`EIO`, `EPARSE`, `ENOPLUGIN`, `EVALIDATE`, `ECYCLE`, `EHOOK`, `EWRITE`) with path + cause.
 - Watch resilience — `watchConfig` throws at boot if the first load fails (no valid fallback state). On re-merge, keeps the last valid state, logs to `stderr`, routes to `onDebug`.
 - `frozen` by default — the returned configuration is immutable unless `configMutability: 'mutable'` is explicit.
 - Watcher ref-counting — a single `fs.watch` per directory, shared across stores, released when the last store calls `stop()`.
 
 #### Cascade + discovery integrated
 
-- 4 stacked layers: `defaults` (code) → `global` (`~/.config/morsel/<name>.config.*`) → `project` (`./<name>.config.*`) → `overrides` (code). Deep merge by increasing priority.
+- 4 stacked layers: `defaults` (code) → `global` (`~/.config/<name>/<name>.config.*`) → `project` (`./<name>.config.*`) → `overrides` (code). Deep merge by increasing priority.
 - Multi-extension discovery — `resolveProjectPath` tests extensions of `formatPlugins` in order.
 - Local `extends` (string and string[]) — inheritance between configurations, resolved per layer before inter-layer merge.
 - `$env` overrides — environment specialization, applied per file before extends merge.
@@ -113,7 +114,7 @@ before:defaults → defaults → after:defaults
 ### 2.1 Cascade by increasing priority
 
 4 stacked layers from lowest to highest priority:
-`defaults` (code) → `global` (`~/.config/morsel/<name>.config.*`) → `project` (`./<name>.config.*`) → `overrides` (code). Each layer overrides the previous layer's keys via deep merge.
+`defaults` (code) → `global` (`~/.config/<name>/<name>.config.*`) → `project` (`./<name>.config.*`) → `overrides` (code). Each layer overrides the previous layer's keys via deep merge.
 
 ### 2.2 Per-layer resolution before inter-layer merge
 
@@ -164,10 +165,10 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 
 - `MorselOptions` — common configuration options (`name`, `cwd`, `defaults`, `overrides`, `globalDir`, etc.).
 - `WatchOptions` — extends `MorselOptions` with `watchDebounce`.
-- `MorselStore<T>` — reactive store instance (`config`, `layers`, `on`, `stop`).
+- `MorselStore<T>` — reactive store instance (`config`, `layers`, `on`, `get`, `set`, `has`, `unset`, `all`, `dotify`, `push`, `unshift`, `pop`, `shift`, `splice`, `indexOf`, `lastIndexOf`, `stop`).
 - `MorselLayer` — trace of a resolved layer (`source`, `path`, `config`, `exists`, `extendsPaths`, `hookName`).
 - `MorselError` — base error class with `path`, `code`, and `cause`.
-- `MorselErrorCode` — union of error codes (`'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK'`).
+- `MorselErrorCode` — union of error codes (`'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK' | 'EWRITE'`).
 - `MorselNoPluginError` — thrown when no extension matches a plugin (`ENOPLUGIN`).
 - `MorselValidationError` — thrown on schema validation failure (`EVALIDATE`).
 - `MorselFormatPlugin` — format plugin contract (raw parsing → object).
@@ -259,7 +260,21 @@ watchConfig(opts)
 ├─ createWatcher(extendsDirs[])   ─── one watcher per extends directory
 ├─ createWatcher(hookWatchDirs[]) ─── one watcher per hook watchPaths directory
 │
-└─ MorselStore<T> { config, layers, on(), stop() }
+└─ MorselStore<T> { config, layers, on(), get(), set(), has(), unset(), all(), dotify(), push(), unshift(), pop(), shift(), splice(), indexOf(), lastIndexOf(), stop() }
+    │
+    ├─ store.get(path, default)    ─── read by dot/bracket path
+    ├─ store.has(path)             ─── key existence check
+    ├─ store.all()                 ─── full clone snapshot
+    ├─ store.dotify()              ─── 1D dotted record
+    ├─ store.set(path, val)        ─── optimistic update + writeConfigFile + rollback on failure
+    ├─ store.unset(path)           ─── optimistic removal + writeConfigFile + rollback on failure
+    ├─ store.push(path, val)       ─── array append via mutateKey + index listener emit
+    ├─ store.unshift(path, val)    ─── array prepend via mutateKey
+    ├─ store.pop(path)             ─── array pop via mutateKey
+    ├─ store.shift(path)           ─── array shift via mutateKey
+    ├─ store.splice(path, ...)     ─── array splice via mutateKey
+    ├─ store.indexOf(path, val)    ─── read-only array search
+    ├─ store.lastIndexOf(path, val) ─── read-only reverse array search
     │
     └─ fs.watch fire (directory) ─── filtering by filename
         │
