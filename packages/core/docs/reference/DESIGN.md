@@ -202,6 +202,7 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `deepMerge` — deterministic deep merge with array strategy handling.
 - `diffKeys` — recursive delta computation between two configurations.
 - `flatten` — flattening to dotted notation.
+- `interpolate` — `${VAR}` env and `{{ref.path}}` cross-reference interpolation on merged config.
 - `defineConfig` — typing and options validation helper.
 - `mergeConfig` — composition of two `MorselOptions` objects.
 
@@ -246,6 +247,8 @@ loadConfigSync(opts) / loadConfig(opts)
 ├─ [hooks after:overrides]
 │
 └─ mergeLayers(allLayers, arrayMerge) ─── deepMerge in order
+    │
+    └─ interpolate(merged) ─── ${VAR} from env, {{ref.path}} cross-refs, ECYCLE on cycles
     │
     └─ applyValidation(config, validationPlugins) ─── if provided
     │

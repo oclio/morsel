@@ -5,6 +5,7 @@ import { applyMutability, mergeLayers } from '@/load/merge-layers';
 import type { ResolvedLayer } from '@/load/resolve-layer';
 import { resolveLayer } from '@/load/resolve-layer';
 import { resolveLayerSync } from '@/load/resolve-layer-sync';
+import { interpolate } from '@/merge/interpolate';
 import {
   resolveGlobalPath,
   resolveGlobalPathSync,
@@ -56,7 +57,8 @@ export function loadConfigSync<T extends ConfigRecord = ConfigRecord>(
   ];
 
   const merged = mergeLayers(layers, resolved.arrayMerge);
-  const validated = applyValidation(merged, resolved.validationPlugins);
+  const interpolated = interpolate(merged);
+  const validated = applyValidation(interpolated, resolved.validationPlugins);
   const config = applyMutability(validated, resolved.configMutability) as T;
 
   return {
@@ -113,7 +115,8 @@ export async function loadConfig<T extends ConfigRecord = ConfigRecord>(
   ];
 
   const merged = mergeLayers(layers, resolved.arrayMerge);
-  const validated = applyValidation(merged, resolved.validationPlugins);
+  const interpolated = interpolate(merged);
+  const validated = applyValidation(interpolated, resolved.validationPlugins);
   const config = applyMutability(validated, resolved.configMutability) as T;
 
   return {

@@ -16,6 +16,7 @@ export type { ArrayMergeStrategy } from '@/merge/deep-merge';
 export { deepMerge } from '@/merge/deep-merge';
 export type { ChangeCategory, KeyChange } from '@/merge/diff-keys';
 export { diffKeys } from '@/merge/diff-keys';
+export { interpolate } from '@/merge/interpolate';
 export type { PathSegment } from '@/paths/parse-path';
 export { parsePath, validatePath } from '@/paths/parse-path';
 export {

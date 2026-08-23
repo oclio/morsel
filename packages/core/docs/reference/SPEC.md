@@ -55,7 +55,8 @@ Layers resolved independently, with hooks interleaved (4 core layers + hook laye
 ### Step 2 — Merge & Validation
 
 1. `mergeLayers(allLayers, arrayMerge)` — recursive deep merge of all resolved layers in order (hooks included).
-2. `applyValidation(config, validationPlugins)` — if `validationPlugins` is provided, each plugin validates and returns the transformed config. In one-shot and watch boot: throws `MorselValidationError` if validation fails. In watch re-merge: caught, logged to `onDebug`/stderr, keeps previous config.
+2. `interpolate(merged)` — resolve `${VAR}` from `process.env` and `{{ref.path}}` cross-references within the merged config. Circular references throw `MorselError` with code `ECYCLE`.
+3. `applyValidation(config, validationPlugins)` — if `validationPlugins` is provided, each plugin validates and returns the transformed config. In one-shot and watch boot: throws `MorselValidationError` if validation fails. In watch re-merge: caught, logged to `onDebug`/stderr, keeps previous config.
 
 ### Step 3 — Mutability & Result
 

@@ -1,6 +1,7 @@
 import { applyValidation } from '@/load/apply-validation';
 import { buildLayers } from '@/load/build-layers';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
+import { interpolate } from '@/merge/interpolate';
 import { resolveGlobalPath, resolveProjectPath } from '@/paths/resolve-paths';
 import { resolveOptions } from '@/store/assert-name';
 import { toMorselLayer } from '@/store/morsel-layer';
@@ -36,7 +37,8 @@ export async function watchConfig<T extends ConfigRecord = ConfigRecord>(
   const layers = await buildLayers(resolved, globalPath, projectPath);
 
   const merged = mergeLayers(layers, resolved.arrayMerge);
-  const validated = applyValidation(merged, resolved.validationPlugins);
+  const interpolated = interpolate(merged);
+  const validated = applyValidation(interpolated, resolved.validationPlugins);
   const config = applyMutability(validated, resolved.configMutability) as T;
   const morselLayers = layers.map((layer) =>
     toMorselLayer(layer, resolved.name),
