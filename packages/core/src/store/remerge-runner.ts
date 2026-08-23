@@ -147,7 +147,12 @@ export function createRemerge<T extends ConfigRecord>(): (
         throw watcherError;
       }
 
-      emitChanges(oldConfig, validated, store.listeners);
+      emitChanges(
+        oldConfig,
+        validated,
+        store.listeners,
+        store.wildcardListeners,
+      );
     } catch (error) {
       const message = `morsel: re-merge failed — keeping last valid config`;
       const context: Record<string, unknown> = { error: String(error) };

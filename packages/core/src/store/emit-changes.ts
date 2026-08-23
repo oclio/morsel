@@ -1,4 +1,5 @@
 import { diffKeys } from '@/merge/diff-keys';
+import { isWildcardMatch } from '@/store/match-wildcard';
 import type { Listener, MorselChangeEvent } from '@/store/types';
 
 type ConfigRecord = Record<string, unknown>;
@@ -15,14 +16,19 @@ type ConfigRecord = Record<string, unknown>;
  * 2. Added and modified keys — top-down (shallowest first), so parent
  *    listeners see the new type before child listeners fire.
  *
+ * Wildcard listeners (`foo.*`, `**`) are emitted after exact listeners
+ * in each phase, sorted by pattern specificity (shallower first).
+ *
  * @param oldConfig - The previous config snapshot.
  * @param newConfig - The new config snapshot.
- * @param listeners - Map of dotted keys to listener sets.
+ * @param listeners - Map of dotted keys to exact-match listener sets.
+ * @param wildcardListeners - Map of wildcard patterns to listener sets.
  */
 export function emitChanges(
   oldConfig: ConfigRecord,
   newConfig: ConfigRecord,
   listeners: Map<string, Set<Listener>>,
+  wildcardListeners = new Map<string, Set<Listener>>(),
 ): void {
   const changes = diffKeys(oldConfig, newConfig);
 
@@ -45,30 +51,39 @@ export function emitChanges(
     });
 
   for (const [key, change] of removed) {
-    const set = listeners.get(key);
-    if (set === undefined) continue;
-    const event: MorselChangeEvent = {
-      keyPath: key,
-      type: change.category,
-      next: change.next,
-      prev: change.prev,
-    };
+    emitToListeners(key, change, listeners, wildcardListeners);
+  }
+
+  for (const [key, change] of addedOrModified) {
+    emitToListeners(key, change, listeners, wildcardListeners);
+  }
+}
+
+function emitToListeners(
+  key: string,
+  change: { category: string; next: unknown; prev: unknown },
+  listeners: Map<string, Set<Listener>>,
+  wildcardListeners: Map<string, Set<Listener>>,
+): void {
+  const event: MorselChangeEvent = {
+    keyPath: key,
+    type: change.category as 'added' | 'modified' | 'removed',
+    next: change.next,
+    prev: change.prev,
+  };
+
+  const set = listeners.get(key);
+  if (set !== undefined) {
     for (const listener of set) {
       listener(event);
     }
   }
 
-  for (const [key, change] of addedOrModified) {
-    const set = listeners.get(key);
-    if (set === undefined) continue;
-    const event: MorselChangeEvent = {
-      keyPath: key,
-      type: change.category,
-      next: change.next,
-      prev: change.prev,
-    };
-    for (const listener of set) {
-      listener(event);
+  for (const [pattern, wildcardSet] of wildcardListeners) {
+    if (isWildcardMatch(pattern, key)) {
+      for (const listener of wildcardSet) {
+        listener(event);
+      }
     }
   }
 }

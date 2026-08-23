@@ -559,7 +559,13 @@ Flat keys are emitted in two strict phases:
 1. **Phase 1: Deletions — Bottom-Up (deepest to shallowest)**: removed child keys are emitted **before** the parent key that changes type. Order: decreasing depth, then **descending** alphabetical order at the same depth.
 2. **Phase 2: Additions and modifications — Top-Down (shallowest to deepest)**: modified/added parent keys are emitted **before** child keys. Order: increasing depth, then **ascending** alphabetical order at the same depth.
 
-No wildcards (`*`) — to observe an entire subtree, listen directly on the parent key.
+Wildcard patterns are supported in `store.on()`:
+
+- `foo.*` — matches any direct child of `foo` (one segment).
+- `**` — matches any key at any depth.
+- `foo.**` — matches `foo` and any descendant of `foo` (zero or more segments).
+
+Wildcard listeners are emitted after exact-match listeners for each key, within the same phase.
 
 ---
 

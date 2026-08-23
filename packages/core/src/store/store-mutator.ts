@@ -56,7 +56,12 @@ export async function mutateKey<T extends ConfigRecord>(
   setPathValue(clonedNext, segments, value);
 
   state._config = applyMutability(clonedNext as T, mutability);
-  emitChanges(previousSnapshot, clonedNext, state.listeners);
+  emitChanges(
+    previousSnapshot,
+    clonedNext,
+    state.listeners,
+    state.wildcardListeners,
+  );
 
   const mutatedConfig = state._config;
   try {
@@ -68,7 +73,12 @@ export async function mutateKey<T extends ConfigRecord>(
   } catch (error) {
     if (state._config === mutatedConfig) {
       state._config = applyMutability(previousSnapshot as T, mutability);
-      emitChanges(clonedNext, previousSnapshot, state.listeners);
+      emitChanges(
+        clonedNext,
+        previousSnapshot,
+        state.listeners,
+        state.wildcardListeners,
+      );
     }
     throw error;
   }
@@ -114,7 +124,12 @@ export async function deleteKey<T extends ConfigRecord>(
   }
 
   state._config = applyMutability(clonedNext as T, mutability);
-  emitChanges(previousSnapshot, clonedNext, state.listeners);
+  emitChanges(
+    previousSnapshot,
+    clonedNext,
+    state.listeners,
+    state.wildcardListeners,
+  );
 
   const mutatedConfig = state._config;
   try {
@@ -129,7 +144,12 @@ export async function deleteKey<T extends ConfigRecord>(
   } catch (error) {
     if (state._config === mutatedConfig) {
       state._config = applyMutability(previousSnapshot as T, mutability);
-      emitChanges(clonedNext, previousSnapshot, state.listeners);
+      emitChanges(
+        clonedNext,
+        previousSnapshot,
+        state.listeners,
+        state.wildcardListeners,
+      );
     }
     throw error;
   }

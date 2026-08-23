@@ -41,6 +41,7 @@ function createState<T extends Record<string, unknown>>(
     _stoppedConfig: undefined,
     _layers: [],
     listeners: new Map(),
+    wildcardListeners: new Map(),
     stopped: false,
     watchers: new Set(),
     watchedFiles: new Map(),
@@ -184,6 +185,29 @@ describe('createMorselStore', () => {
         'morsel: store is stopped',
       );
     });
+
+    it('registers wildcard pattern listener in wildcardListeners map', () => {
+      const state = createState();
+      const store = createMorselStore(state, 'frozen');
+
+      const listener = vi.fn();
+      store.on('foo.*', listener);
+
+      expect(state.wildcardListeners.get('foo.*')).toBeDefined();
+      expect(state.wildcardListeners.get('foo.*')!.has(listener)).toBe(true);
+      expect(state.listeners.get('foo.*')).toBeUndefined();
+    });
+
+    it('registers ** wildcard listener in wildcardListeners map', () => {
+      const state = createState();
+      const store = createMorselStore(state, 'frozen');
+
+      const listener = vi.fn();
+      store.on('**', listener);
+
+      expect(state.wildcardListeners.get('**')).toBeDefined();
+      expect(state.listeners.get('**')).toBeUndefined();
+    });
   });
 
   describe('stop', () => {
@@ -249,14 +273,16 @@ describe('createMorselStore', () => {
       expect(state.watchers.size).toBe(0);
     });
 
-    it('clears listeners map', async () => {
+    it('clears listeners and wildcardListeners maps', async () => {
       const state = createState();
       state.listeners.set('foo', new Set([vi.fn()]));
+      state.wildcardListeners.set('**', new Set([vi.fn()]));
       const store = createMorselStore(state, 'frozen');
 
       await store.stop();
 
       expect(state.listeners.size).toBe(0);
+      expect(state.wildcardListeners.size).toBe(0);
     });
 
     it('does not await remergeDone when undefined', async () => {

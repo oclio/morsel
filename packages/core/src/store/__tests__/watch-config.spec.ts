@@ -70,6 +70,7 @@ function makeState(overrides: Partial<StoreState> = {}): StoreState {
     _stoppedConfig: undefined,
     _layers: [],
     listeners: new Map(),
+    wildcardListeners: new Map(),
     stopped: false,
     watchers: new Set(),
     watchedFiles: new Map(),

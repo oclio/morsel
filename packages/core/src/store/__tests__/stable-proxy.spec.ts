@@ -11,6 +11,7 @@ function createState<T extends Record<string, unknown>>(
     _stoppedConfig: undefined,
     _layers: [],
     listeners: new Map(),
+    wildcardListeners: new Map(),
     stopped: false,
     watchers: new Set(),
     watchedFiles: new Map(),

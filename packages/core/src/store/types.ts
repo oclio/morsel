@@ -168,7 +168,9 @@ export interface MorselStore<
   readonly config: T;
   readonly layers: readonly MorselLayer[];
   /**
-  Listen to a flat key (dotted notation). Returns unsubscribe.
+  Listen to a flat key (dotted notation). Supports wildcard patterns:
+  `foo.*` matches any direct child of `foo`, `**` matches any key.
+  Returns unsubscribe.
   */
   on(
     key: string,

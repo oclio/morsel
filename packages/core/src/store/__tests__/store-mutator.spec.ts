@@ -53,6 +53,7 @@ function createState<T extends Record<string, unknown>>(
     _stoppedConfig: undefined,
     _layers: [],
     listeners: new Map(),
+    wildcardListeners: new Map(),
     stopped: false,
     watchers: new Set(),
     watchedFiles: new Map(),
@@ -140,6 +141,7 @@ describe('store-mutator', () => {
         expect.any(Object),
         expect.any(Object),
         state.listeners,
+        state.wildcardListeners,
       );
     });
 
@@ -323,12 +325,14 @@ describe('store-mutator', () => {
         expect.any(Object),
         expect.any(Object),
         state.listeners,
+        state.wildcardListeners,
       );
       expect(emitChanges).toHaveBeenNthCalledWith(
         2,
         expect.any(Object),
         expect.any(Object),
         state.listeners,
+        state.wildcardListeners,
       );
     });
 
@@ -417,6 +421,7 @@ describe('store-mutator', () => {
         expect.any(Object),
         expect.any(Object),
         state.listeners,
+        state.wildcardListeners,
       );
     });
 
@@ -638,12 +643,14 @@ describe('store-mutator', () => {
         expect.any(Object),
         expect.any(Object),
         state.listeners,
+        state.wildcardListeners,
       );
       expect(emitChanges).toHaveBeenNthCalledWith(
         2,
         expect.any(Object),
         expect.any(Object),
         state.listeners,
+        state.wildcardListeners,
       );
     });
 

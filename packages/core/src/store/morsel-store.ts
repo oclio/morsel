@@ -1,6 +1,7 @@
 import { applyMutability } from '@/load/merge-layers';
 import { dotifyObject } from '@/paths/dotify';
 import { getPathValue } from '@/paths/path-access';
+import { isWildcardPattern } from '@/store/match-wildcard';
 import { createStableProxy } from '@/store/stable-proxy';
 import {
   deleteKey as deleteKeyMutator,
@@ -55,10 +56,13 @@ export function createMorselStore<T extends ConfigRecord>(
       if (state.stopped) {
         throw new Error('morsel: store is stopped');
       }
-      let set = state.listeners.get(key);
+      const map = isWildcardPattern(key)
+        ? state.wildcardListeners
+        : state.listeners;
+      let set = map.get(key);
       if (set === undefined) {
         set = new Set();
-        state.listeners.set(key, set);
+        map.set(key, set);
       }
       set.add(listener);
 
@@ -185,6 +189,7 @@ export function createMorselStore<T extends ConfigRecord>(
       }
       state.watchers.clear();
       state.listeners.clear();
+      state.wildcardListeners.clear();
     },
   };
 

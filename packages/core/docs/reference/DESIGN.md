@@ -219,7 +219,7 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `buildLayers` / `buildLayersSync` — orchestration of the 4 core layers and hooks resolution.
 - `resolveExtends` / `resolveExtendsSync` — recursive resolution of the local inheritance chain.
 - `handleWatchEvent` — filtering and dispatching of `fs.watch` events to concerned stores.
-- `emitChanges` — delta computation and Two-Phase Ordering dispatch to listeners.
+- `emitChanges` — delta computation and Two-Phase Ordering dispatch to listeners. Supports wildcard patterns (`foo.*`, `**`) via separate wildcard listener map.
 
 ---
 
