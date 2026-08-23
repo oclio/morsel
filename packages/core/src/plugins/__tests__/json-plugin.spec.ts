@@ -78,4 +78,22 @@ describe('jsonPlugin', () => {
       expect(result).toEqual({ a: 1 });
     });
   });
+
+  describe('serialize', () => {
+    it('serializes object with 2-space indentation and trailing newline', () => {
+      const { serialize } = jsonPlugin;
+      expect(serialize).toBeDefined();
+      const result = serialize!({ a: 1, b: { c: 2 } });
+
+      expect(result).toBe('{\n  "a": 1,\n  "b": {\n    "c": 2\n  }\n}\n');
+    });
+
+    it('serializes empty object', () => {
+      const { serialize } = jsonPlugin;
+      expect(serialize).toBeDefined();
+      const result = serialize!({});
+
+      expect(result).toBe('{}\n');
+    });
+  });
 });

@@ -31,20 +31,23 @@ export interface ResolvedOptions {
   readonly hooks: MorselHook[];
 }
 
-const ALPHANUMERIC = /^[a-zA-Z0-9]+$/;
+const VALID_NAME = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
 
 /**
  * Validate the `name` option.
  *
- * @throws TypeError if name is missing or not alphanumeric.
+ * @throws TypeError if name is missing, empty, or does not start with a letter
+ * and contain only letters, digits, dashes, or underscores.
  * @param name - The name to validate.
  */
 function assertName(name: unknown): asserts name is string {
   if (typeof name !== 'string' || name === '') {
     throw new TypeError('morsel: name is required');
   }
-  if (!ALPHANUMERIC.test(name)) {
-    throw new TypeError('morsel: name must be alphanumeric');
+  if (!VALID_NAME.test(name)) {
+    throw new TypeError(
+      'morsel: name must start with a letter and contain only letters, digits, dashes, or underscores',
+    );
   }
 }
 
