@@ -8,6 +8,7 @@ import {
   spliceKey,
   unshiftKey,
 } from '@/store/array-ops';
+import { stopStore } from '@/store/boot/stop-store';
 import { isWildcardPattern } from '@/store/reactive/match-wildcard';
 import { createStableProxy } from '@/store/reactive/stable-proxy';
 import {
@@ -25,7 +26,6 @@ import type {
   MorselStore,
   StoreTarget,
 } from '@/store/types';
-import { releaseWatcher } from '@/watch/watcher-registry';
 
 type ConfigRecord = Record<string, unknown>;
 
@@ -179,38 +179,7 @@ export function createMorselStore<T extends ConfigRecord>(
       return Array.isArray(array) ? array.lastIndexOf(value) : -1;
     },
     async stop(): Promise<void> {
-      if (state.stopped) {
-        return;
-      }
-      state.stopped = true;
-
-      await state.remergeDone;
-
-      for (const timer of state.debounceTimers.values()) {
-        clearTimeout(timer);
-      }
-      state.debounceTimers.clear();
-
-      for (const directory of state.watchers) {
-        releaseWatcher(directory, state);
-      }
-      state.watchers.clear();
-
-      for (const hook of state.options.hooks) {
-        if (hook.lifecycle === 'after:write') continue;
-        if (hook.dispose === undefined) continue;
-        try {
-          await hook.dispose();
-        } catch (error) {
-          state.options.onDebug(
-            `hook "${hook.name}" failed in dispose: ${(error as Error).message}`,
-            { hookName: hook.name },
-          );
-        }
-      }
-
-      state.listeners.clear();
-      state.wildcardListeners.clear();
+      return stopStore(state);
     },
   };
 
