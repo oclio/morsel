@@ -223,4 +223,142 @@ describe('writeConfigFile', () => {
       spy.mockRestore();
     });
   });
+
+  describe('skip unchanged writes', () => {
+    it('skips write when setting a key to the same value', async () => {
+      const filePath = path.join(temporaryDirectory, 'app.config.json');
+      await fs.writeFile(
+        filePath,
+        JSON.stringify({ server: { port: 3000 } }),
+        'utf8',
+      );
+      const spy = vi.spyOn(fs, 'writeFile');
+
+      await writeConfigFile(filePath, { path: 'server.port', value: 3000 }, [
+        jsonPlugin,
+      ]);
+
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockRestore();
+    });
+
+    it('skips write when deleting a key that does not exist', async () => {
+      const filePath = path.join(temporaryDirectory, 'app.config.json');
+      await fs.writeFile(
+        filePath,
+        JSON.stringify({ server: { port: 3000 } }),
+        'utf8',
+      );
+      const spy = vi.spyOn(fs, 'writeFile');
+
+      await writeConfigFile(filePath, { isDelete: true, path: 'server.host' }, [
+        jsonPlugin,
+      ]);
+
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockRestore();
+    });
+
+    it('skips write when setting a key to the same nested object', async () => {
+      const filePath = path.join(temporaryDirectory, 'app.config.json');
+      await fs.writeFile(
+        filePath,
+        JSON.stringify({ server: { host: 'localhost', port: 3000 } }),
+        'utf8',
+      );
+      const spy = vi.spyOn(fs, 'writeFile');
+
+      await writeConfigFile(
+        filePath,
+        { path: 'server', value: { host: 'localhost', port: 3000 } },
+        [jsonPlugin],
+      );
+
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockRestore();
+    });
+
+    it('skips write when setting a key to the same array', async () => {
+      const filePath = path.join(temporaryDirectory, 'app.config.json');
+      await fs.writeFile(
+        filePath,
+        JSON.stringify({ tags: ['a', 'b', 'c'] }),
+        'utf8',
+      );
+      const spy = vi.spyOn(fs, 'writeFile');
+
+      await writeConfigFile(
+        filePath,
+        { path: 'tags', value: ['a', 'b', 'c'] },
+        [jsonPlugin],
+      );
+
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockRestore();
+    });
+
+    it('writes when setting a key to a different value', async () => {
+      const filePath = path.join(temporaryDirectory, 'app.config.json');
+      await fs.writeFile(
+        filePath,
+        JSON.stringify({ server: { port: 3000 } }),
+        'utf8',
+      );
+      const spy = vi.spyOn(fs, 'writeFile');
+
+      await writeConfigFile(filePath, { path: 'server.port', value: 8080 }, [
+        jsonPlugin,
+      ]);
+
+      expect(spy).toHaveBeenCalled();
+      spy.mockRestore();
+    });
+
+    it('writes when deleting a key that exists', async () => {
+      const filePath = path.join(temporaryDirectory, 'app.config.json');
+      await fs.writeFile(
+        filePath,
+        JSON.stringify({ server: { port: 3000 } }),
+        'utf8',
+      );
+      const spy = vi.spyOn(fs, 'writeFile');
+
+      await writeConfigFile(filePath, { isDelete: true, path: 'server.port' }, [
+        jsonPlugin,
+      ]);
+
+      expect(spy).toHaveBeenCalled();
+      spy.mockRestore();
+    });
+
+    it('writes when replacing null with an object', async () => {
+      const filePath = path.join(temporaryDirectory, 'app.config.json');
+      await fs.writeFile(filePath, JSON.stringify({ server: null }), 'utf8');
+
+      await writeConfigFile(
+        filePath,
+        { path: 'server', value: { port: 3000 } },
+        [jsonPlugin],
+      );
+
+      const content = JSON.parse(await fs.readFile(filePath, 'utf8'));
+      expect(content).toEqual({ server: { port: 3000 } });
+    });
+
+    it('writes when replacing an array with a non-array object', async () => {
+      const filePath = path.join(temporaryDirectory, 'app.config.json');
+      await fs.writeFile(
+        filePath,
+        JSON.stringify({ items: [1, 2, 3] }),
+        'utf8',
+      );
+
+      await writeConfigFile(filePath, { path: 'items', value: { count: 3 } }, [
+        jsonPlugin,
+      ]);
+
+      const content = JSON.parse(await fs.readFile(filePath, 'utf8'));
+      expect(content).toEqual({ items: { count: 3 } });
+    });
+  });
 });
