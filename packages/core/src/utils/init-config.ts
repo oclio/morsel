@@ -34,8 +34,11 @@ export function initConfig<T extends ConfigRecord = ConfigRecord>(
   }
 
   const cwd = resolved.cwd || process.cwd();
-  const extensions = resolved.formatPlugins.flatMap((p) => p.extensions);
-  const extension = extensions[0] ?? '.json';
+  const plugin = resolved.formatPlugins[0];
+  if (plugin === undefined) {
+    throw new TypeError('morsel: formatPlugins must not be empty');
+  }
+  const extension = plugin.extensions[0] ?? '.json';
   const configDirectory = path.resolve(cwd, '.config');
   const useConfigDirectory = existsSync(configDirectory);
   const projectPath = useConfigDirectory
@@ -43,17 +46,17 @@ export function initConfig<T extends ConfigRecord = ConfigRecord>(
     : path.resolve(cwd, `${resolved.name}.config${extension}`);
 
   const content = options.content ?? options.fallbackContent ?? {};
-  let json: string;
+  let serialized: string;
   try {
-    json = `${JSON.stringify(content, undefined, 2)}\n`;
+    serialized = plugin.serialize(content);
   } catch {
-    json = '{}\n';
+    serialized = plugin.serialize({});
   }
 
   try {
     mkdirSync(path.dirname(projectPath), { recursive: true });
-    const temporaryPath = `${projectPath}.tmp`;
-    writeFileSync(temporaryPath, json, 'utf8');
+    const temporaryPath = `${projectPath}.tmp.${Date.now()}`;
+    writeFileSync(temporaryPath, serialized, 'utf8');
     renameSync(temporaryPath, projectPath);
     return projectPath;
   } catch (error) {

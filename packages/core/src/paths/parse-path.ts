@@ -1,7 +1,4 @@
-/**
- * Prototype pollution keys forbidden across all path operations.
- */
-const FORBIDDEN_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
+import { isUnsafeKey } from '@/utils/unsafe-keys';
 
 /**
  * A single segment of a normalized path — either a string key or a numeric array index.
@@ -16,7 +13,7 @@ export type PathSegment = string | number;
  */
 export function validatePath(segments: readonly PathSegment[]): void {
   for (const segment of segments) {
-    if (FORBIDDEN_SEGMENTS.has(segment as string)) {
+    if (isUnsafeKey(segment as string)) {
       throw new TypeError(
         `morsel: prototype pollution attempt detected: "${segment}"`,
       );

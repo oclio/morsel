@@ -70,12 +70,12 @@ describe('initConfig', () => {
     expect(result).toBe('/project/myapp.config.json');
     expect(mkdirSync).toHaveBeenCalledWith('/project', { recursive: true });
     expect(writeFileSync).toHaveBeenCalledWith(
-      '/project/myapp.config.json.tmp',
-      '{\n  "port": 8080\n}\n',
+      expect.stringMatching(/^\/project\/myapp\.config\.json\.tmp\.\d+$/),
+      jsonPlugin.serialize({ port: 8080 }),
       'utf8',
     );
     expect(renameSync).toHaveBeenCalledWith(
-      '/project/myapp.config.json.tmp',
+      expect.stringMatching(/^\/project\/myapp\.config\.json\.tmp\.\d+$/),
       '/project/myapp.config.json',
     );
   });
@@ -90,8 +90,8 @@ describe('initConfig', () => {
     });
 
     expect(writeFileSync).toHaveBeenCalledWith(
-      '/project/myapp.config.json.tmp',
-      '{\n  "port": 3000,\n  "host": "localhost"\n}\n',
+      expect.stringMatching(/^\/project\/myapp\.config\.json\.tmp\.\d+$/),
+      jsonPlugin.serialize({ port: 3000, host: 'localhost' }),
       'utf8',
     );
   });
@@ -103,13 +103,13 @@ describe('initConfig', () => {
     initConfig({ name: 'myapp' });
 
     expect(writeFileSync).toHaveBeenCalledWith(
-      '/project/myapp.config.json.tmp',
-      '{}\n',
+      expect.stringMatching(/^\/project\/myapp\.config\.json\.tmp\.\d+$/),
+      jsonPlugin.serialize({}),
       'utf8',
     );
   });
 
-  it('uses 2-space indent with trailing newline', () => {
+  it('uses the first format plugin serialize method for output', () => {
     mockResolved();
     vi.mocked(resolveProjectPathSync).mockReturnValue(undefined);
 
@@ -120,7 +120,7 @@ describe('initConfig', () => {
 
     expect(writeFileSync).toHaveBeenCalledWith(
       expect.any(String),
-      '{\n  "a": 1,\n  "b": {\n    "c": 2\n  }\n}\n',
+      jsonPlugin.serialize({ a: 1, b: { c: 2 } }),
       'utf8',
     );
   });
@@ -132,12 +132,12 @@ describe('initConfig', () => {
     initConfig({ name: 'myapp', content: { port: 8080 } as never });
 
     expect(writeFileSync).toHaveBeenCalledWith(
-      '/project/myapp.config.json.tmp',
+      expect.stringMatching(/^\/project\/myapp\.config\.json\.tmp\.\d+$/),
       expect.any(String),
       'utf8',
     );
     expect(renameSync).toHaveBeenCalledWith(
-      '/project/myapp.config.json.tmp',
+      expect.stringMatching(/^\/project\/myapp\.config\.json\.tmp\.\d+$/),
       '/project/myapp.config.json',
     );
   });
@@ -247,7 +247,7 @@ describe('initConfig', () => {
     expect(caught?.code).toBe('EIO');
   });
 
-  it('handles JSON.stringify throwing by falling back to empty object', () => {
+  it('handles plugin.serialize throwing by falling back to empty object', () => {
     mockResolved();
     vi.mocked(resolveProjectPathSync).mockReturnValue(undefined);
 
@@ -257,8 +257,8 @@ describe('initConfig', () => {
     initConfig({ name: 'myapp', content: circular as never });
 
     expect(writeFileSync).toHaveBeenCalledWith(
-      '/project/myapp.config.json.tmp',
-      '{}\n',
+      expect.stringMatching(/^\/project\/myapp\.config\.json\.tmp\.\d+$/),
+      jsonPlugin.serialize({}),
       'utf8',
     );
   });
@@ -287,12 +287,12 @@ describe('initConfig', () => {
       recursive: true,
     });
     expect(writeFileSync).toHaveBeenCalledWith(
-      '/project/.config/myapp.json.tmp',
-      '{\n  "port": 8080\n}\n',
+      expect.stringMatching(/^\/project\/\.config\/myapp\.json\.tmp\.\d+$/),
+      jsonPlugin.serialize({ port: 8080 }),
       'utf8',
     );
     expect(renameSync).toHaveBeenCalledWith(
-      '/project/.config/myapp.json.tmp',
+      expect.stringMatching(/^\/project\/\.config\/myapp\.json\.tmp\.\d+$/),
       '/project/.config/myapp.json',
     );
   });
@@ -338,20 +338,38 @@ describe('initConfig', () => {
     expect(result).toBe('/project/myapp.config.json');
   });
 
-  it('uses the first plugin extension for the written file path', () => {
+  it('uses the first plugin extension and serialize for the written file', () => {
     const yamlPlugin = {
       name: 'yaml',
       extensions: ['.yaml', '.yml'],
       parse: () => ({}),
-      serialize: () => '',
+      serialize: (data: Record<string, unknown>) =>
+        `# yaml\n${JSON.stringify(data)}`,
     };
     mockResolved({ formatPlugins: [yamlPlugin] });
     vi.mocked(resolveProjectPathSync).mockReturnValue(undefined);
     vi.mocked(existsSync).mockReturnValue(false);
 
-    const result = initConfig({ name: 'myapp', content: {} as never });
+    const result = initConfig({
+      name: 'myapp',
+      content: { port: 8080 } as never,
+    });
 
     expect(result).toBe('/project/myapp.config.yaml');
+    expect(writeFileSync).toHaveBeenCalledWith(
+      expect.stringMatching(/^\/project\/myapp\.config\.yaml\.tmp\.\d+$/),
+      '# yaml\n{"port":8080}',
+      'utf8',
+    );
+  });
+
+  it('throws TypeError when formatPlugins is empty', () => {
+    mockResolved({ formatPlugins: [] });
+    vi.mocked(resolveProjectPathSync).mockReturnValue(undefined);
+
+    expect(() => initConfig({ name: 'myapp' })).toThrow(
+      'morsel: formatPlugins must not be empty',
+    );
   });
 
   it('calls resolveProjectPathSync with resolved options', () => {

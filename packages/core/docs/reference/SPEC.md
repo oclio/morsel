@@ -1,12 +1,12 @@
-# SPEC-MORSEL-1.1.0: Pluggable Cascading Config Loader with Watch
+# SPEC-MORSEL-1.2.0: Pluggable Cascading Config Loader with Watch
 
 | Metadata            | Value                                                            |
 | :------------------ | :--------------------------------------------------------------- |
 | **Package**         | `@oclio/morsel`                                                  |
 | **Author**          | @oclio                                                           |
 | **Status**          | `STABLE`                                                         |
-| **Spec version**    | `1.1.0`                                                          |
-| **Created**         | 2026-08-23                                                       |
+| **Spec version**    | `1.2.0`                                                          |
+| **Created**         | 2026-08-24                                                       |
 | **Target runtimes** | Node.js >= 18                                                    |
 | **Architecture**    | See [`DESIGN.md`](./DESIGN.md) for design choices and principles |
 
@@ -46,7 +46,7 @@ Layers resolved independently, with hooks interleaved (4 core layers + hook laye
 - `global`: `resolveGlobalPath` (async) / `resolveGlobalPathSync` (sync) builds candidates from plugin extensions (`formatPlugins.flatMap(p => p.extensions)`), existence check on each (`fs.promises.access` in async, `existsSync` in sync), first match wins. If found → `loadFile(globalPath, formatPlugins)` (plugin parsing + `resolveExtends` + cleanup). If none → `exists: false`, `config: {}`.
 - `[hooks after:global]`: same.
 - `[hooks before:project]`: same.
-- `project`: `resolveProjectPath` (async) / `resolveProjectPathSync` (sync) in `cwd`. Same as `global`.
+- `project`: `resolveProjectPath` (async) / `resolveProjectPathSync` (sync) in `cwd`. Builds candidates from plugin extensions in two groups: first `<cwd>/<name>.config<ext>` for each extension, then `<cwd>/.config/<name><ext>` for each extension (`.config/` directory convention adopted by Vite, ESLint, c12, cosmiconfig). Existence check on each (`fs.promises.access` in async, `existsSync` in sync), first match wins. If found → `loadFile(projectPath, formatPlugins)` (plugin parsing + `resolveExtends` + cleanup). If none → `exists: false`, `config: {}`.
 - `[hooks after:project]`: same.
 - `[hooks before:overrides]`: same.
 - `overrides`: raw object passed as option. Same as `defaults`.
@@ -77,7 +77,7 @@ Layers resolved independently, with hooks interleaved (4 core layers + hook laye
 
 ### 3.2 External Dependencies
 
-**None.** The `package.json` has `dependencies: {}`.
+**None.** The `package.json` declares no runtime dependencies.
 
 ### 3.3 Compatibility Constraints
 
@@ -116,19 +116,17 @@ export interface WatchOptions<
   readonly signal?: AbortSignal;
 }
 
-export type StoreTarget = 'global' | 'project';
-export type DeleteTarget = 'all' | 'global' | 'project';
-
 export interface MorselStore<
   T extends Record<string, unknown> = Record<string, unknown>,
 > {
   readonly config: T;
   readonly layers: readonly MorselLayer[];
-  on(
-    keyPath: string,
-    listener: Listener,
-    options?: ListenerOptions,
-  ): () => void;
+  /**
+   * Listen to key changes. Supports wildcard patterns:
+   * `foo.*` matches one segment, `**` matches any depth.
+   * See §4.5 for wildcard semantics and two-phase ordering.
+   */
+  on(key: string, listener: Listener, options?: ListenerOptions): () => void;
   get<V = unknown>(
     path: string | readonly (string | number)[],
     defaultValue?: V,
@@ -377,6 +375,7 @@ export interface StoreState<T extends ConfigRecord = ConfigRecord> {
   _layers: MorselLayer[];
   options: ResolvedOptions;
   listeners: Map<string, Set<Listener>>;
+  wildcardListeners: Map<string, Set<Listener>>;
   stopped: boolean;
   watchers: Set<string>;
   watchedFiles: Map<string, Set<string>>;
@@ -390,6 +389,49 @@ export interface StoreState<T extends ConfigRecord = ConfigRecord> {
   remerge: (store: StoreState) => Promise<void>;
   enoentLogged: Set<string>;
 }
+
+/**
+ * Target layer for set and mutate operations. Internal — inferred from
+ * `MorselStore.set` / `mutateKey` / `push` / etc. via string literals.
+ */
+export type StoreTarget = 'global' | 'project';
+
+/**
+ * Target layer(s) for delete operations. Internal — inferred from
+ * `MorselStore.unset` / `deleteKey` via string literals.
+ */
+export type DeleteTarget = 'all' | 'global' | 'project';
+
+/**
+ * Describes a mutation applied to a configuration file. Internal — surfaced
+ * via `WriteEvent.mutation` consumed by `EventHook.onWrite`.
+ */
+export interface MutationOperation {
+  readonly path: string;
+  readonly value?: unknown;
+  readonly isDelete?: boolean;
+}
+
+/**
+ * Result of resolving which layer and file path owns a given key. Internal —
+ * `resolveKeyOrigin` is not part of the public API.
+ */
+export interface KeyOrigin {
+  readonly layer: MorselLayer | undefined;
+  readonly filePath: string | undefined;
+  readonly isWritable: boolean;
+  readonly exists: boolean;
+}
+
+/**
+ * Flatten a nested object into a 1D record with dotted paths. Internal —
+ * `MorselStore.dotify()` is the public equivalent for store config.
+ */
+export function dotifyObject(
+  object: unknown,
+  prefix?: string,
+  result?: Record<string, unknown>,
+): Record<string, unknown>;
 ```
 
 ---
@@ -397,6 +439,8 @@ export interface StoreState<T extends ConfigRecord = ConfigRecord> {
 ### 4.3 Public Signatures
 
 ```typescript
+// ── Load & Watch ──
+
 export function loadConfig<
   T extends Record<string, unknown> = Record<string, unknown>,
 >(options: MorselOptions<T>): Promise<ConfigResult<T>>;
@@ -429,6 +473,8 @@ export function initConfig<
   formatPlugins?: readonly FormatPlugin[];
 }): string;
 
+// ── Config Helpers ──
+
 export function deepMerge(
   base: Record<string, unknown>,
   override: Record<string, unknown>,
@@ -440,7 +486,10 @@ export function diffKeys(
   newObj: Record<string, unknown>,
 ): Map<string, KeyChange>;
 
-export function flatten(obj: Record<string, unknown>): Map<string, unknown>;
+export function interpolate(
+  config: Record<string, unknown>,
+  env?: Record<string, string | undefined>,
+): Record<string, unknown>;
 
 export function defineConfig<
   T extends Record<string, unknown> = Record<string, unknown>,
@@ -453,7 +502,7 @@ export function mergeConfig<
   overrides: Partial<MorselOptions<T>>,
 ): MorselOptions<T>;
 
-// Path utilities
+// ── Path Utilities ──
 
 export type PathSegment = string | number;
 
@@ -475,34 +524,15 @@ export function setPathValue(
 ): void;
 
 export function hasRemovedPathValue(
-  target: Record<string, unknown> | unknown[],
+  target: ConfigRecord | unknown[],
   path: string | readonly PathSegment[],
 ): boolean;
 
-export function dotifyObject(
-  object: unknown,
-  prefix?: string,
-  result?: Record<string, unknown>,
-): Record<string, unknown>;
-
-// Format plugin
+// ── Format Plugin ──
 
 export const jsonPlugin: FormatPlugin;
 
-// Writer internals
-
-export interface MutationOperation {
-  readonly path: string;
-  readonly value?: unknown;
-  readonly isDelete?: boolean;
-}
-
-export interface KeyOrigin {
-  readonly layer: MorselLayer | undefined;
-  readonly filePath: string | undefined;
-  readonly isWritable: boolean;
-  readonly exists: boolean;
-}
+// ── Watcher Registry ──
 
 /**
  * Entry in the global watcher registry (ref-counting and retry timer).
@@ -532,7 +562,7 @@ export function clearRegistry(): void;
 
 1. Checks if the configuration file already exists via `resolveProjectPathSync`. If yes → returns the existing path without modifying anything (idempotence).
 2. If no: `mkdirSync(dirname, { recursive: true })` — creates the parent directory if needed.
-3. Writes `content` (or `fallbackContent`, or `{}`) as JSON via atomic write: `writeFileSync` to `<path>.tmp` then `renameSync` to `<path>` (avoids partial reads in case of crash).
+3. Writes `content` (or `fallbackContent`, or `{}`) via the first format plugin's `serialize` method via atomic write: `writeFileSync` to `<path>.tmp.<timestamp>` then `renameSync` to `<path>` (avoids partial reads in case of crash).
 4. Returns the created path.
 5. On write failure (`writeFileSync` or `renameSync` throws): throws `MorselError` (`EIO`) with the project path and original error as cause.
 
@@ -548,7 +578,7 @@ export function clearRegistry(): void;
 2. Parses the existing content via the matching format plugin (or `{}` if empty).
 3. Applies the mutation (`set` or `delete`) to the parsed config.
 4. Serializes the result via the plugin's `serialize` method.
-5. Writes to a temporary file (`<path>.tmp`), then atomically renames to the target path.
+5. Writes to a temporary file (`<path>.tmp.<timestamp>`), then atomically renames to the target path.
 6. Writes are serialized per file path via a promise queue — concurrent mutations to the same file are queued.
 
 On I/O or serialization failure, a `MorselError` (`EWRITE`) is thrown. The caller (`mutateKey`/`deleteKey`) is responsible for rolling back the in-memory state.
@@ -602,7 +632,7 @@ Wildcard listeners are emitted after exact-match listeners for each key, within 
 - **`cycle` (circular `extends`, `visited` Set + `MAX_DEPTH = 10`)** — One-shot: throws `MorselError` (`ECYCLE`). Watch boot: throws. Re-merge: caught, keeps previous config, `onDebug`/stderr.
 - **`hook` (hook throws in `load()`)** — One-shot: throws `MorselError` (`EHOOK`). Watch boot: throws. Re-merge: caught, keeps previous config, `onDebug`/stderr.
 - **`hook async` (hook returns a Promise in `loadConfigSync`)** — Throws `TypeError('morsel: hook "<name>" is async — use loadConfig or watchConfig')`. Programming error.
-- **`env` (`$env` present but `envName` undefined)** — Warns `onDebug` only (not stderr), `$env` ignored. Same in one-shot and watch.
+- **`env` (`$env` present but `envName` undefined)** — Warns via `onDebug` (or stderr if `onDebug` is not provided), `$env` ignored. Same in one-shot and watch.
 - **`program` (`name` missing, `name` invalid, `on()` after `stop()`)** — Throws `TypeError`/`Error`. Same in one-shot and watch.
 
 ### 5.2 Priority & Debug Channels
@@ -736,22 +766,3 @@ In `frozen` mode, `store.config` is backed by a stable Proxy (`stable-proxy.ts`)
    - Other values → resolved via `path.resolve`
 2. **Windows fallback** — if no explicit `globalDir` and `APPDATA` env var is set on `win32`: `%APPDATA%/<name>`
 3. **Default** — `~/.config/<name>`
-
-### 7.4 Known Limitations
-
-1. `fs.watch` cross-platform (macOS `fsevents`, Linux `inotify`, Windows `ReadDirectoryChangesW`): directory-level watching with filename filtering protects against descriptor loss.
-2. No symlink following: normalization via `path.resolve` only.
-3. The dot (`.`) is a key separator for diff and events only (`store.on("foo.bar")`). The internal structure preserves raw keys without artificial destructuring.
-4. Circular `extends` detected with maximum depth `MAX_DEPTH = 10` (`ECYCLE`).
-5. `defaults` and `overrides` apply `$env` and clean up `extends`, but do not follow an `extends` chain (files only).
-6. `initConfig` initializes only the project configuration, never the global configuration.
-7. `extends` and `$env` are absolute reserved keywords.
-8. No wildcards (`*`) in events.
-9. Stateless hooks only in the current version (no runtime mutators).
-
----
-
-## 8. Revision History
-
-- **1.0.0** (2026-08-20): Candidate normative specification 1.0.0, integration of the 8 lifecycle hook points, architecture pseudocode, and separation of design into `DESIGN.md`.
-- **1.1.0** (2026-08-23): Native path module (`parsePath`, `validatePath`, `getPathValue`, `setPathValue`, `hasRemovedPathValue`) with dot/bracket notation, array index support, and prototype pollution protection (`__proto__`, `constructor`, `prototype`). Atomic write engine (`writeConfigFile`) with per-file promise queue, temp-file + rename strategy, and `EWRITE` error code. `serialize` method added to `FormatPlugin`. Native accessors on `MorselStore`: `get`, `set`, `has`, `unset`, `all`, `dotify` (aliases of `mutateKey`/`deleteKey` + read/flatten helpers). Optimistic in-memory update with listener notification and automatic rollback on write failure. Concurrent re-merge detection: rollback is skipped if `state._config` has changed during `await writeConfigFile` (watcher re-merge took precedence). Array mutator API on `MorselStore`: `push`, `unshift`, `pop`, `shift`, `splice` (sugar on `mutateKey` with full array replacement) + `indexOf`/`lastIndexOf` read helpers. `EVALIDATE` extended to cover type mismatch (non-array target). `StoreTarget` and `DeleteTarget` types.

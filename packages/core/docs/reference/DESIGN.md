@@ -151,7 +151,7 @@ Each layer (`global`, `project`) resolves its own `extends` and `$env` independe
 - A modified object → recursive descent toward child scalars.
 - An entire object replaced (type change, e.g. object → string) or added/removed → emits the parent.
 - A modified array → emits the parent only (no index notation).
-- No wildcards (`*`) to keep algorithmic complexity strictly $O(N)$.
+- Wildcard patterns (`foo.*`, `**`, `foo.**`) supported in `store.on()` for ergonomic event subscription. Matching is $O(N)$ per key — see SPEC §4.5 for semantics.
 
 ### 2.4 Directory-level watching + filename filtering
 
@@ -225,7 +225,6 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `initConfig` — atomic and idempotent configuration file initialization.
 - `deepMerge` — deterministic deep merge with array strategy handling.
 - `diffKeys` — recursive delta computation between two configurations.
-- `flatten` — flattening to dotted notation.
 - `interpolate` — `${VAR}` env and `{{ref.path}}` cross-reference interpolation on merged config.
 - `defineConfig` — typing and options validation helper.
 - `mergeConfig` — composition of two `MorselOptions` objects.
@@ -240,7 +239,7 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `StoreState` — internal mutable shared state of a reactive store.
 - `WatcherEntry` — `WatcherRegistry` entry (`watcher`, `refCount`, `stores`, `retryTimer`).
 - `WatcherRegistry` — global registry mapping directory paths to `WatcherEntry` (`Map<string, WatcherEntry>`).
-- `buildLayers` / `buildLayersSync` — orchestration of the 4 core layers and hooks resolution.
+- `buildLayers` — async orchestration of the 4 core layers and hooks resolution. The sync path is handled inline by `loadConfigSync` via `runHooksSync` + `resolveLayerSync`.
 - `resolveExtends` / `resolveExtendsSync` — recursive resolution of the local inheritance chain.
 - `handleWatchEvent` — filtering and dispatching of `fs.watch` events to concerned stores.
 - `emitChanges` — delta computation and Two-Phase Ordering dispatch to listeners. Supports wildcard patterns (`foo.*`, `**`) via separate wildcard listener map.
