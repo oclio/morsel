@@ -168,7 +168,7 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `MorselStore<T>` — reactive store instance (`config`, `layers`, `on`, `get`, `set`, `has`, `unset`, `all`, `dotify`, `push`, `unshift`, `pop`, `shift`, `splice`, `indexOf`, `lastIndexOf`, `stop`).
 - `MorselLayer` — trace of a resolved layer (`configName`, `source`, `path`, `config`, `exists`, `extendsPaths`, `hookName`).
 - `MorselError` — base error class with `path`, `code`, and `cause`.
-- `MorselErrorCode` — union of error codes (`'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK' | 'EWRITE'`).
+- `ErrorCode` — union of error codes (`'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK' | 'EWRITE'`).
 - `MorselNoPluginError` — thrown when no extension matches a plugin (`ENOPLUGIN`).
 - `MorselValidationError` — thrown on schema validation failure (`EVALIDATE`).
 - `MorselWriteError` — thrown on write/mutation failure (`EWRITE`, + `filePath`, + `mutation`).

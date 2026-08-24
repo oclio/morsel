@@ -6,14 +6,14 @@ morsel provides **explicit error codes, structured error classes, configurable d
 
 ---
 
-## Error Hierarchy & `MorselErrorCode`
+## Error Hierarchy & `ErrorCode`
 
 All operational errors thrown or caught by morsel are instances of `MorselError`:
 
 ```typescript
 export class MorselError extends Error {
   readonly path: string | undefined;
-  readonly code: MorselErrorCode;
+  readonly code: ErrorCode;
   readonly cause: NodeJS.ErrnoException | Error;
 }
 ```

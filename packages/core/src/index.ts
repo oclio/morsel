@@ -1,4 +1,4 @@
-export type { MorselErrorCode } from '@/errors/morsel-error';
+export type { ErrorCode } from '@/errors/morsel-error';
 export { MorselError } from '@/errors/morsel-error';
 export { MorselNoPluginError } from '@/errors/no-plugin-error';
 export { MorselValidationError } from '@/errors/validation-error';

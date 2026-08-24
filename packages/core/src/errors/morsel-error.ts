@@ -9,7 +9,7 @@
  * - `EHOOK` — hook lifecycle failure (hook.load threw)
  * - `EWRITE` — write/mutation failure (I/O or serialize error during writeConfig)
  */
-export type MorselErrorCode =
+export type ErrorCode =
   'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK' | 'EWRITE';
 
 /**
@@ -24,12 +24,12 @@ export type MorselErrorCode =
  */
 export class MorselError extends Error {
   readonly path: string | undefined;
-  readonly code: MorselErrorCode;
+  readonly code: ErrorCode;
   override readonly cause: NodeJS.ErrnoException | Error;
 
   constructor(
     path: string | undefined,
-    code: MorselErrorCode,
+    code: ErrorCode,
     cause: NodeJS.ErrnoException | Error,
   ) {
     const message = cause.message;

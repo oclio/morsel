@@ -197,7 +197,7 @@ export interface MorselLayer {
 
 export class MorselError extends Error {
   readonly path: string | undefined;
-  readonly code: MorselErrorCode;
+  readonly code: ErrorCode;
   override readonly cause: NodeJS.ErrnoException | Error;
 }
 
@@ -206,7 +206,7 @@ export class MorselWriteError extends MorselError {
   readonly mutation: MutationOperation;
 }
 
-export type MorselErrorCode =
+export type ErrorCode =
   'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK' | 'EWRITE';
 
 export class MorselNoPluginError extends MorselError {

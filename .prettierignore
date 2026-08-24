@@ -1,6 +1,4 @@
 .agents/**
-.dev/**
-.ops/**
 .temp/**
 node_modules/**
 CHANGELOG.md
