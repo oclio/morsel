@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 
 import { MorselError } from '@/errors/morsel-error';
-import { MorselNoPluginError } from '@/errors/no-plugin-error';
+import { NoPluginError } from '@/errors/no-plugin-error';
 import { selectParser } from '@/plugins/select-parser';
 import type { MorselFormatPlugin } from '@/plugins/types';
 
@@ -39,7 +39,7 @@ function parseContent(
 ): ConfigRecord {
   const plugin = selectParser(filePath, formatPlugins);
   if (plugin === undefined) {
-    throw new MorselNoPluginError(filePath, extensionOf(filePath));
+    throw new NoPluginError(filePath, extensionOf(filePath));
   }
 
   try {
@@ -65,7 +65,7 @@ function extensionOf(filePath: string): string {
  * - `ENOENT`: returns `{ exists: false, config: {} }` — normal flow.
  * - Other fs errors: throws `MorselError` (code `EIO`).
  * - Parse errors: throws `MorselError` (code `EPARSE`).
- * - No matching plugin: throws `MorselNoPluginError` (code `ENOPLUGIN`).
+ * - No matching plugin: throws `NoPluginError` (code `ENOPLUGIN`).
  *
  * @param filePath - Absolute path to the config file.
  * @param formatPlugins - Ordered list of format plugins.

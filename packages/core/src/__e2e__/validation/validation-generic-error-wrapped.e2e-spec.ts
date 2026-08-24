@@ -27,7 +27,7 @@ describe('validation-generic-error-wrapped — generic Error wrapped', () => {
         validationPlugins: [{ name: 'positive', validate }],
       }),
     ).rejects.toMatchObject({
-      name: 'MorselValidationError',
+      name: 'ValidationError',
       code: 'EVALIDATE',
       issues: { positive: 'port must be positive' },
     });

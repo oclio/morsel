@@ -11,7 +11,7 @@ import { loadConfig } from '@/index';
 describe('error-evalidation-boot — validation fail at boot throws', () => {
   clearWatcherRegistry();
 
-  it('MorselValidationError thrown with issues', async () => {
+  it('ValidationError thrown with issues', async () => {
     const { directory } = await createTemporaryEnvironment();
     const projectDirectory = `${directory}/project`;
 
@@ -38,7 +38,7 @@ describe('error-evalidation-boot — validation fail at boot throws', () => {
         validationPlugins: [validationPlugin],
       } as never),
     ).rejects.toMatchObject({
-      name: 'MorselValidationError',
+      name: 'ValidationError',
       code: 'EVALIDATE',
     });
   });

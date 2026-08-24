@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 
 import { MorselError } from '@/errors/morsel-error';
-import { MorselNoPluginError } from '@/errors/no-plugin-error';
+import { NoPluginError } from '@/errors/no-plugin-error';
 import { loadFile, loadFileSync } from '@/load/load-file';
 import { jsonPlugin } from '@/plugins/json-plugin';
 
@@ -197,29 +197,29 @@ describe('loadFile', () => {
     }
   });
 
-  it('throws MorselNoPluginError when no plugin matches the extension', async () => {
+  it('throws NoPluginError when no plugin matches the extension', async () => {
     vi.mocked(readFile).mockResolvedValue('{}');
 
     try {
       await loadFile('/fake/config.yaml', [jsonPlugin]);
       throw new Error('expected promise to reject');
     } catch (error) {
-      expect(error).toBeInstanceOf(MorselNoPluginError);
-      expect((error as MorselNoPluginError).code).toBe('ENOPLUGIN');
-      expect((error as MorselNoPluginError).path).toBe('/fake/config.yaml');
-      expect((error as MorselNoPluginError).extension).toBe('.yaml');
+      expect(error).toBeInstanceOf(NoPluginError);
+      expect((error as NoPluginError).code).toBe('ENOPLUGIN');
+      expect((error as NoPluginError).path).toBe('/fake/config.yaml');
+      expect((error as NoPluginError).extension).toBe('.yaml');
     }
   });
 
-  it('throws MorselNoPluginError when file has no extension', async () => {
+  it('throws NoPluginError when file has no extension', async () => {
     vi.mocked(readFile).mockResolvedValue('{}');
 
     try {
       await loadFile('/fake/config', [jsonPlugin]);
       throw new Error('expected promise to reject');
     } catch (error) {
-      expect(error).toBeInstanceOf(MorselNoPluginError);
-      expect((error as MorselNoPluginError).extension).toBe('');
+      expect(error).toBeInstanceOf(NoPluginError);
+      expect((error as NoPluginError).extension).toBe('');
     }
   });
 });
@@ -340,17 +340,17 @@ describe('loadFileSync', () => {
     }
   });
 
-  it('throws MorselNoPluginError when no plugin matches the extension', () => {
+  it('throws NoPluginError when no plugin matches the extension', () => {
     vi.mocked(readFileSync).mockReturnValue('{}');
 
     try {
       loadFileSync('/fake/config.yaml', [jsonPlugin]);
       throw new Error('expected function to throw');
     } catch (error) {
-      expect(error).toBeInstanceOf(MorselNoPluginError);
-      expect((error as MorselNoPluginError).code).toBe('ENOPLUGIN');
-      expect((error as MorselNoPluginError).path).toBe('/fake/config.yaml');
-      expect((error as MorselNoPluginError).extension).toBe('.yaml');
+      expect(error).toBeInstanceOf(NoPluginError);
+      expect((error as NoPluginError).code).toBe('ENOPLUGIN');
+      expect((error as NoPluginError).path).toBe('/fake/config.yaml');
+      expect((error as NoPluginError).extension).toBe('.yaml');
     }
   });
 });

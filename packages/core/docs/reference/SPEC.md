@@ -56,7 +56,7 @@ Layers resolved independently, with hooks interleaved (4 core layers + hook laye
 
 1. `mergeLayers(allLayers, arrayMerge)` — recursive deep merge of all resolved layers in order (hooks included).
 2. `interpolate(merged)` — resolve `${VAR}` from `process.env` and `{{ref.path}}` cross-references within the merged config. Circular references throw `MorselError` with code `ECYCLE`.
-3. `applyValidation(config, validationPlugins)` — if `validationPlugins` is provided, each plugin validates and returns the transformed config. In one-shot and watch boot: throws `MorselValidationError` if validation fails. In watch re-merge: caught, logged to `onDebug`/stderr, keeps previous config.
+3. `applyValidation(config, validationPlugins)` — if `validationPlugins` is provided, each plugin validates and returns the transformed config. In one-shot and watch boot: throws `ValidationError` if validation fails. In watch re-merge: caught, logged to `onDebug`/stderr, keeps previous config.
 
 ### Step 3 — Mutability & Result
 
@@ -201,7 +201,7 @@ export class MorselError extends Error {
   override readonly cause: NodeJS.ErrnoException | Error;
 }
 
-export class MorselWriteError extends MorselError {
+export class WriteError extends MorselError {
   readonly filePath: string;
   readonly mutation: MutationOperation;
 }
@@ -209,11 +209,11 @@ export class MorselWriteError extends MorselError {
 export type ErrorCode =
   'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK' | 'EWRITE';
 
-export class MorselNoPluginError extends MorselError {
+export class NoPluginError extends MorselError {
   readonly extension: string;
 }
 
-export class MorselValidationError extends MorselError {
+export class ValidationError extends MorselError {
   readonly issues: Readonly<Record<string, string>>;
 }
 
@@ -577,8 +577,8 @@ Wildcard listeners are emitted after exact-match listeners for each key, within 
 - **`fs` (ENOENT, file absent)** — Normal flow: `exists: false`, `config: {}`. Not an error.
 - **`fs` (ENOENT during a watch re-merge)** — If a `global` or `project` layer that previously existed (`exists: true` in `store._layers`) disappears during a re-merge, the re-merge is short-circuited: the config stays frozen at the last valid state (`lastConfig`), `onDebug` is called once with `{ code: 'ENOENT', sources: [<source>] }` (duplicates suppressed via `enoentLogged` until the file reappears). Watchers remain active.
 - **`parse` (invalid content on an existing file)** — One-shot: throws `MorselError` (`EPARSE`). Watch boot: throws. Re-merge: caught, keeps previous config, `onDebug`/stderr, no event.
-- **`plugin` (no plugin for the extension)** — One-shot: throws `MorselNoPluginError` (`ENOPLUGIN`). Watch boot: throws. Re-merge: caught, keeps previous config, `onDebug`/stderr.
-- **`validation` (validation fail)** — One-shot: throws `MorselValidationError` (`EVALIDATE`). Watch boot: throws. Re-merge: caught, keeps previous config, `onDebug`/stderr.
+- **`plugin` (no plugin for the extension)** — One-shot: throws `NoPluginError` (`ENOPLUGIN`). Watch boot: throws. Re-merge: caught, keeps previous config, `onDebug`/stderr.
+- **`validation` (validation fail)** — One-shot: throws `ValidationError` (`EVALIDATE`). Watch boot: throws. Re-merge: caught, keeps previous config, `onDebug`/stderr.
 - **`cycle` (circular `extends`, `visited` Set + `MAX_DEPTH = 10`)** — One-shot: throws `MorselError` (`ECYCLE`). Watch boot: throws. Re-merge: caught, keeps previous config, `onDebug`/stderr.
 - **`hook` (hook throws in `load()`)** — One-shot: throws `MorselError` (`EHOOK`). Watch boot: throws. Re-merge: caught, keeps previous config, `onDebug`/stderr.
 - **`hook async` (hook returns a Promise in `loadConfigSync`)** — Throws `TypeError('morsel: hook "<name>" is async — use loadConfig or watchConfig')`. Programming error.
@@ -599,7 +599,7 @@ Wildcard listeners are emitted after exact-match listeners for each key, within 
 
 ### 5.4 `ENOPLUGIN` Error Messages
 
-`MorselNoPluginError` includes a generic hint guiding the user to register a plugin:
+`NoPluginError` includes a generic hint guiding the user to register a plugin:
 
 - With extension (`.yaml`): `morsel: ENOPLUGIN — no format plugin found for .yaml. Register a MorselFormatPlugin via options.formatPlugins. (/path/to/myapp.config.yaml)`
 - No extension: `morsel: ENOPLUGIN — file has no extension. Register a MorselFormatPlugin via options.formatPlugins. (/path/to/myapp.config)`

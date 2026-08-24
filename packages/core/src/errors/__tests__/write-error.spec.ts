@@ -1,28 +1,28 @@
 import { MorselError } from '@/errors/morsel-error';
-import { MorselWriteError } from '@/errors/write-error';
+import { WriteError } from '@/errors/write-error';
 import type { MutationOperation } from '@/writer/write-config';
 
-describe('MorselWriteError', () => {
+describe('WriteError', () => {
   const mutation: MutationOperation = {
     path: 'server.port',
     value: 8080,
   };
 
   it('extends MorselError with EWRITE code', () => {
-    const error = new MorselWriteError(
+    const error = new WriteError(
       '/path/config.json',
       mutation,
       new Error('write failed'),
     );
 
     expect(error).toBeInstanceOf(MorselError);
-    expect(error.name).toBe('MorselWriteError');
+    expect(error.name).toBe('WriteError');
     expect(error.code).toBe('EWRITE');
     expect(error.path).toBe('/path/config.json');
   });
 
   it('stores filePath and mutation', () => {
-    const error = new MorselWriteError(
+    const error = new WriteError(
       '/path/config.json',
       mutation,
       new Error('write failed'),
@@ -34,13 +34,13 @@ describe('MorselWriteError', () => {
 
   it('preserves cause', () => {
     const cause = new Error('disk full');
-    const error = new MorselWriteError('/path/config.json', mutation, cause);
+    const error = new WriteError('/path/config.json', mutation, cause);
 
     expect(error.cause).toBe(cause);
   });
 
   it('formats message with code and path', () => {
-    const error = new MorselWriteError(
+    const error = new WriteError(
       '/path/config.json',
       mutation,
       new Error('write failed'),
@@ -56,7 +56,7 @@ describe('MorselWriteError', () => {
       path: 'server.port',
       isDelete: true,
     };
-    const error = new MorselWriteError(
+    const error = new WriteError(
       '/path/config.json',
       deleteMutation,
       new Error('write failed'),

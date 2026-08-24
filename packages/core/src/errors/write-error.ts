@@ -7,7 +7,7 @@ import type { MutationOperation } from '@/writer/write-config';
  * Carries the target file path and the mutation that was attempted,
  * so consumers can retry or report precisely what failed.
  */
-export class MorselWriteError extends MorselError {
+export class WriteError extends MorselError {
   readonly filePath: string;
   readonly mutation: MutationOperation;
 
@@ -17,7 +17,7 @@ export class MorselWriteError extends MorselError {
     cause: NodeJS.ErrnoException | Error,
   ) {
     super(filePath, 'EWRITE', cause);
-    this.name = 'MorselWriteError';
+    this.name = 'WriteError';
     this.filePath = filePath;
     this.mutation = mutation;
   }

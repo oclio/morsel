@@ -3,7 +3,7 @@ import { MorselError } from '@/errors/morsel-error';
 /**
  * Thrown when no format plugin matches the file extension.
  */
-export class MorselNoPluginError extends MorselError {
+export class NoPluginError extends MorselError {
   /**
    * Unsupported extension, ex: ".yaml"
    */
@@ -15,7 +15,7 @@ export class MorselNoPluginError extends MorselError {
       : `file has no extension. Register a MorselFormatPlugin via options.formatPlugins.`;
 
     super(filePath, 'ENOPLUGIN', new Error(message));
-    this.name = 'MorselNoPluginError';
+    this.name = 'NoPluginError';
     this.extension = extension;
   }
 }

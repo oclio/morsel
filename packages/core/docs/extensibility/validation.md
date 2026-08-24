@@ -37,7 +37,7 @@ You can wrap any schema validator (Zod, Valibot, ArkType, Yup) into a `MorselVal
 
 ```typescript
 import { z } from 'zod';
-import { loadConfigSync, MorselValidationError } from '@oclio/morsel';
+import { loadConfigSync, ValidationError } from '@oclio/morsel';
 import type { MorselValidationPlugin } from '@oclio/morsel';
 
 export function createZodValidator(
@@ -59,7 +59,7 @@ export function createZodValidator(
         issues[keyPath] = issue.message;
       }
 
-      throw new MorselValidationError(issues);
+      throw new ValidationError(issues);
     },
   };
 }
@@ -91,10 +91,10 @@ If `./myapp.config.json` contains:
 { "port": 80, "apiKey": "short" }
 ```
 
-morsel throws a formatted `MorselValidationError`:
+morsel throws a formatted `ValidationError`:
 
 ```text
-MorselValidationError [EVALIDATE]:
+ValidationError [EVALIDATE]:
   - port: Number must be greater than or equal to 1024
   - apiKey: apiKey must be at least 10 chars
 ```
@@ -115,10 +115,10 @@ MorselValidationError [EVALIDATE]:
 ## Error Handling (`EVALIDATE`)
 
 - **In One-Shot Mode (`loadConfig` / `loadConfigSync`)**:
-  Throws `MorselValidationError` immediately, preventing invalid boots.
+  Throws `ValidationError` immediately, preventing invalid boots.
 - **In Live-Reload Mode (`watchConfig`)**:
-  - Initial boot: throws `MorselValidationError` immediately.
-  - Runtime re-merge: catches `MorselValidationError`, logs the validation issues via `onDebug`/`stderr`, and **keeps the last valid configuration intact**.
+  - Initial boot: throws `ValidationError` immediately.
+  - Runtime re-merge: catches `ValidationError`, logs the validation issues via `onDebug`/`stderr`, and **keeps the last valid configuration intact**.
 
 ---
 

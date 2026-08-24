@@ -9,7 +9,7 @@ import { loadConfig } from '@/index';
 describe('validation-boot-throw — validation fail at boot throws', () => {
   clearWatcherRegistry();
 
-  it('throws MorselValidationError when plugin rejects config', async () => {
+  it('throws ValidationError when plugin rejects config', async () => {
     const { directory } = await createTemporaryEnvironment();
     const projectDirectory = `${directory}/project`;
 
@@ -32,7 +32,7 @@ describe('validation-boot-throw — validation fail at boot throws', () => {
         validationPlugins: [{ name: 'port-type', validate }],
       }),
     ).rejects.toMatchObject({
-      name: 'MorselValidationError',
+      name: 'ValidationError',
       code: 'EVALIDATE',
     });
   });

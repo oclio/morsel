@@ -169,12 +169,12 @@ export default defineConfig({
                   link: '/api/classes/MorselError',
                 },
                 {
-                  text: 'MorselNoPluginError',
-                  link: '/api/classes/MorselNoPluginError',
+                  text: 'NoPluginError',
+                  link: '/api/classes/NoPluginError',
                 },
                 {
-                  text: 'MorselValidationError',
-                  link: '/api/classes/MorselValidationError',
+                  text: 'ValidationError',
+                  link: '/api/classes/ValidationError',
                 },
               ],
             },

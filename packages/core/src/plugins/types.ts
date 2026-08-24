@@ -33,7 +33,7 @@ export interface MorselFormatPlugin {
  *
  * Applied post-merge, in order. Each plugin can validate and transform the config
  * (coercion, defaults, strip). If a plugin throws, core wraps it into
- * `MorselValidationError`.
+ * `ValidationError`.
  *
  * The plugin must return a new reference — do not mutate the argument.
  * The input is not guaranteed mutable (a previous plugin may return a frozen object).
@@ -46,7 +46,7 @@ export interface MorselValidationPlugin {
   /**
    * Validate and optionally transform the final config (post-merge).
    * Return the config (potentially modified) if valid.
-   * Throw if invalid — core wraps into MorselValidationError with the issues.
+   * Throw if invalid — core wraps into ValidationError with the issues.
    * Strict/flex (accept extra keys, strip, coerce) is the plugin's responsibility.
    */
   validate(config: Record<string, unknown>): Record<string, unknown>;

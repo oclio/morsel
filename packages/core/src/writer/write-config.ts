@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
-import { MorselWriteError } from '@/errors/write-error';
+import { WriteError } from '@/errors/write-error';
 import { hasRemovedPathValue, setPathValue } from '@/paths/path-access';
 import { jsonPlugin } from '@/plugins/json-plugin';
 import { selectParser } from '@/plugins/select-parser';
@@ -93,7 +93,7 @@ export async function writeConfigFile(
       await fs.writeFile(temporaryPath, serialized, 'utf8');
       await fs.rename(temporaryPath, filePath);
     } catch (error) {
-      throw new MorselWriteError(
+      throw new WriteError(
         filePath,
         mutation,
         error instanceof Error ? error : new Error(String(error)),

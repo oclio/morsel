@@ -95,7 +95,7 @@ export interface MorselOptions<
   Validation plugins. Default: [].
   Applied on the final config (post-merge), in order.
   Each plugin can validate and transform the config (coercion, defaults, strip).
-  If a plugin throws → MorselValidationError. Boot: throw. Re-merge: catch + keep previous.
+  If a plugin throws → ValidationError. Boot: throw. Re-merge: catch + keep previous.
   */
   readonly validationPlugins?: readonly MorselValidationPlugin[];
   /**

@@ -7,7 +7,7 @@ import { setupPluginErrorScenario } from './_setup-plugin-error';
 describe('plugin-no-plugin-error — .yaml without yaml plugin throws ENOPLUGIN', () => {
   clearWatcherRegistry();
 
-  it('MorselNoPluginError thrown when extends references .yaml with no yaml plugin', async () => {
+  it('NoPluginError thrown when extends references .yaml with no yaml plugin', async () => {
     const { directory, projectDirectory } = await setupPluginErrorScenario(
       'base.yaml',
       'port: 3000',
@@ -20,7 +20,7 @@ describe('plugin-no-plugin-error — .yaml without yaml plugin throws ENOPLUGIN'
         globalDir: `${directory}/global`,
       }),
     ).rejects.toMatchObject({
-      name: 'MorselNoPluginError',
+      name: 'NoPluginError',
       code: 'ENOPLUGIN',
     });
   });

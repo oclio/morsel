@@ -76,7 +76,7 @@ Always return a **new object reference** from `validate()`. A previous validator
 
 ```typescript
 import type { MorselValidationPlugin } from '@oclio/morsel';
-import { MorselValidationError } from '@oclio/morsel';
+import { ValidationError } from '@oclio/morsel';
 
 export const portRangeValidator: MorselValidationPlugin = {
   name: 'port-range',
@@ -85,7 +85,7 @@ export const portRangeValidator: MorselValidationPlugin = {
       typeof config.port === 'number' &&
       (config.port < 1024 || config.port > 65535)
     ) {
-      throw new MorselValidationError({
+      throw new ValidationError({
         port: `Port ${config.port} must be between 1024 and 65535`,
       });
     }

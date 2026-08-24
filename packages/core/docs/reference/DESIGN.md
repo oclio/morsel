@@ -37,7 +37,7 @@ morsel starts from the premise that a configuration loader must be **lean, robus
 #### Pluggable pipeline, not monolith
 
 - `MorselFormatPlugin` — parsing is a contract, not a switch. `jsonPlugin` is injected by default, YAML/TOML/JSON5 are opt-in plugins. The core contains no `JSON.parse` outside of `jsonPlugin`.
-- `MorselValidationPlugin` — validation is a post-merge contract. Zod, Valibot, Yup — the user brings their schema, the core wraps the error in `MorselValidationError`. No validation dependencies in the core.
+- `MorselValidationPlugin` — validation is a post-merge contract. Zod, Valibot, Yup — the user brings their schema, the core wraps the error in `ValidationError`. No validation dependencies in the core.
 - `MorselFormatPlugin.serialize` — pure serialization contract. Format plugins define how data is represented as a string for writes, while core orchestrates atomic I/O and target resolution.
 
 #### Lean by construction
@@ -169,9 +169,9 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `MorselLayer` — trace of a resolved layer (`configName`, `source`, `path`, `config`, `exists`, `extendsPaths`, `hookName`).
 - `MorselError` — base error class with `path`, `code`, and `cause`.
 - `ErrorCode` — union of error codes (`'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK' | 'EWRITE'`).
-- `MorselNoPluginError` — thrown when no extension matches a plugin (`ENOPLUGIN`).
-- `MorselValidationError` — thrown on schema validation failure (`EVALIDATE`).
-- `MorselWriteError` — thrown on write/mutation failure (`EWRITE`, + `filePath`, + `mutation`).
+- `NoPluginError` — thrown when no extension matches a plugin (`ENOPLUGIN`).
+- `ValidationError` — thrown on schema validation failure (`EVALIDATE`).
+- `WriteError` — thrown on write/mutation failure (`EWRITE`, + `filePath`, + `mutation`).
 - `MorselFormatPlugin` — format plugin contract (raw parsing → object).
 - `MorselValidationPlugin` — post-merge validation/transformation plugin contract.
 - `LayerHook` — lifecycle hook contract.

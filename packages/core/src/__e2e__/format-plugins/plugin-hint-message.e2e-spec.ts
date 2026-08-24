@@ -20,7 +20,7 @@ describe('plugin-hint-message — ENOPLUGIN message includes install hints', () 
         globalDir: `${directory}/global`,
       }),
     ).rejects.toMatchObject({
-      name: 'MorselNoPluginError',
+      name: 'NoPluginError',
       code: 'ENOPLUGIN',
     });
 
@@ -50,7 +50,7 @@ describe('plugin-hint-message — ENOPLUGIN message includes install hints', () 
         globalDir: `${directory}/global`,
       }),
     ).rejects.toMatchObject({
-      name: 'MorselNoPluginError',
+      name: 'NoPluginError',
       code: 'ENOPLUGIN',
     });
 
