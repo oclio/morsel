@@ -1,12 +1,12 @@
-# SPEC-MORSEL-1.1.0: Pluggable Cascading Config Loader with Watch
+# SPEC-MORSEL-1.2.0: Pluggable Cascading Config Loader with Watch
 
 | Metadata            | Value                                                            |
 | :------------------ | :--------------------------------------------------------------- |
 | **Package**         | `@oclio/morsel`                                                  |
 | **Author**          | @oclio                                                           |
 | **Status**          | `STABLE`                                                         |
-| **Spec version**    | `1.1.0`                                                          |
-| **Created**         | 2026-08-23                                                       |
+| **Spec version**    | `1.2.0`                                                          |
+| **Created**         | 2026-08-24                                                       |
 | **Target runtimes** | Node.js >= 18                                                    |
 | **Architecture**    | See [`DESIGN.md`](./DESIGN.md) for design choices and principles |
 
@@ -403,6 +403,8 @@ export interface StoreState<T extends ConfigRecord = ConfigRecord> {
 ### 4.3 Public Signatures
 
 ```typescript
+// ── Load & Watch ──
+
 export function loadConfig<
   T extends Record<string, unknown> = Record<string, unknown>,
 >(options: MorselOptions<T>): Promise<ConfigResult<T>>;
@@ -435,6 +437,8 @@ export function initConfig<
   formatPlugins?: readonly FormatPlugin[];
 }): string;
 
+// ── Config Helpers ──
+
 export function deepMerge(
   base: Record<string, unknown>,
   override: Record<string, unknown>,
@@ -464,7 +468,7 @@ export function mergeConfig<
   overrides: Partial<MorselOptions<T>>,
 ): MorselOptions<T>;
 
-// Path utilities
+// ── Path Utilities ──
 
 export type PathSegment = string | number;
 
@@ -496,11 +500,11 @@ export function dotifyObject(
   result?: Record<string, unknown>,
 ): Record<string, unknown>;
 
-// Format plugin
+// ── Format Plugin ──
 
 export const jsonPlugin: FormatPlugin;
 
-// Writer internals
+// ── Writer Internals ──
 
 export interface MutationOperation {
   readonly path: string;
@@ -514,6 +518,8 @@ export interface KeyOrigin {
   readonly isWritable: boolean;
   readonly exists: boolean;
 }
+
+// ── Watcher Registry ──
 
 /**
  * Entry in the global watcher registry (ref-counting and retry timer).
@@ -747,20 +753,3 @@ In `frozen` mode, `store.config` is backed by a stable Proxy (`stable-proxy.ts`)
    - Other values → resolved via `path.resolve`
 2. **Windows fallback** — if no explicit `globalDir` and `APPDATA` env var is set on `win32`: `%APPDATA%/<name>`
 3. **Default** — `~/.config/<name>`
-
-### 7.4 Known Limitations
-
-1. `fs.watch` cross-platform (macOS `fsevents`, Linux `inotify`, Windows `ReadDirectoryChangesW`): directory-level watching with filename filtering protects against descriptor loss.
-2. No symlink following: normalization via `path.resolve` only.
-3. The dot (`.`) is a key separator for diff and events only (`store.on("foo.bar")`). The internal structure preserves raw keys without artificial destructuring.
-4. Circular `extends` detected with maximum depth `MAX_DEPTH = 10` (`ECYCLE`).
-5. `defaults` and `overrides` apply `$env` and clean up `extends`, but do not follow an `extends` chain (files only).
-6. `initConfig` initializes only the project configuration, never the global configuration.
-7. `extends` and `$env` are absolute reserved keywords.
-
----
-
-## 8. Revision History
-
-- **1.0.0** (2026-08-20): Candidate normative specification 1.0.0, integration of the 8 lifecycle hook points, architecture pseudocode, and separation of design into `DESIGN.md`.
-- **1.1.0** (2026-08-23): Native path module (`parsePath`, `validatePath`, `getPathValue`, `setPathValue`, `hasRemovedPathValue`) with dot/bracket notation, array index support, and prototype pollution protection (`__proto__`, `constructor`, `prototype`). Atomic write engine (`writeConfigFile`) with per-file promise queue, temp-file + rename strategy, and `EWRITE` error code. `serialize` method added to `FormatPlugin`. Native accessors on `MorselStore`: `get`, `set`, `has`, `unset`, `all`, `dotify` (aliases of `mutateKey`/`deleteKey` + read/flatten helpers). Optimistic in-memory update with listener notification and automatic rollback on write failure. Concurrent re-merge detection: rollback is skipped if `state._config` has changed during `await writeConfigFile` (watcher re-merge took precedence). Array mutator API on `MorselStore`: `push`, `unshift`, `pop`, `shift`, `splice` (sugar on `mutateKey` with full array replacement) + `indexOf`/`lastIndexOf` read helpers. `EVALIDATE` extended to cover type mismatch (non-array target). `StoreTarget` and `DeleteTarget` types.
