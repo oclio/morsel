@@ -41,7 +41,7 @@ Every Node.js config loader forces a trade-off: zero-dep but no watching, or fea
 
 ## What is morsel
 
-- **Lean & Zero-dep:** Config parsing and native file watching packed into less than 7 KB gzipped.
+- **Lean & Zero-dep:** Config parsing and native file watching packed into less than 9 KB gzipped.
 - **Reactive:** `store.on('database.port', callback)` — listen to specific keys using dotted notation, not the entire config object.
 - **Live-reload:** `watchConfig` attaches `fs.watch` to directories with per-file debouncing and automatic re-merging. The returned Proxy remains stable—no need to re-fetch the config on updates.
 - **Layered Cascade:** `defaults` → `global` (`~/.config/<app>/`) → `project` (`./<app>.config.json`) → `overrides`. Each layer is resolved independently then deep-merged in order.

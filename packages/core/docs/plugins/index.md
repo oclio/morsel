@@ -29,20 +29,18 @@ Validation plugins validate and transform the merged configuration post-merge.
 | `@oclio/morsel-schema`  | JSON schema (0D)  | 📋 October 2026 |
 | `@oclio/morsel-env`     | env validation    | 📋 October 2026 |
 
-## Store Extensions
+## Ecosystem
 
-| Package                  | Role                     | Status          |
-| ------------------------ | ------------------------ | --------------- |
-| `@oclio/morsel-wildcard` | wildcard event listeners | 📋 October 2026 |
+| Package               | Role                                                   | Status          |
+| --------------------- | ------------------------------------------------------ | --------------- |
+| `@oclio/morsel-multi` | load and manage multiple named configs in one instance | 📋 October 2026 |
 
-## Hooks
+## Tooling
 
-Hooks inject dynamic configuration at 8 lifecycle points in the pipeline.
-
-| Package               | Role                    | Status          |
-| --------------------- | ----------------------- | --------------- |
-| `@oclio/morsel-env`   | process.env / .env file | 📋 October 2026 |
-| `@oclio/morsel-vault` | HashiCorp Vault secrets | 📋 October 2026 |
+| Package             | Role                                                   | Status          |
+| ------------------- | ------------------------------------------------------ | --------------- |
+| `@oclio/morsel-cli` | command-line tool for config inspection and management | 📋 October 2026 |
+| `morsel/action`     | GitHub Action for config validation in CI pipelines    | 📋 October 2026 |
 
 ---
 
