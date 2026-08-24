@@ -16,15 +16,15 @@ describe('watch-scalar-to-object — {a:"val"} → {a:{b:1}}', () => {
     });
 
     const callOrder: string[] = [];
-    store!.on('a', (next, prev) => {
+    store!.on('a', (event) => {
       callOrder.push('a');
-      expect(next).toEqual({ b: 1 });
-      expect(prev).toBe('val');
+      expect(event.next).toEqual({ b: 1 });
+      expect(event.prev).toBe('val');
     });
-    store!.on('a.b', (next, prev) => {
+    store!.on('a.b', (event) => {
       callOrder.push('a.b');
-      expect(next).toBe(1);
-      expect(prev).toBeUndefined();
+      expect(event.next).toBe(1);
+      expect(event.prev).toBeUndefined();
     });
 
     await writeConfig(projectDirectory, 'myapp.config.json', {

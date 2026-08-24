@@ -232,3 +232,53 @@ describe('deepMerge', () => {
     expect(cloned.matrix[0]).not.toBe(originalMatrix[0]);
   });
 });
+
+describe('deepMerge — prototype pollution protection', () => {
+  it('skips __proto__ key from override', () => {
+    const malicious = JSON.parse('{"__proto__":{"polluted":true}}');
+    const result = deepMerge({ foo: 'bar' }, malicious, 'replace');
+
+    expect(result).toEqual({ foo: 'bar' });
+    expect(result).not.toHaveProperty('polluted');
+    expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
+  });
+
+  it('skips constructor key from override', () => {
+    const result = deepMerge(
+      { foo: 'bar' },
+      { constructor: { prototype: { polluted: true } } } as Record<
+        string,
+        unknown
+      >,
+      'replace',
+    );
+
+    expect(result).toEqual({ foo: 'bar' });
+    expect(result).not.toHaveProperty('prototype');
+  });
+
+  it('skips __proto__ key from base when spreading', () => {
+    const malicious = JSON.parse('{"__proto__":{"polluted":true}}');
+    const result = deepMerge(malicious, { foo: 'bar' }, 'replace');
+
+    expect(result).not.toHaveProperty('polluted');
+  });
+
+  it('skips __proto__ in nested objects during merge', () => {
+    const malicious = JSON.parse('{"nested":{"__proto__":{"polluted":true}}}');
+    const result = deepMerge({ nested: {} }, malicious, 'replace');
+
+    expect(result['nested'] as Record<string, unknown>).toEqual({});
+    expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
+  });
+
+  it('skips __proto__ in deepCloneValue for arrays', () => {
+    const malicious = JSON.parse('{"items":[{"__proto__":{"polluted":true}}]}');
+    const result = deepMerge({}, malicious, 'replace');
+
+    const items = result['items'] as unknown[];
+    expect(items[0]).toEqual({});
+    expect((items[0] as Record<string, unknown>)['polluted']).toBeUndefined();
+    expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
+  });
+});

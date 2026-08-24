@@ -16,8 +16,8 @@ describe('watch-scalar-modified — change scalar in project file', () => {
     });
 
     const events: { next: unknown; prev: unknown }[] = [];
-    store!.on('port', (next, prev) => {
-      events.push({ next, prev });
+    store!.on('port', (event) => {
+      events.push({ next: event.next, prev: event.prev });
     });
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });

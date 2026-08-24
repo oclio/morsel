@@ -21,7 +21,12 @@ describe('emitChanges', () => {
 
     emitChanges({ foo: 1 }, { foo: 2 }, listeners);
 
-    expect(listener).toHaveBeenCalledWith(2, 1);
+    expect(listener).toHaveBeenCalledWith({
+      keyPath: 'foo',
+      type: 'modified',
+      next: 2,
+      prev: 1,
+    });
   });
 
   it('emits to multiple listeners for the same key', () => {
@@ -35,8 +40,18 @@ describe('emitChanges', () => {
 
     emitChanges({ bar: 'old' }, { bar: 'new' }, listeners);
 
-    expect(listener1).toHaveBeenCalledWith('new', 'old');
-    expect(listener2).toHaveBeenCalledWith('new', 'old');
+    expect(listener1).toHaveBeenCalledWith({
+      keyPath: 'bar',
+      type: 'modified',
+      next: 'new',
+      prev: 'old',
+    });
+    expect(listener2).toHaveBeenCalledWith({
+      keyPath: 'bar',
+      type: 'modified',
+      next: 'new',
+      prev: 'old',
+    });
   });
 
   it('skips keys with no registered listeners', () => {
@@ -53,7 +68,12 @@ describe('emitChanges', () => {
     emitChanges({ foo: 1, bar: 3 }, { foo: 2, bar: 4 }, listeners);
 
     expect(listener).toHaveBeenCalledTimes(1);
-    expect(listener).toHaveBeenCalledWith(2, 1);
+    expect(listener).toHaveBeenCalledWith({
+      keyPath: 'foo',
+      type: 'modified',
+      next: 2,
+      prev: 1,
+    });
   });
 
   it('skips removed keys with no registered listeners', () => {
@@ -70,7 +90,30 @@ describe('emitChanges', () => {
     emitChanges({ gone: 1, kept: 1 }, { kept: 2 }, listeners);
 
     expect(listener).toHaveBeenCalledTimes(1);
-    expect(listener).toHaveBeenCalledWith(2, 1);
+    expect(listener).toHaveBeenCalledWith({
+      keyPath: 'kept',
+      type: 'modified',
+      next: 2,
+      prev: 1,
+    });
+  });
+
+  it('emits removed key event with correct payload', () => {
+    vi.mocked(diffKeys).mockReturnValue(
+      new Map([['gone', { next: undefined, prev: 42, category: 'removed' }]]),
+    );
+
+    const listener = vi.fn() as unknown as Listener;
+    const listeners = new Map([['gone', new Set([listener])]]);
+
+    emitChanges({ gone: 42 }, {}, listeners);
+
+    expect(listener).toHaveBeenCalledWith({
+      keyPath: 'gone',
+      type: 'removed',
+      next: undefined,
+      prev: 42,
+    });
   });
 
   it('emits removed keys bottom-up first, then added/modified top-down', () => {
@@ -263,6 +306,108 @@ describe('emitChanges', () => {
     emitChanges({}, {}, listeners);
 
     expect(callOrder).toEqual(['a.x', 'a.y', 'b.x']);
+  });
+
+  it('emits to wildcard foo.* listener when foo.bar changes', () => {
+    vi.mocked(diffKeys).mockReturnValue(
+      new Map([['foo.bar', { next: 2, prev: 1, category: 'modified' }]]),
+    );
+
+    const listener = vi.fn() as unknown as Listener;
+    const listeners = new Map<string, Set<Listener>>();
+    const wildcardListeners = new Map([['foo.*', new Set([listener])]]);
+
+    emitChanges(
+      { foo: { bar: 1 } },
+      { foo: { bar: 2 } },
+      listeners,
+      wildcardListeners,
+    );
+
+    expect(listener).toHaveBeenCalledWith({
+      keyPath: 'foo.bar',
+      type: 'modified',
+      next: 2,
+      prev: 1,
+    });
+  });
+
+  it('does not emit to wildcard foo.* listener when foo.bar.baz changes', () => {
+    vi.mocked(diffKeys).mockReturnValue(
+      new Map([['foo.bar.baz', { next: 2, prev: 1, category: 'modified' }]]),
+    );
+
+    const listener = vi.fn() as unknown as Listener;
+    const listeners = new Map<string, Set<Listener>>();
+    const wildcardListeners = new Map([['foo.*', new Set([listener])]]);
+
+    emitChanges({}, {}, listeners, wildcardListeners);
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('emits to ** wildcard listener for any key change', () => {
+    vi.mocked(diffKeys).mockReturnValue(
+      new Map([
+        ['a.b.c', { next: 2, prev: 1, category: 'modified' }],
+        ['x.y', { next: 3, prev: undefined, category: 'added' }],
+      ]),
+    );
+
+    const listener = vi.fn() as unknown as Listener;
+    const listeners = new Map<string, Set<Listener>>();
+    const wildcardListeners = new Map([['**', new Set([listener])]]);
+
+    emitChanges({}, {}, listeners, wildcardListeners);
+
+    expect(listener).toHaveBeenCalledTimes(2);
+    expect(listener).toHaveBeenNthCalledWith(1, {
+      keyPath: 'x.y',
+      type: 'added',
+      next: 3,
+      prev: undefined,
+    });
+    expect(listener).toHaveBeenNthCalledWith(2, {
+      keyPath: 'a.b.c',
+      type: 'modified',
+      next: 2,
+      prev: 1,
+    });
+  });
+
+  it('emits to both exact and wildcard listeners for the same key', () => {
+    vi.mocked(diffKeys).mockReturnValue(
+      new Map([['foo.bar', { next: 2, prev: 1, category: 'modified' }]]),
+    );
+
+    const exactListener = vi.fn() as unknown as Listener;
+    const wildcardListener = vi.fn() as unknown as Listener;
+    const listeners = new Map([['foo.bar', new Set([exactListener])]]);
+    const wildcardListeners = new Map([['foo.*', new Set([wildcardListener])]]);
+
+    emitChanges({}, {}, listeners, wildcardListeners);
+
+    expect(exactListener).toHaveBeenCalledTimes(1);
+    expect(wildcardListener).toHaveBeenCalledTimes(1);
+    expect(wildcardListener).toHaveBeenCalledWith({
+      keyPath: 'foo.bar',
+      type: 'modified',
+      next: 2,
+      prev: 1,
+    });
+  });
+
+  it('works without wildcardListeners parameter (backward compatible)', () => {
+    vi.mocked(diffKeys).mockReturnValue(
+      new Map([['foo', { next: 2, prev: 1, category: 'modified' }]]),
+    );
+
+    const listener = vi.fn() as unknown as Listener;
+    const listeners = new Map([['foo', new Set([listener])]]);
+
+    emitChanges({ foo: 1 }, { foo: 2 }, listeners);
+
+    expect(listener).toHaveBeenCalledTimes(1);
   });
 });
 

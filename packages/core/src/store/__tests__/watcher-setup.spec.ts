@@ -68,6 +68,7 @@ function makeState(overrides: Partial<StoreState> = {}): StoreState {
     _stoppedConfig: undefined,
     _layers: [],
     listeners: new Map(),
+    wildcardListeners: new Map(),
     stopped: false,
     watchers: new Set(),
     watchedFiles: new Map(),
@@ -243,7 +244,7 @@ describe('collectWatchedFiles', () => {
     expect(fileCount(state.watchedFiles)).toBe(3);
   });
 
-  it('adds watchPaths from MorselWatchableHook hooks', () => {
+  it('adds watchPaths from LayerWatchableHook hooks', () => {
     const state = makeState({
       watchedFiles: new Map(),
       options: {

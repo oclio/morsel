@@ -1,8 +1,10 @@
 /**
- * Hook lifecycle — 8 insertion points in the pipeline.
+ * Hook lifecycle — 8 layer insertion points + 1 event point.
  *
  * Hooks `before:X` produce a layer that stacks **before** layer `X` (lower priority).
  * Hooks `after:X` produce a layer that stacks **after** layer `X` (higher priority).
+ * `after:write` is an event hook — it does not produce a layer, it reacts to
+ * a successful write (see {@link EventHook}).
  */
 export type HookLifecycle =
   | 'before:defaults'
@@ -12,7 +14,8 @@ export type HookLifecycle =
   | 'before:project'
   | 'after:project'
   | 'before:overrides'
-  | 'after:overrides';
+  | 'after:overrides'
+  | 'after:write';
 
 /**
  * Context passed to a hook's `load` method.
@@ -29,8 +32,12 @@ export interface HookContext {
   envName resolved from options (process.env.NODE_ENV or explicit).
   */
   readonly envName: string | undefined;
-  // Future: trigger() to request a re-merge (stateful hooks)
-  // Future: state to persist between merges (stateful hooks)
+  /**
+  Request a re-merge of the store. No-op in loadConfig/loadConfigSync
+  (no store lifecycle). In watchConfig, triggers a re-merge cycle.
+  Safe to call multiple times — coalesced by the re-merge debouncer.
+  */
+  readonly triggerRemerge: () => void;
 }
 
 /**
@@ -40,7 +47,7 @@ export interface HookContext {
  * Sync (Record) or async (Promise<Record>). Async hooks throw TypeError in loadConfigSync.
  * If `load` throws → MorselError (code EHOOK).
  */
-export interface MorselHook {
+export interface LayerHook {
   /**
   Unique hook name, ex: "env", "package-json". Becomes hookName in MorselLayer.
   */
@@ -57,18 +64,80 @@ export interface MorselHook {
   load(
     context: HookContext,
   ): Record<string, unknown> | Promise<Record<string, unknown>>;
+  /**
+   * Called once after the store is created in watchConfig.
+   * Use to open connections, start pollers, etc.
+   * Not called in loadConfig/loadConfigSync (one-shot, no lifecycle).
+   * If throw → MorselError (code EHOOK).
+   */
+  init?(context: HookContext): void | Promise<void>;
+  /**
+   * Called once when the store is stopped via stop().
+   * Use to close connections, clear timers, etc.
+   * Not called in loadConfig/loadConfigSync.
+   * Errors are caught and logged via onDebug — do not block stop().
+   */
+  dispose?(): void | Promise<void>;
 }
 
 /**
- * Watchable hook — extends MorselHook with static watchPaths.
+ * Watchable hook — extends LayerHook with static watchPaths.
  *
  * The core watches these paths the same way as extends files:
  * collectWatchedFiles and collectDirectories include them.
  * watchPaths is static (the hook is stateless).
  */
-export interface MorselWatchableHook extends MorselHook {
+export interface LayerWatchableHook extends LayerHook {
   /**
   Paths watched by the core. The core creates a watcher per directory.
   */
   readonly watchPaths: readonly string[];
 }
+
+/**
+ * Event payload passed to an {@link EventHook} with lifecycle `after:write`.
+ */
+export interface WriteEvent {
+  /**
+  Absolute path of the file that was written.
+  */
+  readonly filePath: string;
+  /**
+  Dotted key path that was mutated.
+  */
+  readonly keyPath: string;
+  /**
+  The mutation that was applied.
+  */
+  readonly mutation: import('@/writer/write-config').MutationOperation;
+}
+
+/**
+ * Event hook — reacts to a successful write, does not produce a layer.
+ *
+ * Currently only supports lifecycle `after:write`.
+ * Called after `writeConfigFile` succeeds in `mutateKey`/`deleteKey`.
+ * Not called on rollback.
+ * If `onWrite` throws, the error is logged via `onDebug`/stderr — the write
+ * is already confirmed on disk, so the mutation is not rolled back.
+ */
+export interface EventHook {
+  /**
+  Unique hook name, ex: "audit-log", "metrics".
+  */
+  readonly name: string;
+  /**
+  Event lifecycle point. Currently only `after:write`.
+  */
+  readonly lifecycle: 'after:write';
+  /**
+  Called after a successful write. Sync or async.
+  Errors are caught and logged — they do not fail the mutation.
+  */
+  onWrite(event: WriteEvent): void | Promise<void>;
+}
+
+/**
+ * Union of all hook types accepted by `MorselOptions.hooks`.
+ */
+export type Hook = LayerHook | LayerWatchableHook | EventHook;

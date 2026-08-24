@@ -14,16 +14,16 @@
 
 ## 1. Normative Invariants
 
-1. **Pluggable architecture**: parsing is provided by format plugins (`MorselFormatPlugin`). The core provides `jsonPlugin` by default. No format is hardcoded in the core — `JSON.parse` lives in `jsonPlugin`, not in `loadFile`. Pipeline extensibility is provided by hooks (`MorselHook`) that insert at specific lifecycle points.
+1. **Pluggable architecture**: parsing is provided by format plugins (`FormatPlugin`). The core provides `jsonPlugin` by default. No format is hardcoded in the core — `JSON.parse` lives in `jsonPlugin`, not in `loadFile`. Pipeline extensibility is provided by hooks (`LayerHook`, `EventHook`) that insert at specific lifecycle points or react to events.
 2. **Zero runtime dependencies**: `node:fs`, `node:path`, `node:os` only. No external packages.
 3. **Watch resilience, one-shot throw**: `loadConfig`/`loadConfigSync` throw `MorselError` on fs or parse errors. `watchConfig` throws `MorselError` if the initial load (first pass) fails — there is no "last valid state" at boot. For subsequent re-merges (fs.watch fire), `watchConfig` catches internally, keeps the last valid state, logs the error to `stderr`, and routes to `onDebug` (noop by default). Programming errors (`name` missing, `name` invalid, `on()` after `stop()`) throw in both modes.
 4. **Reserved keyword cleanup**: `extends` and `$env` are **absolute reserved keywords** of the engine — they cannot be used as business keys in the final config. They are stripped from each layer before inter-layer merge. Never present in the final `config`. If an application needs a key named `$env` or `extends` for business purposes, it must be renamed (`$envConfig`, `extendsList`, etc.).
 5. **Sync-first & distinct async**: `loadConfigSync` is synchronous, `loadConfig` and `watchConfig` are async. No `watch: true/false` option — the chosen function determines the behavior. Async `loadConfig` avoids blocking the event loop during reads — useful for apps that load multiple configs in parallel with `Promise.all`. `watchConfig` is async because boot performs reads (`readFile`) before setting up watchers.
 6. **Watch ref-counting**: a single `fs.watch` per directory, shared across all stores. Closed when the last store calls `stop()`. Includes directories of `extends` files and `watchPaths` of watchable hooks — a change in an inherited file triggers a re-merge.
 7. **Parsing / semantics separation**: the plugin parses raw content → `Record<string, unknown>`. Semantic concepts (`extends`, `$env`, cleanup) are core. The plugin knows nothing about `extends` or `$env`.
-8. **Lifecycle hooks**: hooks (`MorselHook`) insert at 8 pipeline points (before/after for each layer). A hook produces a `Record` that becomes a layer in the cascade. Stateless — the core calls the hook on each merge, no state between merges.
+8. **Lifecycle hooks**: layer hooks (`LayerHook`) insert at 8 pipeline points (before/after for each layer). A layer hook produces a `Record` that becomes a layer in the cascade. The `load` method is stateless — the core calls it on each merge, no state is kept between merges. Optional `init`/`dispose` lifecycle methods allow stateful hooks to manage external connections (pollers, WebSocket, etcd watch) — `init` is called once after the store is created in `watchConfig`, `dispose` is called once when the store is stopped via `stop()`. Neither is called in `loadConfig`/`loadConfigSync` (one-shot, no lifecycle). The `HookContext` provides `triggerRemerge()` so a hook can request a re-merge of the configuration (e.g. when a remote config source changes). In `loadConfig`/`loadConfigSync`, `triggerRemerge` is a noop. Event hooks (`EventHook`) react to lifecycle events (e.g. `after:write`) without producing a layer — they are side-effect only (logging, metrics, audit).
 9. **Native path parsing & prototype protection**: the core provides robust path parsing supporting dot notation (`a.b.c`), indexed arrays (`users[0].name`, `users.0.name`), and escaped dots (`app\.config.host`). Any attempt to access or mutate `__proto__`, `constructor`, or `prototype` is rejected (`TypeError`).
-10. **Transactional mutation & optimistic write**: `mutateKey` and `deleteKey` update the in-memory config optimistically, emit key-level change events, and persist changes via atomic read-modify-write on the source layer. Writes are serialized per file path. In case of I/O or serialization failure, the in-memory state is automatically rolled back, revert events are emitted, and a `MorselError` (`EWRITE`) is thrown.
+10. **Transactional mutation & optimistic write**: `mutateKey` and `deleteKey` update the in-memory config optimistically, emit key-level change events, and persist changes via atomic read-modify-write on the source layer. Writes are serialized per file path. In case of I/O or serialization failure, the in-memory state is automatically rolled back, revert events are emitted, and a `MorselError` (`EWRITE`) is thrown. After a successful write, `after:write` event hooks (`EventHook`) are triggered with a `WriteEvent` — errors in these hooks are caught and logged via `onDebug`, they do not roll back the mutation.
 
 ---
 
@@ -55,7 +55,8 @@ Layers resolved independently, with hooks interleaved (4 core layers + hook laye
 ### Step 2 — Merge & Validation
 
 1. `mergeLayers(allLayers, arrayMerge)` — recursive deep merge of all resolved layers in order (hooks included).
-2. `applyValidation(config, validationPlugins)` — if `validationPlugins` is provided, each plugin validates and returns the transformed config. In one-shot and watch boot: throws `MorselValidationError` if validation fails. In watch re-merge: caught, logged to `onDebug`/stderr, keeps previous config.
+2. `interpolate(merged)` — resolve `${VAR}` from `process.env` and `{{ref.path}}` cross-references within the merged config. Circular references throw `MorselError` with code `ECYCLE`.
+3. `applyValidation(config, validationPlugins)` — if `validationPlugins` is provided, each plugin validates and returns the transformed config. In one-shot and watch boot: throws `ValidationError` if validation fails. In watch re-merge: caught, logged to `onDebug`/stderr, keeps previous config.
 
 ### Step 3 — Mutability & Result
 
@@ -98,9 +99,9 @@ export interface MorselOptions<
   readonly globalDir?: string;
   readonly defaults?: Partial<T> | Record<string, unknown>;
   readonly overrides?: Partial<T> | Record<string, unknown>;
-  readonly formatPlugins?: readonly MorselFormatPlugin[];
-  readonly validationPlugins?: readonly MorselValidationPlugin[];
-  readonly hooks?: readonly (MorselHook | MorselWatchableHook)[];
+  readonly formatPlugins?: readonly FormatPlugin[];
+  readonly validationPlugins?: readonly ValidationPlugin[];
+  readonly hooks?: readonly Hook[];
   readonly arrayMerge?: ArrayMergeStrategy;
   readonly configMutability?: ConfigMutability;
   readonly envName?: string;
@@ -112,6 +113,7 @@ export interface WatchOptions<
   T extends Record<string, unknown> = Record<string, unknown>,
 > extends MorselOptions<T> {
   readonly watchDebounce?: number;
+  readonly signal?: AbortSignal;
 }
 
 export type StoreTarget = 'global' | 'project';
@@ -122,7 +124,11 @@ export interface MorselStore<
 > {
   readonly config: T;
   readonly layers: readonly MorselLayer[];
-  on(keyPath: string, listener: Listener): () => void;
+  on(
+    keyPath: string,
+    listener: Listener,
+    options?: ListenerOptions,
+  ): () => void;
   get<V = unknown>(
     path: string | readonly (string | number)[],
     defaultValue?: V,
@@ -191,44 +197,65 @@ export interface MorselLayer {
 
 export class MorselError extends Error {
   readonly path: string | undefined;
-  readonly code: MorselErrorCode;
-  readonly cause: NodeJS.ErrnoException | Error;
+  readonly code: ErrorCode;
+  override readonly cause: NodeJS.ErrnoException | Error;
 }
 
-export type MorselErrorCode =
+export class WriteError extends MorselError {
+  readonly filePath: string;
+  readonly mutation: MutationOperation;
+}
+
+export type ErrorCode =
   'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK' | 'EWRITE';
 
-export class MorselNoPluginError extends MorselError {
+export class NoPluginError extends MorselError {
   readonly extension: string;
 }
 
-export class MorselValidationError extends MorselError {
+export class ValidationError extends MorselError {
   readonly issues: Readonly<Record<string, string>>;
 }
 
-export interface MorselFormatPlugin {
+export interface FormatPlugin {
   readonly name: string;
   readonly extensions: readonly string[];
   parse(content: string, filePath: string): Record<string, unknown>;
-  serialize?(data: Record<string, unknown>): string;
+  serialize(data: Record<string, unknown>): string;
 }
 
-export interface MorselValidationPlugin {
+export interface ValidationPlugin {
   readonly name: string;
   validate(config: Record<string, unknown>): Record<string, unknown>;
 }
 
-export interface MorselHook {
+export interface LayerHook {
   readonly name: string;
   readonly lifecycle: HookLifecycle;
   load(
     ctx: HookContext,
   ): Record<string, unknown> | Promise<Record<string, unknown>>;
+  init?(ctx: HookContext): void | Promise<void>;
+  dispose?(): void | Promise<void>;
 }
 
-export interface MorselWatchableHook extends MorselHook {
+export interface LayerWatchableHook extends LayerHook {
   readonly watchPaths: readonly string[];
 }
+
+export interface WriteEvent {
+  readonly filePath: string;
+  readonly keyPath: string;
+  readonly mutation: MutationOperation;
+}
+
+export interface EventHook {
+  readonly name: string;
+  readonly lifecycle: 'after:write';
+  onWrite(event: WriteEvent): void | Promise<void>;
+}
+
+export type Hook = LayerHook | LayerWatchableHook | EventHook;
 
 export type HookLifecycle =
   | 'before:defaults'
@@ -238,11 +265,13 @@ export type HookLifecycle =
   | 'before:project'
   | 'after:project'
   | 'before:overrides'
-  | 'after:overrides';
+  | 'after:overrides'
+  | 'after:write';
 
 export interface HookContext {
   readonly cwd: string;
   readonly envName: string | undefined;
+  readonly triggerRemerge: () => void;
 }
 
 export interface ConfigResult<
@@ -275,7 +304,18 @@ export interface KeyChange {
   readonly category: ChangeCategory;
 }
 
-export type Listener = (next: unknown, prev: unknown) => void;
+export interface ChangeEvent {
+  readonly keyPath: string;
+  readonly type: ChangeCategory;
+  readonly next: unknown;
+  readonly prev: unknown;
+}
+
+export interface ListenerOptions {
+  readonly once?: boolean;
+}
+
+export type Listener = (event: ChangeEvent) => void;
 export type DebugCallback = (
   message: string,
   context?: Record<string, unknown>,
@@ -322,9 +362,9 @@ export interface ResolvedOptions {
   readonly configMutability: ConfigMutability;
   readonly verbose: boolean;
   readonly onDebug: DebugCallback;
-  readonly formatPlugins: readonly MorselFormatPlugin[];
-  readonly validationPlugins: readonly MorselValidationPlugin[];
-  readonly hooks: readonly (MorselHook | MorselWatchableHook)[];
+  readonly formatPlugins: readonly FormatPlugin[];
+  readonly validationPlugins: readonly ValidationPlugin[];
+  readonly hooks: readonly Hook[];
 }
 
 /**
@@ -371,7 +411,7 @@ export function watchConfig<
 
 export function resolvePaths(
   options: ResolvePathsOptions,
-  formatPlugins: readonly MorselFormatPlugin[],
+  formatPlugins: readonly FormatPlugin[],
 ): ResolvedPaths;
 
 // All path resolution functions (resolvePaths, resolveProjectPath,
@@ -386,7 +426,7 @@ export function initConfig<
   cwd?: string;
   content?: T;
   fallbackContent?: T;
-  formatPlugins?: readonly MorselFormatPlugin[];
+  formatPlugins?: readonly FormatPlugin[];
 }): string;
 
 export function deepMerge(
@@ -447,7 +487,7 @@ export function dotifyObject(
 
 // Format plugin
 
-export const jsonPlugin: MorselFormatPlugin;
+export const jsonPlugin: FormatPlugin;
 
 // Writer internals
 
@@ -507,7 +547,7 @@ export function clearRegistry(): void;
 1. Reads the existing file content. If the file does not exist (ENOENT), treats the content as empty and proceeds — the file will be created.
 2. Parses the existing content via the matching format plugin (or `{}` if empty).
 3. Applies the mutation (`set` or `delete`) to the parsed config.
-4. Serializes the result via the plugin's `serialize` method (or `JSON.stringify` fallback).
+4. Serializes the result via the plugin's `serialize` method.
 5. Writes to a temporary file (`<path>.tmp`), then atomically renames to the target path.
 6. Writes are serialized per file path via a promise queue — concurrent mutations to the same file are queued.
 
@@ -521,16 +561,16 @@ When `unset` or `deleteKey` is called with `target: 'all'` (the default), the de
 
 ### 4.5 Events & Two-Phase Ordering
 
-Events are computed via `diffKeys` and emitted via `store.on(keyPath, listener)`:
+Events are computed via `diffKeys` and emitted via `store.on(keyPath, listener, options?)`:
 
-- **Scalar modified**: `(next: value, prev: oldValue)`.
-- **Scalar added**: `(next: value, prev: undefined)`.
-- **Scalar removed**: `(next: undefined, prev: oldValue)`.
+- **Scalar modified**: `event = { keyPath, type: 'modified', next: value, prev: oldValue }`.
+- **Scalar added**: `event = { keyPath, type: 'added', next: value, prev: undefined }`.
+- **Scalar removed**: `event = { keyPath, type: 'removed', next: undefined, prev: oldValue }`.
 - **Object → object (same type)**: recursive descent, emits modified child scalars.
-- **Object replaced by scalar**: `(next: scalar, prev: oldObject)` on the parent + all child scalars as removed.
-- **Scalar replaced by object**: `(next: newObject, prev: scalar)` on the parent + all child scalars as added.
+- **Object replaced by scalar**: `event = { keyPath, type: 'modified', next: scalar, prev: oldObject }` on the parent + all child scalars as removed.
+- **Scalar replaced by object**: `event = { keyPath, type: 'modified', next: newObject, prev: scalar }` on the parent + all child scalars as added.
 - **Object added / removed**: emits on the parent + all child scalars.
-- **Array modified**: `(next: newArray, prev: oldArray)` on the parent (atomic replacement, no per-index diff). Array mutators (`push`, `unshift`, `pop`, `shift`, `splice`) delegate to `mutateKey` with the full replacement array. `push` additionally emits on `path.<newIndex>` for the newly added element. Type mismatch (target is not an array) throws `MorselError` (`EVALIDATE`).
+- **Array modified**: `event = { keyPath, type: 'modified', next: newArray, prev: oldArray }` on the parent (atomic replacement, no per-index diff). Array mutators (`push`, `unshift`, `pop`, `shift`, `splice`) delegate to `mutateKey` with the full replacement array. `push` additionally emits on `path.<newIndex>` for the newly added element. Type mismatch (target is not an array) throws `MorselError` (`EVALIDATE`).
 
 #### Two-Phase Ordering Invariant
 
@@ -539,7 +579,13 @@ Flat keys are emitted in two strict phases:
 1. **Phase 1: Deletions — Bottom-Up (deepest to shallowest)**: removed child keys are emitted **before** the parent key that changes type. Order: decreasing depth, then **descending** alphabetical order at the same depth.
 2. **Phase 2: Additions and modifications — Top-Down (shallowest to deepest)**: modified/added parent keys are emitted **before** child keys. Order: increasing depth, then **ascending** alphabetical order at the same depth.
 
-No wildcards (`*`) — to observe an entire subtree, listen directly on the parent key.
+Wildcard patterns are supported in `store.on()`:
+
+- `foo.*` — matches any direct child of `foo` (one segment).
+- `**` — matches any key at any depth.
+- `foo.**` — matches `foo` and any descendant of `foo` (zero or more segments).
+
+Wildcard listeners are emitted after exact-match listeners for each key, within the same phase.
 
 ---
 
@@ -551,8 +597,8 @@ No wildcards (`*`) — to observe an entire subtree, listen directly on the pare
 - **`fs` (ENOENT, file absent)** — Normal flow: `exists: false`, `config: {}`. Not an error.
 - **`fs` (ENOENT during a watch re-merge)** — If a `global` or `project` layer that previously existed (`exists: true` in `store._layers`) disappears during a re-merge, the re-merge is short-circuited: the config stays frozen at the last valid state (`lastConfig`), `onDebug` is called once with `{ code: 'ENOENT', sources: [<source>] }` (duplicates suppressed via `enoentLogged` until the file reappears). Watchers remain active.
 - **`parse` (invalid content on an existing file)** — One-shot: throws `MorselError` (`EPARSE`). Watch boot: throws. Re-merge: caught, keeps previous config, `onDebug`/stderr, no event.
-- **`plugin` (no plugin for the extension)** — One-shot: throws `MorselNoPluginError` (`ENOPLUGIN`). Watch boot: throws. Re-merge: caught, keeps previous config, `onDebug`/stderr.
-- **`validation` (validation fail)** — One-shot: throws `MorselValidationError` (`EVALIDATE`). Watch boot: throws. Re-merge: caught, keeps previous config, `onDebug`/stderr.
+- **`plugin` (no plugin for the extension)** — One-shot: throws `NoPluginError` (`ENOPLUGIN`). Watch boot: throws. Re-merge: caught, keeps previous config, `onDebug`/stderr.
+- **`validation` (validation fail)** — One-shot: throws `ValidationError` (`EVALIDATE`). Watch boot: throws. Re-merge: caught, keeps previous config, `onDebug`/stderr.
 - **`cycle` (circular `extends`, `visited` Set + `MAX_DEPTH = 10`)** — One-shot: throws `MorselError` (`ECYCLE`). Watch boot: throws. Re-merge: caught, keeps previous config, `onDebug`/stderr.
 - **`hook` (hook throws in `load()`)** — One-shot: throws `MorselError` (`EHOOK`). Watch boot: throws. Re-merge: caught, keeps previous config, `onDebug`/stderr.
 - **`hook async` (hook returns a Promise in `loadConfigSync`)** — Throws `TypeError('morsel: hook "<name>" is async — use loadConfig or watchConfig')`. Programming error.
@@ -573,10 +619,10 @@ No wildcards (`*`) — to observe an entire subtree, listen directly on the pare
 
 ### 5.4 `ENOPLUGIN` Error Messages
 
-`MorselNoPluginError` includes a generic hint guiding the user to register a plugin:
+`NoPluginError` includes a generic hint guiding the user to register a plugin:
 
-- With extension (`.yaml`): `morsel: ENOPLUGIN — no format plugin found for .yaml. Register a MorselFormatPlugin via options.formatPlugins. (/path/to/myapp.config.yaml)`
-- No extension: `morsel: ENOPLUGIN — file has no extension. Register a MorselFormatPlugin via options.formatPlugins. (/path/to/myapp.config)`
+- With extension (`.yaml`): `morsel: ENOPLUGIN — no format plugin found for .yaml. Register a FormatPlugin via options.formatPlugins. (/path/to/myapp.config.yaml)`
+- No extension: `morsel: ENOPLUGIN — file has no extension. Register a FormatPlugin via options.formatPlugins. (/path/to/myapp.config)`
 
 The core does not recommend any specific plugin package — the plugin architecture is open and extensible.
 
@@ -708,4 +754,4 @@ In `frozen` mode, `store.config` is backed by a stable Proxy (`stable-proxy.ts`)
 ## 8. Revision History
 
 - **1.0.0** (2026-08-20): Candidate normative specification 1.0.0, integration of the 8 lifecycle hook points, architecture pseudocode, and separation of design into `DESIGN.md`.
-- **1.1.0** (2026-08-23): Native path module (`parsePath`, `validatePath`, `getPathValue`, `setPathValue`, `hasRemovedPathValue`) with dot/bracket notation, array index support, and prototype pollution protection (`__proto__`, `constructor`, `prototype`). Atomic write engine (`writeConfigFile`) with per-file promise queue, temp-file + rename strategy, and `EWRITE` error code. `serialize` method added to `MorselFormatPlugin`. Native accessors on `MorselStore`: `get`, `set`, `has`, `unset`, `all`, `dotify` (aliases of `mutateKey`/`deleteKey` + read/flatten helpers). Optimistic in-memory update with listener notification and automatic rollback on write failure. Concurrent re-merge detection: rollback is skipped if `state._config` has changed during `await writeConfigFile` (watcher re-merge took precedence). Array mutator API on `MorselStore`: `push`, `unshift`, `pop`, `shift`, `splice` (sugar on `mutateKey` with full array replacement) + `indexOf`/`lastIndexOf` read helpers. `EVALIDATE` extended to cover type mismatch (non-array target). `StoreTarget` and `DeleteTarget` types.
+- **1.1.0** (2026-08-23): Native path module (`parsePath`, `validatePath`, `getPathValue`, `setPathValue`, `hasRemovedPathValue`) with dot/bracket notation, array index support, and prototype pollution protection (`__proto__`, `constructor`, `prototype`). Atomic write engine (`writeConfigFile`) with per-file promise queue, temp-file + rename strategy, and `EWRITE` error code. `serialize` method added to `FormatPlugin`. Native accessors on `MorselStore`: `get`, `set`, `has`, `unset`, `all`, `dotify` (aliases of `mutateKey`/`deleteKey` + read/flatten helpers). Optimistic in-memory update with listener notification and automatic rollback on write failure. Concurrent re-merge detection: rollback is skipped if `state._config` has changed during `await writeConfigFile` (watcher re-merge took precedence). Array mutator API on `MorselStore`: `push`, `unshift`, `pop`, `shift`, `splice` (sugar on `mutateKey` with full array replacement) + `indexOf`/`lastIndexOf` read helpers. `EVALIDATE` extended to cover type mismatch (non-array target). `StoreTarget` and `DeleteTarget` types.

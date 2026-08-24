@@ -1,11 +1,11 @@
-import { MorselValidationError } from '@/errors/validation-error';
+import { ValidationError } from '@/errors/validation-error';
 import { applyValidation } from '@/load/apply-validation';
-import type { MorselValidationPlugin } from '@/plugins/types';
+import type { ValidationPlugin } from '@/plugins/types';
 
 function makePlugin(
   name: string,
   validate: (config: Record<string, unknown>) => Record<string, unknown>,
-): MorselValidationPlugin {
+): ValidationPlugin {
   return { name, validate };
 }
 
@@ -35,26 +35,23 @@ describe('applyValidation', () => {
   it.each([
     ['Error', new Error('bad config'), 'bad config'],
     ['non-Error', 'string error', 'string error'],
-  ])(
-    'wraps a thrown %s into MorselValidationError',
-    (_label, thrown, expected) => {
-      const plugin = makePlugin('p', () => {
-        throw thrown;
+  ])('wraps a thrown %s into ValidationError', (_label, thrown, expected) => {
+    const plugin = makePlugin('p', () => {
+      throw thrown;
+    });
+    try {
+      applyValidation({}, [plugin]);
+      throw new Error('should have thrown');
+    } catch (error) {
+      expect(error).toBeInstanceOf(ValidationError);
+      expect((error as ValidationError).issues).toEqual({
+        p: expected,
       });
-      try {
-        applyValidation({}, [plugin]);
-        throw new Error('should have thrown');
-      } catch (error) {
-        expect(error).toBeInstanceOf(MorselValidationError);
-        expect((error as MorselValidationError).issues).toEqual({
-          p: expected,
-        });
-      }
-    },
-  );
+    }
+  });
 
-  it('rethrows MorselValidationError as-is', () => {
-    const original = new MorselValidationError({ field: 'invalid' });
+  it('rethrows ValidationError as-is', () => {
+    const original = new ValidationError({ field: 'invalid' });
     const plugin = makePlugin('p', () => {
       throw original;
     });

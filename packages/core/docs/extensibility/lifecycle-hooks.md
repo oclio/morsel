@@ -1,8 +1,8 @@
-# Lifecycle Hooks (`MorselHook`)
+# Lifecycle Hooks (`LayerHook`)
 
 Modern applications often need to inject configuration dynamically from outside the standard filesystem cascade — such as reading environment variables, parsing `package.json`, decrypting secrets, or reading from a local daemon.
 
-morsel provides **Lifecycle Hooks (`MorselHook`)** to intercept specific stages of the resolution pipeline and insert dynamic layers.
+morsel provides **Lifecycle Hooks (`LayerHook`)** to intercept specific stages of the resolution pipeline and insert dynamic layers.
 
 ---
 
@@ -49,7 +49,7 @@ Hooks can hook `before` or `after` any of the 4 core layers:
 
 ---
 
-## The Hook Contract: `MorselHook`
+## The Hook Contract: `LayerHook`
 
 A hook is a **stateless** object defining:
 
@@ -58,9 +58,9 @@ A hook is a **stateless** object defining:
 - `load(ctx: HookContext)`: Function returning a `Record<string, unknown>` or a `Promise<Record<string, unknown>>`.
 
 ```typescript
-import type { MorselHook, HookContext } from '@oclio/morsel';
+import type { LayerHook, HookContext } from '@oclio/morsel';
 
-export const envHook: MorselHook = {
+export const envHook: LayerHook = {
   name: 'env',
   lifecycle: 'after:project', // Overrides project config, but lower than code overrides
   load(ctx: HookContext) {
@@ -74,16 +74,16 @@ export const envHook: MorselHook = {
 
 ---
 
-## Watchable Hooks: `MorselWatchableHook`
+## Watchable Hooks: `LayerWatchableHook`
 
-If a hook reads from external files on disk (e.g. a `.env` file or `package.json`), it can implement `MorselWatchableHook` by providing a `watchPaths` array:
+If a hook reads from external files on disk (e.g. a `.env` file or `package.json`), it can implement `LayerWatchableHook` by providing a `watchPaths` array:
 
 ```typescript
 import path from 'node:path';
 import fs from 'node:fs';
-import type { MorselWatchableHook, HookContext } from '@oclio/morsel';
+import type { LayerWatchableHook, HookContext } from '@oclio/morsel';
 
-export function createEnvFileHook(envPath: string): MorselWatchableHook {
+export function createEnvFileHook(envPath: string): LayerWatchableHook {
   return {
     name: 'dotenv',
     lifecycle: 'after:defaults',

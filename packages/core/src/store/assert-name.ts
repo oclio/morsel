@@ -1,13 +1,10 @@
-import type { MorselHook, MorselWatchableHook } from '@/hooks/types';
+import type { Hook } from '@/hooks/types';
 import type { ConfigMutability } from '@/load/merge-layers';
 import type { DebugCallback } from '@/load/resolve-env';
 import type { ArrayMergeStrategy } from '@/merge/deep-merge';
 import { resolveGlobalDirectory } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
-import type {
-  MorselFormatPlugin,
-  MorselValidationPlugin,
-} from '@/plugins/types';
+import type { FormatPlugin, ValidationPlugin } from '@/plugins/types';
 import type { MorselOptions } from '@/store/types';
 
 type ConfigRecord = Record<string, unknown>;
@@ -26,9 +23,9 @@ export interface ResolvedOptions {
   readonly configMutability: ConfigMutability;
   readonly verbose: boolean;
   readonly onDebug: DebugCallback;
-  readonly formatPlugins: readonly MorselFormatPlugin[];
-  readonly validationPlugins: readonly MorselValidationPlugin[];
-  readonly hooks: readonly (MorselHook | MorselWatchableHook)[];
+  readonly formatPlugins: readonly FormatPlugin[];
+  readonly validationPlugins: readonly ValidationPlugin[];
+  readonly hooks: readonly Hook[];
 }
 
 const VALID_NAME = /^[a-zA-Z][a-zA-Z0-9_-]*$/;

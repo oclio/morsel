@@ -4,6 +4,7 @@ import type { HookContext } from '@/hooks/types';
 import type { ResolvedLayer } from '@/load/resolve-layer';
 import { resolveLayer } from '@/load/resolve-layer';
 import type { ResolvedOptions } from '@/store/assert-name';
+import { noop } from '@/store/assert-name';
 
 interface LayerResolveOptions {
   readonly envName: string | undefined;
@@ -25,8 +26,9 @@ export async function buildLayers(
   resolved: ResolvedOptions,
   globalPath: string | undefined,
   projectPath: string | undefined,
+  triggerRemerge: () => void = noop,
 ): Promise<ResolvedLayer[]> {
-  const context: HookContext = createHookContext(resolved);
+  const context: HookContext = createHookContext(resolved, triggerRemerge);
   const layerOptions: LayerResolveOptions = {
     envName: resolved.envName,
     onDebug: resolved.onDebug,

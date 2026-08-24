@@ -3,7 +3,7 @@ import { access } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import path from 'node:path';
 
-import type { MorselFormatPlugin } from '@/plugins/types';
+import type { FormatPlugin } from '@/plugins/types';
 
 const EMPTY_PLUGINS_MESSAGE = 'morsel: formatPlugins must not be empty';
 
@@ -53,9 +53,7 @@ export function resolveGlobalDirectory(options: ResolvePathsOptions): string {
 /**
  * Collect candidate extensions from format plugins, in order, deduplicated.
  */
-function collectExtensions(
-  formatPlugins: readonly MorselFormatPlugin[],
-): string[] {
+function collectExtensions(formatPlugins: readonly FormatPlugin[]): string[] {
   const seen = new Set<string>();
   const all = formatPlugins.flatMap((plugin) => plugin.extensions);
   const extensions: string[] = [];
@@ -71,17 +69,25 @@ function collectExtensions(
 }
 
 /**
- * Build candidate project paths: `<cwd>/<name>.config<ext>` for each extension.
+ * Build candidate project paths.
+ *
+ * Checks `<cwd>/<name>.config<ext>` first, then `<cwd>/.config/<name><ext>`
+ * for each extension (`.config/` directory convention adopted by Vite, ESLint,
+ * c12, cosmiconfig).
  */
 function candidateProjectPaths(
   options: ResolvePathsOptions,
-  formatPlugins: readonly MorselFormatPlugin[],
+  formatPlugins: readonly FormatPlugin[],
 ): string[] {
   const cwd = options.cwd || process.cwd();
   const extensions = collectExtensions(formatPlugins);
-  return extensions.map((extension) =>
+  const rootCandidates = extensions.map((extension) =>
     path.resolve(cwd, `${options.name}.config${extension}`),
   );
+  const configDirectoryCandidates = extensions.map((extension) =>
+    path.resolve(cwd, '.config', `${options.name}${extension}`),
+  );
+  return [...rootCandidates, ...configDirectoryCandidates];
 }
 
 /**
@@ -89,7 +95,7 @@ function candidateProjectPaths(
  */
 function candidateGlobalPaths(
   options: ResolvePathsOptions,
-  formatPlugins: readonly MorselFormatPlugin[],
+  formatPlugins: readonly FormatPlugin[],
 ): string[] {
   const directory = resolveGlobalDirectory(options);
   const extensions = collectExtensions(formatPlugins);
@@ -109,7 +115,7 @@ function candidateGlobalPaths(
  */
 export async function resolveProjectPath(
   options: ResolvePathsOptions,
-  formatPlugins: readonly MorselFormatPlugin[],
+  formatPlugins: readonly FormatPlugin[],
 ): Promise<string | undefined> {
   if (formatPlugins.length === 0) {
     throw new TypeError(EMPTY_PLUGINS_MESSAGE);
@@ -134,7 +140,7 @@ export async function resolveProjectPath(
  */
 export function resolveProjectPathSync(
   options: ResolvePathsOptions,
-  formatPlugins: readonly MorselFormatPlugin[],
+  formatPlugins: readonly FormatPlugin[],
 ): string | undefined {
   if (formatPlugins.length === 0) {
     throw new TypeError(EMPTY_PLUGINS_MESSAGE);
@@ -156,7 +162,7 @@ export function resolveProjectPathSync(
  */
 export async function resolveGlobalPath(
   options: ResolvePathsOptions,
-  formatPlugins: readonly MorselFormatPlugin[],
+  formatPlugins: readonly FormatPlugin[],
 ): Promise<string | undefined> {
   if (formatPlugins.length === 0) {
     throw new TypeError(EMPTY_PLUGINS_MESSAGE);
@@ -181,7 +187,7 @@ export async function resolveGlobalPath(
  */
 export function resolveGlobalPathSync(
   options: ResolvePathsOptions,
-  formatPlugins: readonly MorselFormatPlugin[],
+  formatPlugins: readonly FormatPlugin[],
 ): string | undefined {
   if (formatPlugins.length === 0) {
     throw new TypeError(EMPTY_PLUGINS_MESSAGE);
@@ -206,7 +212,7 @@ export function resolveGlobalPathSync(
  */
 export function resolvePaths(
   options: ResolvePathsOptions,
-  formatPlugins: readonly MorselFormatPlugin[],
+  formatPlugins: readonly FormatPlugin[],
 ): ResolvedPaths {
   if (formatPlugins.length === 0) {
     throw new TypeError(EMPTY_PLUGINS_MESSAGE);

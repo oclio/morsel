@@ -1,4 +1,4 @@
-import { MorselError } from '@/errors/morsel-error';
+import { MorselError } from '@/errors/error';
 
 /**
  * Thrown when a validation plugin rejects the merged config.
@@ -7,7 +7,7 @@ import { MorselError } from '@/errors/morsel-error';
  * is always `undefined`. The consumer distinguishes via `instanceof`
  * or `e.code === 'EVALIDATE'`.
  */
-export class MorselValidationError extends MorselError {
+export class ValidationError extends MorselError {
   /**
    * Map of dotted key to human-readable message.
    * Example: `tools.eslint` maps to "expected boolean, received string".
@@ -18,7 +18,7 @@ export class MorselValidationError extends MorselError {
     const count = Object.keys(issues).length;
     const message = `validation failed (${count} issue${count === 1 ? '' : 's'})`;
     super(undefined, 'EVALIDATE', new Error(message));
-    this.name = 'MorselValidationError';
+    this.name = 'ValidationError';
     this.issues = issues;
   }
 }

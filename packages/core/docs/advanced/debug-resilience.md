@@ -6,14 +6,14 @@ morsel provides **explicit error codes, structured error classes, configurable d
 
 ---
 
-## Error Hierarchy & `MorselErrorCode`
+## Error Hierarchy & `ErrorCode`
 
 All operational errors thrown or caught by morsel are instances of `MorselError`:
 
 ```typescript
 export class MorselError extends Error {
   readonly path: string | undefined;
-  readonly code: MorselErrorCode;
+  readonly code: ErrorCode;
   readonly cause: NodeJS.ErrnoException | Error;
 }
 ```
@@ -25,7 +25,7 @@ export class MorselError extends Error {
 | **`EIO`**       | Filesystem I/O     | `EACCES`, `EBUSY`, disk full, permission denied          | Throws in one-shot; logs in watch re-merge.            |
 | **`EPARSE`**    | Syntax Error       | Malformed JSON/YAML/TOML in an existing file             | Throws in one-shot; preserves previous state in watch. |
 | **`ENOPLUGIN`** | Missing Plugin     | File extension found on disk without a registered parser | Throws with install hints (e.g. `@oclio/morsel-yaml`). |
-| **`EVALIDATE`** | Validation Failure | Schema rejection by a `MorselValidationPlugin`           | Throws `MorselValidationError` with issues map.        |
+| **`EVALIDATE`** | Validation Failure | Schema rejection by a `ValidationPlugin`                 | Throws `ValidationError` with issues map.              |
 | **`ECYCLE`**    | Circular Extends   | Circular `extends` reference or depth > 10               | Throws immediately to prevent infinite recursion.      |
 | **`EHOOK`**     | Hook Failure       | Unhandled exception thrown inside `hook.load()`          | Throws in one-shot; logs in watch re-merge.            |
 

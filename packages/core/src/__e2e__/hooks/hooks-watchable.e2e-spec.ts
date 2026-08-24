@@ -11,7 +11,7 @@ import {
 
 import { watchConfig } from '@/index';
 
-describe('hooks-watchable — MorselWatchableHook with watchPaths', () => {
+describe('hooks-watchable — LayerWatchableHook with watchPaths', () => {
   clearWatcherRegistry();
 
   it('watchPaths directory watched at boot', async () => {

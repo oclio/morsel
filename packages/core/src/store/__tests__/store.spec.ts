@@ -1,6 +1,7 @@
 import { applyMutability } from '@/load/merge-layers';
-import { createMorselStore } from '@/store/morsel-store';
+import { emitChanges } from '@/store/emit-changes';
 import { createStableProxy } from '@/store/stable-proxy';
+import { createMorselStore } from '@/store/store';
 import {
   deleteKey,
   mutateKey,
@@ -41,11 +42,12 @@ function createState<T extends Record<string, unknown>>(
     _stoppedConfig: undefined,
     _layers: [],
     listeners: new Map(),
+    wildcardListeners: new Map(),
     stopped: false,
     watchers: new Set(),
     watchedFiles: new Map(),
     projectPath: '/project/config.json',
-    options: {} as never,
+    options: { hooks: [] } as never,
     lastConfig: {},
     remergeInProgress: false,
     remergeDone: undefined,
@@ -184,6 +186,113 @@ describe('createMorselStore', () => {
         'morsel: store is stopped',
       );
     });
+
+    it('registers wildcard pattern listener in wildcardListeners map', () => {
+      const state = createState();
+      const store = createMorselStore(state, 'frozen');
+
+      const listener = vi.fn();
+      store.on('foo.*', listener);
+
+      expect(state.wildcardListeners.get('foo.*')).toBeDefined();
+      expect(state.wildcardListeners.get('foo.*')!.has(listener)).toBe(true);
+      expect(state.listeners.get('foo.*')).toBeUndefined();
+    });
+
+    it('registers ** wildcard listener in wildcardListeners map', () => {
+      const state = createState();
+      const store = createMorselStore(state, 'frozen');
+
+      const listener = vi.fn();
+      store.on('**', listener);
+
+      expect(state.wildcardListeners.get('**')).toBeDefined();
+      expect(state.listeners.get('**')).toBeUndefined();
+    });
+
+    it('auto-unsubscribes after first event when once is true', () => {
+      const state = createState();
+      const store = createMorselStore(state, 'frozen');
+
+      const listener = vi.fn();
+      store.on('foo', listener, { once: true });
+
+      emitChanges(
+        { foo: 0 },
+        { foo: 1 },
+        state.listeners,
+        state.wildcardListeners,
+      );
+      emitChanges(
+        { foo: 1 },
+        { foo: 2 },
+        state.listeners,
+        state.wildcardListeners,
+      );
+
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(state.listeners.get('foo')!.size).toBe(0);
+    });
+
+    it('auto-unsubscribes wildcard listener after first event when once is true', () => {
+      const state = createState();
+      const store = createMorselStore(state, 'frozen');
+
+      const listener = vi.fn();
+      store.on('foo.*', listener, { once: true });
+
+      emitChanges(
+        {},
+        { foo: { bar: 1 } },
+        state.listeners,
+        state.wildcardListeners,
+      );
+      emitChanges(
+        { foo: { bar: 1 } },
+        { foo: { baz: 2 } },
+        state.listeners,
+        state.wildcardListeners,
+      );
+
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(state.wildcardListeners.get('foo.*')!.size).toBe(0);
+    });
+
+    it('manual unsubscribe works with once listener', () => {
+      const state = createState();
+      const store = createMorselStore(state, 'frozen');
+
+      const listener = vi.fn();
+      const unsub = store.on('foo', listener, { once: true });
+
+      unsub();
+
+      expect(state.listeners.get('foo')!.size).toBe(0);
+    });
+
+    it('does not auto-unsubscribe when once is not set', () => {
+      const state = createState();
+      const store = createMorselStore(state, 'frozen');
+
+      const listener = vi.fn();
+      store.on('foo', listener);
+
+      emitChanges(
+        { foo: 0 },
+        { foo: 1 },
+        state.listeners,
+        state.wildcardListeners,
+      );
+      emitChanges(
+        { foo: 1 },
+        { foo: 2 },
+        state.listeners,
+        state.wildcardListeners,
+      );
+
+      expect(listener).toHaveBeenCalledTimes(2);
+      expect(state.listeners.get('foo')!.size).toBe(1);
+    });
   });
 
   describe('stop', () => {
@@ -249,14 +358,16 @@ describe('createMorselStore', () => {
       expect(state.watchers.size).toBe(0);
     });
 
-    it('clears listeners map', async () => {
+    it('clears listeners and wildcardListeners maps', async () => {
       const state = createState();
       state.listeners.set('foo', new Set([vi.fn()]));
+      state.wildcardListeners.set('**', new Set([vi.fn()]));
       const store = createMorselStore(state, 'frozen');
 
       await store.stop();
 
       expect(state.listeners.size).toBe(0);
+      expect(state.wildcardListeners.size).toBe(0);
     });
 
     it('does not await remergeDone when undefined', async () => {
@@ -286,6 +397,91 @@ describe('createMorselStore', () => {
       expect(clearTimeoutSpy).toHaveBeenCalledWith(timer2);
       expect(state.debounceTimers.size).toBe(0);
       clearTimeoutSpy.mockRestore();
+    });
+
+    it('calls dispose on hooks with dispose defined', async () => {
+      const dispose = vi.fn();
+      const state = createState({
+        options: {
+          hooks: [
+            {
+              name: 'test',
+              lifecycle: 'before:defaults',
+              load: () => ({}),
+              dispose,
+            },
+          ],
+        } as never,
+      });
+      const store = createMorselStore(state, 'frozen');
+
+      await store.stop();
+
+      expect(dispose).toHaveBeenCalledTimes(1);
+    });
+
+    it('skips dispose for EventHook (after:write)', async () => {
+      const dispose = vi.fn();
+      const state = createState({
+        options: {
+          hooks: [
+            {
+              name: 'audit',
+              lifecycle: 'after:write',
+              onWrite: vi.fn(),
+              dispose,
+            },
+          ],
+        } as never,
+      });
+      const store = createMorselStore(state, 'frozen');
+
+      await store.stop();
+
+      expect(dispose).not.toHaveBeenCalled();
+    });
+
+    it('skips dispose when not defined on hook', async () => {
+      const state = createState({
+        options: {
+          hooks: [
+            {
+              name: 'no-dispose',
+              lifecycle: 'before:defaults',
+              load: () => ({}),
+            },
+          ],
+        } as never,
+      });
+      const store = createMorselStore(state, 'frozen');
+
+      await expect(store.stop()).resolves.toBeUndefined();
+    });
+
+    it('logs dispose errors via onDebug without throwing', async () => {
+      const onDebug = vi.fn();
+      const state = createState({
+        options: {
+          hooks: [
+            {
+              name: 'failing',
+              lifecycle: 'before:defaults',
+              load: () => ({}),
+              dispose: () => {
+                throw new Error('cleanup failed');
+              },
+            },
+          ],
+          onDebug,
+        } as never,
+      });
+      const store = createMorselStore(state, 'frozen');
+
+      await expect(store.stop()).resolves.toBeUndefined();
+      expect(onDebug).toHaveBeenCalledWith(
+        'hook "failing" failed in dispose: cleanup failed',
+        { hookName: 'failing' },
+      );
     });
   });
 

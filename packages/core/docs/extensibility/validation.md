@@ -1,4 +1,4 @@
-# Schema Validation (`MorselValidationPlugin`)
+# Schema Validation (`ValidationPlugin`)
 
 Configuration errors (missing fields, incorrect types, invalid formats) should fail fast with clear, actionable diagnostics before your application starts listening on ports or establishing database connections.
 
@@ -33,16 +33,14 @@ Cascade (defaults → global → project → overrides → hooks)
 
 ## Writing a Validation Plugin (Zod Example)
 
-You can wrap any schema validator (Zod, Valibot, ArkType, Yup) into a `MorselValidationPlugin` in just a few lines:
+You can wrap any schema validator (Zod, Valibot, ArkType, Yup) into a `ValidationPlugin` in just a few lines:
 
 ```typescript
 import { z } from 'zod';
-import { loadConfigSync, MorselValidationError } from '@oclio/morsel';
-import type { MorselValidationPlugin } from '@oclio/morsel';
+import { loadConfigSync, ValidationError } from '@oclio/morsel';
+import type { ValidationPlugin } from '@oclio/morsel';
 
-export function createZodValidator(
-  schema: z.ZodTypeAny,
-): MorselValidationPlugin {
+export function createZodValidator(schema: z.ZodTypeAny): ValidationPlugin {
   return {
     name: 'zod',
     validate(config: Record<string, unknown>) {
@@ -59,7 +57,7 @@ export function createZodValidator(
         issues[keyPath] = issue.message;
       }
 
-      throw new MorselValidationError(issues);
+      throw new ValidationError(issues);
     },
   };
 }
@@ -91,10 +89,10 @@ If `./myapp.config.json` contains:
 { "port": 80, "apiKey": "short" }
 ```
 
-morsel throws a formatted `MorselValidationError`:
+morsel throws a formatted `ValidationError`:
 
 ```text
-MorselValidationError [EVALIDATE]:
+ValidationError [EVALIDATE]:
   - port: Number must be greater than or equal to 1024
   - apiKey: apiKey must be at least 10 chars
 ```
@@ -115,10 +113,10 @@ MorselValidationError [EVALIDATE]:
 ## Error Handling (`EVALIDATE`)
 
 - **In One-Shot Mode (`loadConfig` / `loadConfigSync`)**:
-  Throws `MorselValidationError` immediately, preventing invalid boots.
+  Throws `ValidationError` immediately, preventing invalid boots.
 - **In Live-Reload Mode (`watchConfig`)**:
-  - Initial boot: throws `MorselValidationError` immediately.
-  - Runtime re-merge: catches `MorselValidationError`, logs the validation issues via `onDebug`/`stderr`, and **keeps the last valid configuration intact**.
+  - Initial boot: throws `ValidationError` immediately.
+  - Runtime re-merge: catches `ValidationError`, logs the validation issues via `onDebug`/`stderr`, and **keeps the last valid configuration intact**.
 
 ---
 

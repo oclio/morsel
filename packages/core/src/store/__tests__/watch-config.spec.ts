@@ -1,11 +1,13 @@
+import { MorselError } from '@/errors/error';
 import { buildLayers } from '@/load/build-layers';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
 import { resolveGlobalPath, resolveProjectPath } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
 import { resolveOptions } from '@/store/assert-name';
 import { noop } from '@/store/assert-name';
-import { toMorselLayer } from '@/store/morsel-layer';
-import { createMorselStore } from '@/store/morsel-store';
+import { toMorselLayer } from '@/store/layer';
+import { createRemerge } from '@/store/remerge-runner';
+import { createMorselStore } from '@/store/store';
 import { createStoreState } from '@/store/store-state';
 import { watchConfig } from '@/store/watch-config';
 import { collectWatchedFiles, setupWatchers } from '@/store/watcher-setup';
@@ -29,10 +31,13 @@ vi.mock('@/store/assert-name', async (importOriginal) => {
     resolveOptions: vi.fn(),
   };
 });
-vi.mock('@/store/morsel-layer', () => ({
+vi.mock('@/store/layer', () => ({
   toMorselLayer: vi.fn(),
 }));
-vi.mock('@/store/morsel-store', () => ({
+vi.mock('@/store/remerge-runner', () => ({
+  createRemerge: vi.fn(),
+}));
+vi.mock('@/store/store', () => ({
   createMorselStore: vi.fn(),
 }));
 vi.mock('@/store/store-state', () => ({
@@ -70,6 +75,7 @@ function makeState(overrides: Partial<StoreState> = {}): StoreState {
     _stoppedConfig: undefined,
     _layers: [],
     listeners: new Map(),
+    wildcardListeners: new Map(),
     stopped: false,
     watchers: new Set(),
     watchedFiles: new Map(),
@@ -108,6 +114,7 @@ describe('watchConfig', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(setupWatchers).mockImplementation(() => {});
+    vi.mocked(createRemerge).mockReturnValue(vi.fn());
 
     vi.mocked(resolveOptions).mockReturnValue({
       name: 'myapp',
@@ -203,6 +210,7 @@ describe('watchConfig', () => {
         expect.objectContaining({ name: 'myapp' }),
         '/global/myapp.config.json',
         '/project/myapp.config.json',
+        expect.any(Function),
       );
     });
 
@@ -276,6 +284,234 @@ describe('watchConfig', () => {
       expect(releaseWatcher).toHaveBeenCalledWith('/dir1', mockState);
       expect(releaseWatcher).toHaveBeenCalledWith('/dir2', mockState);
       expect(mockState.watchers.size).toBe(0);
+    });
+  });
+
+  describe('hook init', () => {
+    it('calls init on hooks with init defined after store creation', async () => {
+      const init = vi.fn();
+      const hook = {
+        name: 'test-hook',
+        lifecycle: 'before:defaults',
+        load: () => ({}),
+        init,
+      };
+      vi.mocked(resolveOptions).mockReturnValue({
+        name: 'myapp',
+        cwd: '/project',
+        defaults: {},
+        overrides: {},
+        globalDir: '/global',
+        arrayMerge: 'replace',
+        envName: 'test',
+        onDebug: noop,
+        configMutability: 'frozen',
+        verbose: false,
+        formatPlugins: [jsonPlugin],
+        validationPlugins: [],
+        hooks: [hook],
+      } as never);
+
+      await watchConfig({ name: 'myapp' });
+
+      expect(init).toHaveBeenCalledTimes(1);
+      expect(init).toHaveBeenCalledWith(
+        expect.objectContaining({
+          cwd: '/project',
+          envName: 'test',
+          triggerRemerge: expect.any(Function),
+        }),
+      );
+    });
+
+    it('skips init for EventHook (after:write)', async () => {
+      const init = vi.fn();
+      const hook = {
+        name: 'audit',
+        lifecycle: 'after:write',
+        onWrite: vi.fn(),
+        init,
+      };
+      vi.mocked(resolveOptions).mockReturnValue({
+        name: 'myapp',
+        cwd: '/project',
+        defaults: {},
+        overrides: {},
+        globalDir: '/global',
+        arrayMerge: 'replace',
+        envName: 'test',
+        onDebug: noop,
+        configMutability: 'frozen',
+        verbose: false,
+        formatPlugins: [jsonPlugin],
+        validationPlugins: [],
+        hooks: [hook],
+      } as never);
+
+      await watchConfig({ name: 'myapp' });
+
+      expect(init).not.toHaveBeenCalled();
+    });
+
+    it('skips init when not defined on hook', async () => {
+      const hook = {
+        name: 'no-init-hook',
+        lifecycle: 'before:defaults',
+        load: () => ({}),
+      };
+      vi.mocked(resolveOptions).mockReturnValue({
+        name: 'myapp',
+        cwd: '/project',
+        defaults: {},
+        overrides: {},
+        globalDir: '/global',
+        arrayMerge: 'replace',
+        envName: 'test',
+        onDebug: noop,
+        configMutability: 'frozen',
+        verbose: false,
+        formatPlugins: [jsonPlugin],
+        validationPlugins: [],
+        hooks: [hook],
+      } as never);
+
+      await expect(watchConfig({ name: 'myapp' })).resolves.toBeDefined();
+    });
+
+    it('throws MorselError with EHOOK when init throws', async () => {
+      const hook = {
+        name: 'failing-hook',
+        lifecycle: 'before:defaults',
+        load: () => ({}),
+        init: () => {
+          throw new Error('connection refused');
+        },
+      };
+      vi.mocked(resolveOptions).mockReturnValue({
+        name: 'myapp',
+        cwd: '/project',
+        defaults: {},
+        overrides: {},
+        globalDir: '/global',
+        arrayMerge: 'replace',
+        envName: 'test',
+        onDebug: noop,
+        configMutability: 'frozen',
+        verbose: false,
+        formatPlugins: [jsonPlugin],
+        validationPlugins: [],
+        hooks: [hook],
+      } as never);
+
+      await expect(watchConfig({ name: 'myapp' })).rejects.toThrow(
+        'hook "failing-hook" failed in init: connection refused',
+      );
+
+      try {
+        await watchConfig({ name: 'myapp' });
+      } catch (error) {
+        expect((error as MorselError).code).toBe('EHOOK');
+      }
+    });
+  });
+
+  describe('triggerRemerge', () => {
+    it('passes a triggerRemerge function to buildLayers that calls remerge when state is ready', async () => {
+      const mockRemerge = vi.fn();
+      vi.mocked(createRemerge).mockReturnValue(mockRemerge);
+
+      await watchConfig({ name: 'myapp' });
+
+      const triggerRemerge = vi.mocked(buildLayers).mock
+        .calls[0]![3] as () => void;
+      triggerRemerge();
+
+      expect(mockRemerge).toHaveBeenCalledTimes(1);
+      expect(mockRemerge).toHaveBeenCalledWith(mockState);
+    });
+
+    it('triggerRemerge is a noop before state is created', async () => {
+      const mockRemerge = vi.fn();
+      vi.mocked(createRemerge).mockReturnValue(mockRemerge);
+
+      let capturedTrigger: (() => void) | undefined;
+      vi.mocked(buildLayers).mockImplementation(
+        async (_options, _g, _p, trigger) => {
+          capturedTrigger = trigger;
+          // Call trigger before state is created (stateRef.current is still undefined)
+          trigger!();
+          return [makeResolvedLayer({ source: 'defaults', config: {} })];
+        },
+      );
+
+      await watchConfig({ name: 'myapp' });
+
+      expect(mockRemerge).not.toHaveBeenCalled();
+      // After boot, trigger should work
+      capturedTrigger!();
+      expect(mockRemerge).toHaveBeenCalledTimes(1);
+    });
+
+    it('passes triggerRemerge to init context', async () => {
+      const mockRemerge = vi.fn();
+      vi.mocked(createRemerge).mockReturnValue(mockRemerge);
+      const init = vi.fn();
+      const hook = {
+        name: 'test-hook',
+        lifecycle: 'before:defaults',
+        load: () => ({}),
+        init,
+      };
+      vi.mocked(resolveOptions).mockReturnValue({
+        name: 'myapp',
+        cwd: '/project',
+        defaults: {},
+        overrides: {},
+        globalDir: '/global',
+        arrayMerge: 'replace',
+        envName: 'test',
+        onDebug: noop,
+        configMutability: 'frozen',
+        verbose: false,
+        formatPlugins: [jsonPlugin],
+        validationPlugins: [],
+        hooks: [hook],
+      } as never);
+
+      await watchConfig({ name: 'myapp' });
+
+      const initContext = init.mock.calls[0]![0];
+      initContext.triggerRemerge();
+      expect(mockRemerge).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('signal — AbortSignal support', () => {
+    it('calls store.stop() when signal is already aborted', async () => {
+      const controller = new AbortController();
+      controller.abort();
+
+      await watchConfig({ name: 'myapp', signal: controller.signal });
+
+      expect(mockStore.stop).toHaveBeenCalledTimes(1);
+    });
+
+    it('calls store.stop() when signal aborts after boot', async () => {
+      const controller = new AbortController();
+
+      await watchConfig({ name: 'myapp', signal: controller.signal });
+
+      expect(mockStore.stop).not.toHaveBeenCalled();
+
+      controller.abort();
+
+      expect(mockStore.stop).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not call store.stop() when no signal is provided', async () => {
+      await watchConfig({ name: 'myapp' });
+
+      expect(mockStore.stop).not.toHaveBeenCalled();
     });
   });
 });

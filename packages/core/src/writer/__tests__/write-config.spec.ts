@@ -2,9 +2,9 @@ import { promises as fs } from 'node:fs';
 import * as os from 'node:os';
 import path from 'node:path';
 
-import { MorselError } from '@/errors/morsel-error';
+import { MorselError } from '@/errors/error';
 import { jsonPlugin } from '@/plugins/json-plugin';
-import type { MorselFormatPlugin } from '@/plugins/types';
+import type { FormatPlugin } from '@/plugins/types';
 import { writeConfigFile } from '@/writer/write-config';
 
 describe('writeConfigFile', () => {
@@ -73,7 +73,7 @@ describe('writeConfigFile', () => {
     });
 
     it('delete removes key from object rather than setting to undefined', async () => {
-      const preservingPlugin: MorselFormatPlugin = {
+      const preservingPlugin: FormatPlugin = {
         name: 'preserving-json',
         extensions: ['.json'],
         parse: jsonPlugin.parse,
@@ -109,24 +109,8 @@ describe('writeConfigFile', () => {
       expect(content).toEqual({ a: 1 });
     });
 
-    it('uses JSON.stringify fallback when plugin has no serialize', async () => {
-      const pluginWithoutSerialize: MorselFormatPlugin = {
-        name: 'json-no-serialize',
-        extensions: ['.json'],
-        parse: jsonPlugin.parse,
-      };
-      const filePath = path.join(temporaryDirectory, 'app.config.json');
-
-      await writeConfigFile(filePath, { path: 'a', value: 1 }, [
-        pluginWithoutSerialize,
-      ]);
-
-      const content = await fs.readFile(filePath, 'utf8');
-      expect(content).toBe(JSON.stringify({ a: 1 }, undefined, 2) + '\n');
-    });
-
     it('passes string content to plugin parse, not Buffer', async () => {
-      const strictPlugin: MorselFormatPlugin = {
+      const strictPlugin: FormatPlugin = {
         name: 'strict-json',
         extensions: ['.json'],
         parse(content: string, _filePath: string) {
@@ -176,12 +160,13 @@ describe('writeConfigFile', () => {
     });
 
     it('wraps non-Error throws from plugin parse into MorselError', async () => {
-      const throwingPlugin: MorselFormatPlugin = {
+      const throwingPlugin: FormatPlugin = {
         name: 'throwing',
         extensions: ['.json'],
         parse: () => {
           throw 'not an Error';
         },
+        serialize: () => '',
       };
       const filePath = path.join(temporaryDirectory, 'app.config.json');
       await fs.writeFile(filePath, JSON.stringify({ a: 1 }), 'utf8');

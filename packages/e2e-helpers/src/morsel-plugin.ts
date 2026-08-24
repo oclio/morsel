@@ -2,6 +2,7 @@ export interface CustomFormatPlugin {
   readonly name: string;
   readonly extensions: readonly string[];
   parse(content: string, filePath?: string): Record<string, unknown>;
+  serialize(data: Record<string, unknown>): string;
 }
 
 /**
@@ -22,4 +23,8 @@ export const morselPlugin: CustomFormatPlugin = {
     }
     return result;
   },
+  serialize: (data: Record<string, unknown>) =>
+    Object.entries(data)
+      .map(([key, value]) => `${key}=${value}`)
+      .join('\n') + '\n',
 };

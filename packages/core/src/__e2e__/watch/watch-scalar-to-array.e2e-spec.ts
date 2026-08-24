@@ -16,8 +16,8 @@ describe('watch-scalar-to-array — {a:1} → {a:[1,2]}', () => {
     });
 
     const events: { next: unknown; prev: unknown }[] = [];
-    store!.on('a', (next, prev) => {
-      events.push({ next, prev });
+    store!.on('a', (event) => {
+      events.push({ next: event.next, prev: event.prev });
     });
 
     await writeConfig(projectDirectory, 'myapp.config.json', { a: [1, 2] });

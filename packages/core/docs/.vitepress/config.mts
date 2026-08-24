@@ -169,12 +169,12 @@ export default defineConfig({
                   link: '/api/classes/MorselError',
                 },
                 {
-                  text: 'MorselNoPluginError',
-                  link: '/api/classes/MorselNoPluginError',
+                  text: 'NoPluginError',
+                  link: '/api/classes/NoPluginError',
                 },
                 {
-                  text: 'MorselValidationError',
-                  link: '/api/classes/MorselValidationError',
+                  text: 'ValidationError',
+                  link: '/api/classes/ValidationError',
                 },
               ],
             },
@@ -195,12 +195,12 @@ export default defineConfig({
                   link: '/api/interfaces/ConfigResult',
                 },
                 {
-                  text: 'MorselFormatPlugin',
-                  link: '/api/interfaces/MorselFormatPlugin',
+                  text: 'FormatPlugin',
+                  link: '/api/interfaces/FormatPlugin',
                 },
                 {
-                  text: 'MorselValidationPlugin',
-                  link: '/api/interfaces/MorselValidationPlugin',
+                  text: 'ValidationPlugin',
+                  link: '/api/interfaces/ValidationPlugin',
                 },
                 { text: 'MorselHook', link: '/api/interfaces/MorselHook' },
                 {

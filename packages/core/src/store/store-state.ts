@@ -29,6 +29,7 @@ export interface StoreState<T extends ConfigRecord = ConfigRecord> {
   */
   options: ResolvedOptions;
   listeners: Map<string, Set<Listener>>;
+  wildcardListeners: Map<string, Set<Listener>>;
   stopped: boolean;
   watchers: Set<string>;
   watchedFiles: Map<string, Set<string>>;
@@ -106,6 +107,7 @@ export function createStoreState<T extends ConfigRecord>(
     _layers: layers,
     options,
     listeners: new Map(),
+    wildcardListeners: new Map(),
     stopped: false,
     watchers: new Set(),
     watchedFiles,

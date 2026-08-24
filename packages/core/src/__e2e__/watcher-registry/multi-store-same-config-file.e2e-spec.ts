@@ -32,11 +32,11 @@ describe('multi-store-same-config-file — 2 stores same name, same dir', () => 
 
     const events1: { next: unknown; prev: unknown }[] = [];
     const events2: { next: unknown; prev: unknown }[] = [];
-    store1.on('port', (next, prev) => {
-      events1.push({ next, prev });
+    store1.on('port', (event) => {
+      events1.push({ next: event.next, prev: event.prev });
     });
-    store2.on('port', (next, prev) => {
-      events2.push({ next, prev });
+    store2.on('port', (event) => {
+      events2.push({ next: event.next, prev: event.prev });
     });
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });

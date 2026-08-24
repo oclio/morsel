@@ -1,7 +1,17 @@
-import { MorselError } from '@/errors/morsel-error';
-import type { HookContext, HookLifecycle, MorselHook } from '@/hooks/types';
+import { MorselError } from '@/errors/error';
+import type {
+  EventHook,
+  Hook,
+  HookContext,
+  HookLifecycle,
+  WriteEvent,
+} from '@/hooks/types';
 import { buildHookLayer } from '@/load/layer-helpers';
 import type { ResolvedLayer } from '@/load/resolve-layer';
+
+function isEventHook(hook: Hook): hook is EventHook {
+  return hook.lifecycle === 'after:write';
+}
 
 function isPromise<T>(value: T | Promise<T>): value is Promise<T> {
   return (
@@ -19,13 +29,14 @@ function isPromise<T>(value: T | Promise<T>): value is Promise<T> {
  * If a hook's `load` throws → MorselError (code EHOOK).
  */
 export function runHooksSync(
-  hooks: readonly MorselHook[],
+  hooks: readonly Hook[],
   lifecycle: HookLifecycle,
   context: HookContext,
 ): ResolvedLayer[] {
   const layers: ResolvedLayer[] = [];
 
   for (const hook of hooks) {
+    if (isEventHook(hook)) continue;
     if (hook.lifecycle !== lifecycle) continue;
 
     let result: Record<string, unknown> | Promise<Record<string, unknown>>;
@@ -59,13 +70,14 @@ export function runHooksSync(
  * Hooks are awaited in order. If a hook's `load` throws → MorselError (EHOOK).
  */
 export async function runHooks(
-  hooks: readonly MorselHook[],
+  hooks: readonly Hook[],
   lifecycle: HookLifecycle,
   context: HookContext,
 ): Promise<ResolvedLayer[]> {
   const layers: ResolvedLayer[] = [];
 
   for (const hook of hooks) {
+    if (isEventHook(hook)) continue;
     if (hook.lifecycle !== lifecycle) continue;
 
     let result: Record<string, unknown> | Promise<Record<string, unknown>>;
@@ -98,4 +110,29 @@ export async function runHooks(
   }
 
   return layers;
+}
+
+/**
+ * Run all `after:write` event hooks after a successful write.
+ *
+ * Errors from `onWrite` are caught and logged via `onDebug` — the write is
+ * already confirmed on disk, so the mutation is not rolled back.
+ */
+export async function runWriteHooks(
+  hooks: readonly Hook[],
+  event: WriteEvent,
+  onDebug: (message: string, context?: Record<string, unknown>) => void,
+): Promise<void> {
+  for (const hook of hooks) {
+    if (!isEventHook(hook)) continue;
+
+    try {
+      await hook.onWrite(event);
+    } catch (error) {
+      onDebug(
+        `hook "${hook.name}" failed in after:write: ${(error as Error).message}`,
+        { hookName: hook.name, event },
+      );
+    }
+  }
 }

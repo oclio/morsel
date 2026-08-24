@@ -22,6 +22,8 @@ describe('init-config-custom-extension — initConfig with custom format plugin'
       extensions: ['.morsel'],
       parse: (content: string) =>
         JSON.parse(content) as Record<string, unknown>,
+      serialize: (data: Record<string, unknown>) =>
+        JSON.stringify(data, undefined, 2) + '\n',
     };
 
     const returnedPath = initConfig({

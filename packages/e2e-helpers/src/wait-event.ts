@@ -1,5 +1,14 @@
 export interface EventObservable {
-  on(key: string, listener: (next: unknown, prev: unknown) => void): () => void;
+  on(
+    key: string,
+    listener: (event: {
+      readonly keyPath: string;
+      readonly type: string;
+      readonly next: unknown;
+      readonly prev: unknown;
+    }) => void,
+    options?: Record<string, never>,
+  ): () => void;
 }
 
 /**
@@ -19,10 +28,10 @@ export async function waitForEvent(
       );
     }, timeoutMs);
 
-    const off = store.on(key, (next: unknown, prev: unknown) => {
+    const off = store.on(key, (event) => {
       clearTimeout(timer);
       off();
-      resolve({ next, prev });
+      resolve({ next: event.next, prev: event.prev });
     });
   });
 }

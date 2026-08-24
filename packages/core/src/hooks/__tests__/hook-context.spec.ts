@@ -23,21 +23,29 @@ function makeOptions(
 }
 
 describe('createHookContext', () => {
+  const noop = (): void => {};
+
   it('builds context with cwd and envName from resolved options', () => {
-    const context = createHookContext(makeOptions());
+    const context = createHookContext(makeOptions(), noop);
 
     expect(context.cwd).toBe('/project');
     expect(context.envName).toBe('test');
   });
 
   it('preserves undefined envName when not set', () => {
-    const context = createHookContext(makeOptions({ envName: undefined }));
+    const context = createHookContext(
+      makeOptions({ envName: undefined }),
+      noop,
+    );
 
     expect(context.envName).toBeUndefined();
   });
 
   it('uses custom cwd from options', () => {
-    const context = createHookContext(makeOptions({ cwd: '/custom/path' }));
+    const context = createHookContext(
+      makeOptions({ cwd: '/custom/path' }),
+      noop,
+    );
 
     expect(context.cwd).toBe('/custom/path');
   });
@@ -45,10 +53,17 @@ describe('createHookContext', () => {
   it('creates a fresh context object each call', () => {
     const options = makeOptions();
 
-    const context1 = createHookContext(options);
-    const context2 = createHookContext(options);
+    const context1 = createHookContext(options, noop);
+    const context2 = createHookContext(options, noop);
 
     expect(context1).not.toBe(context2);
     expect(context1).toEqual(context2);
+  });
+
+  it('passes triggerRemerge into context', () => {
+    const triggerRemerge = vi.fn();
+    const context = createHookContext(makeOptions(), triggerRemerge);
+
+    expect(context.triggerRemerge).toBe(triggerRemerge);
   });
 });

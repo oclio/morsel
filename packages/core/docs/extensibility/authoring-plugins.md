@@ -4,20 +4,20 @@ morsel's core is intentionally minimal and zero-dependency: it does not hardcode
 
 Instead, the entire system is built around three pluggable contracts:
 
-1. **`MorselFormatPlugin`** — parses raw file bytes into a JavaScript object.
-2. **`MorselValidationPlugin`** — validates and transforms the merged configuration.
-3. **`MorselHook`** — injects dynamic layers during pipeline lifecycle stages.
+1. **`FormatPlugin`** — parses raw file bytes into a JavaScript object.
+2. **`ValidationPlugin`** — validates and transforms the merged configuration.
+3. **`LayerHook`** — injects dynamic layers during pipeline lifecycle stages.
 
 ---
 
-## 1. Writing a Format Plugin (`MorselFormatPlugin`)
+## 1. Writing a Format Plugin (`FormatPlugin`)
 
 A format plugin teaches morsel how to parse a specific file format (e.g. YAML, TOML, JSON5, INI).
 
 ### The Contract
 
 ```typescript
-export interface MorselFormatPlugin {
+export interface FormatPlugin {
   readonly name: string;
   readonly extensions: readonly string[];
   parse(content: string, filePath: string): Record<string, unknown>;
@@ -28,9 +28,9 @@ export interface MorselFormatPlugin {
 
 ```typescript
 import yaml from 'js-yaml';
-import type { MorselFormatPlugin } from '@oclio/morsel';
+import type { FormatPlugin } from '@oclio/morsel';
 
-export const yamlPlugin: MorselFormatPlugin = {
+export const yamlPlugin: FormatPlugin = {
   name: 'yaml',
   extensions: ['.yaml', '.yml'],
   parse(content: string, filePath: string): Record<string, unknown> {
@@ -53,18 +53,18 @@ export const yamlPlugin: MorselFormatPlugin = {
 If morsel finds a file with an unsupported extension on disk, it checks its static `PLUGIN_HINTS` table:
 
 - For known packages (e.g. `.yaml`): suggests running `pnpm add @oclio/morsel-yaml`.
-- For unknown extensions: suggests registering a custom `MorselFormatPlugin`.
+- For unknown extensions: suggests registering a custom `FormatPlugin`.
 
 ---
 
-## 2. Writing a Validation Plugin (`MorselValidationPlugin`)
+## 2. Writing a Validation Plugin (`ValidationPlugin`)
 
 Validation plugins ensure that the final merged configuration conforms to your application's domain rules.
 
 ### The Contract
 
 ```typescript
-export interface MorselValidationPlugin {
+export interface ValidationPlugin {
   readonly name: string;
   validate(config: Record<string, unknown>): Record<string, unknown>;
 }
@@ -75,17 +75,17 @@ export interface MorselValidationPlugin {
 Always return a **new object reference** from `validate()`. A previous validator in the chain may have returned an immutable object.
 
 ```typescript
-import type { MorselValidationPlugin } from '@oclio/morsel';
-import { MorselValidationError } from '@oclio/morsel';
+import type { ValidationPlugin } from '@oclio/morsel';
+import { ValidationError } from '@oclio/morsel';
 
-export const portRangeValidator: MorselValidationPlugin = {
+export const portRangeValidator: ValidationPlugin = {
   name: 'port-range',
   validate(config) {
     if (
       typeof config.port === 'number' &&
       (config.port < 1024 || config.port > 65535)
     ) {
-      throw new MorselValidationError({
+      throw new ValidationError({
         port: `Port ${config.port} must be between 1024 and 65535`,
       });
     }
@@ -96,7 +96,7 @@ export const portRangeValidator: MorselValidationPlugin = {
 
 ---
 
-## 3. Writing a Hook Plugin (`MorselHook` / `MorselWatchableHook`)
+## 3. Writing a Hook Plugin (`LayerHook` / `LayerWatchableHook`)
 
 Hooks produce dynamic layers inserted before or after core layers.
 
@@ -105,11 +105,9 @@ Hooks produce dynamic layers inserted before or after core layers.
 ```typescript
 import fs from 'node:fs';
 import path from 'node:path';
-import type { MorselWatchableHook, HookContext } from '@oclio/morsel';
+import type { LayerWatchableHook, HookContext } from '@oclio/morsel';
 
-export function createPackageJsonHook(
-  cwd = process.cwd(),
-): MorselWatchableHook {
+export function createPackageJsonHook(cwd = process.cwd()): LayerWatchableHook {
   const pkgPath = path.resolve(cwd, 'package.json');
   return {
     name: 'package-json',

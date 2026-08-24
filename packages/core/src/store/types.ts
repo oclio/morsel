@@ -1,12 +1,10 @@
-import type { MorselHook, MorselWatchableHook } from '@/hooks/types';
+import type { Hook } from '@/hooks/types';
 import type { ConfigMutability } from '@/load/merge-layers';
 import type { DebugCallback } from '@/load/resolve-env';
 import type { LayerSource } from '@/load/resolve-layer';
 import type { ArrayMergeStrategy } from '@/merge/deep-merge';
-import type {
-  MorselFormatPlugin,
-  MorselValidationPlugin,
-} from '@/plugins/types';
+import type { ChangeCategory } from '@/merge/diff-keys';
+import type { FormatPlugin, ValidationPlugin } from '@/plugins/types';
 
 /**
  * Generic configuration object record with unknown values.
@@ -14,9 +12,30 @@ import type {
 export type ConfigRecord = Record<string, unknown>;
 
 /**
+ * Event object passed to a listener when a watched dotted key changes.
+ */
+export interface ChangeEvent {
+  readonly keyPath: string;
+  readonly type: ChangeCategory;
+  readonly next: unknown;
+  readonly prev: unknown;
+}
+
+/**
+ * Options for `store.on()`.
+ *
+ * - `once: true` — auto-unsubscribe after first event
+ * - Future: `signal: AbortSignal` — unsubscribe via AbortController
+ * - Future: `includeChildren: boolean` — emit for child key changes
+ */
+export interface ListenerOptions {
+  readonly once?: boolean;
+}
+
+/**
  * Callback invoked when a watched dotted key changes.
  */
-export type Listener = (next: unknown, prev: unknown) => void;
+export type Listener = (event: ChangeEvent) => void;
 
 /**
  * User-facing options for `loadConfig` and `watchConfig`.
@@ -69,21 +88,22 @@ export interface MorselOptions<
   Order = match priority by extension.
   First plugin whose extensions include path.extname(filePath) wins.
   */
-  readonly formatPlugins?: readonly MorselFormatPlugin[];
+  readonly formatPlugins?: readonly FormatPlugin[];
   /**
   Validation plugins. Default: [].
   Applied on the final config (post-merge), in order.
   Each plugin can validate and transform the config (coercion, defaults, strip).
-  If a plugin throws → MorselValidationError. Boot: throw. Re-merge: catch + keep previous.
+  If a plugin throws → ValidationError. Boot: throw. Re-merge: catch + keep previous.
   */
-  readonly validationPlugins?: readonly MorselValidationPlugin[];
+  readonly validationPlugins?: readonly ValidationPlugin[];
   /**
    * Hooks inserted into the pipeline at their lifecycle point.
-   * Each hook produces a Record that becomes a layer.
+   * Layer hooks produce a Record that becomes a layer.
+   * Event hooks (`after:write`) react to successful writes without producing a layer.
    * Async hooks (Promise) → TypeError in loadConfigSync.
-   * MorselWatchableHook → watchPaths watched by the core.
+   * LayerWatchableHook → watchPaths watched by the core.
    */
-  readonly hooks?: readonly (MorselHook | MorselWatchableHook)[];
+  readonly hooks?: readonly Hook[];
 }
 
 /**
@@ -96,6 +116,10 @@ export interface WatchOptions<
   Default: 300. Watch debounce in ms.
   */
   readonly watchDebounce?: number;
+  /**
+  AbortSignal to stop watching. When aborted, `store.stop()` is called automatically.
+  */
+  readonly signal?: AbortSignal;
 }
 
 /**
@@ -146,9 +170,11 @@ export interface MorselStore<
   readonly config: T;
   readonly layers: readonly MorselLayer[];
   /**
-  Listen to a flat key (dotted notation). Returns unsubscribe.
+  Listen to a flat key (dotted notation). Supports wildcard patterns:
+  `foo.*` matches any direct child of `foo`, `**` matches any key.
+  Returns unsubscribe.
   */
-  on(key: string, listener: Listener): () => void;
+  on(key: string, listener: Listener, options?: ListenerOptions): () => void;
   /**
   Read a value by dot or bracket path, returning defaultValue if undefined.
   */

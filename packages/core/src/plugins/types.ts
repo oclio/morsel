@@ -6,7 +6,7 @@
  *
  * If parsing fails, the plugin throws; core wraps it into `MorselError` (code `EPARSE`).
  */
-export interface MorselFormatPlugin {
+export interface FormatPlugin {
   /**
   Unique plugin name, ex: "json", "yaml".
   */
@@ -25,7 +25,7 @@ export interface MorselFormatPlugin {
    * Serialize a config record back to string format for file writing.
    * Format plugins only handle structure-to-string transformation.
    */
-  serialize?(data: Record<string, unknown>): string;
+  serialize(data: Record<string, unknown>): string;
 }
 
 /**
@@ -33,12 +33,12 @@ export interface MorselFormatPlugin {
  *
  * Applied post-merge, in order. Each plugin can validate and transform the config
  * (coercion, defaults, strip). If a plugin throws, core wraps it into
- * `MorselValidationError`.
+ * `ValidationError`.
  *
  * The plugin must return a new reference — do not mutate the argument.
  * The input is not guaranteed mutable (a previous plugin may return a frozen object).
  */
-export interface MorselValidationPlugin {
+export interface ValidationPlugin {
   /**
   Unique plugin name, ex: "zod", "valibot".
   */
@@ -46,7 +46,7 @@ export interface MorselValidationPlugin {
   /**
    * Validate and optionally transform the final config (post-merge).
    * Return the config (potentially modified) if valid.
-   * Throw if invalid — core wraps into MorselValidationError with the issues.
+   * Throw if invalid — core wraps into ValidationError with the issues.
    * Strict/flex (accept extra keys, strip, coerce) is the plugin's responsibility.
    */
   validate(config: Record<string, unknown>): Record<string, unknown>;

@@ -30,6 +30,12 @@ export default defineConfig([
       'unicorn/consistent-boolean-name': 'off',
     },
   },
+  {
+    files: ['src/store/watch-config.ts'],
+    rules: {
+      'prefer-const': 'off',
+    },
+  },
   // TESTS
   {
     files: ['src/**/*.spec.ts', 'src/**/*.e2e-spec.ts'],

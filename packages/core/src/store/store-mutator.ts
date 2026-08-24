@@ -1,4 +1,6 @@
-import { MorselError } from '@/errors/morsel-error';
+import { MorselError } from '@/errors/error';
+import { runWriteHooks } from '@/hooks/run-hooks';
+import type { WriteEvent } from '@/hooks/types';
 import { applyMutability } from '@/load/merge-layers';
 import { parsePath } from '@/paths/parse-path';
 import {
@@ -56,22 +58,40 @@ export async function mutateKey<T extends ConfigRecord>(
   setPathValue(clonedNext, segments, value);
 
   state._config = applyMutability(clonedNext as T, mutability);
-  emitChanges(previousSnapshot, clonedNext, state.listeners);
+  emitChanges(
+    previousSnapshot,
+    clonedNext,
+    state.listeners,
+    state.wildcardListeners,
+  );
 
+  const mutation = { path: dottedPath, value };
   const mutatedConfig = state._config;
   try {
     await writeConfigFile(
       targetFilePath,
-      { path: dottedPath, value },
+      mutation,
       state.options.formatPlugins,
     );
   } catch (error) {
     if (state._config === mutatedConfig) {
       state._config = applyMutability(previousSnapshot as T, mutability);
-      emitChanges(clonedNext, previousSnapshot, state.listeners);
+      emitChanges(
+        clonedNext,
+        previousSnapshot,
+        state.listeners,
+        state.wildcardListeners,
+      );
     }
     throw error;
   }
+
+  const writeEvent: WriteEvent = {
+    filePath: targetFilePath,
+    keyPath: dottedPath,
+    mutation,
+  };
+  await runWriteHooks(state.options.hooks, writeEvent, state.options.onDebug);
 }
 
 /**
@@ -114,25 +134,42 @@ export async function deleteKey<T extends ConfigRecord>(
   }
 
   state._config = applyMutability(clonedNext as T, mutability);
-  emitChanges(previousSnapshot, clonedNext, state.listeners);
+  emitChanges(
+    previousSnapshot,
+    clonedNext,
+    state.listeners,
+    state.wildcardListeners,
+  );
 
+  const deleteMutation = { isDelete: true, path: dottedPath } as const;
   const mutatedConfig = state._config;
   try {
     for (const file of targetFiles) {
-      await writeConfigFile(
-        file,
-        { isDelete: true, path: dottedPath },
-        state.options.formatPlugins,
-      );
+      await writeConfigFile(file, deleteMutation, state.options.formatPlugins);
     }
-    return true;
   } catch (error) {
     if (state._config === mutatedConfig) {
       state._config = applyMutability(previousSnapshot as T, mutability);
-      emitChanges(clonedNext, previousSnapshot, state.listeners);
+      emitChanges(
+        clonedNext,
+        previousSnapshot,
+        state.listeners,
+        state.wildcardListeners,
+      );
     }
     throw error;
   }
+
+  for (const file of targetFiles) {
+    const writeEvent: WriteEvent = {
+      filePath: file,
+      keyPath: dottedPath,
+      mutation: deleteMutation,
+    };
+    await runWriteHooks(state.options.hooks, writeEvent, state.options.onDebug);
+  }
+
+  return true;
 }
 
 function assertArray(
@@ -162,7 +199,7 @@ function emitIndexListener(
   const listeners = state.listeners.get(indexKey);
   if (listeners !== undefined) {
     for (const listener of listeners) {
-      listener(next, prev);
+      listener({ keyPath: indexKey, type: 'added', next, prev });
     }
   }
 }

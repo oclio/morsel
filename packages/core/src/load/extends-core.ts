@@ -1,12 +1,12 @@
 import path from 'node:path';
 
-import { MorselError } from '@/errors/morsel-error';
+import { MorselError } from '@/errors/error';
 import { normalizeExtends, stripExtends } from '@/load/extends-helpers';
 import type { LoadFileResult } from '@/load/load-file';
 import type { DebugCallback } from '@/load/resolve-env';
 import { resolveEnv } from '@/load/resolve-env';
 import { deepMerge } from '@/merge/deep-merge';
-import type { MorselFormatPlugin } from '@/plugins/types';
+import type { FormatPlugin } from '@/plugins/types';
 
 const MAX_DEPTH = 10;
 
@@ -27,7 +27,7 @@ export interface ResolveExtendsResult {
 export interface ResolveExtendsOptions {
   readonly envName: string | undefined;
   readonly onDebug: DebugCallback | undefined;
-  readonly formatPlugins: readonly MorselFormatPlugin[];
+  readonly formatPlugins: readonly FormatPlugin[];
 }
 
 /**

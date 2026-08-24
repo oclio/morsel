@@ -16,8 +16,8 @@ describe('watch-deep-nested-array-modified — deep array element change', () =>
     });
 
     const events: { next: unknown; prev: unknown }[] = [];
-    store!.on('items', (next, prev) => {
-      events.push({ next, prev });
+    store!.on('items', (event) => {
+      events.push({ next: event.next, prev: event.prev });
     });
     store!.on('items.0.name', () => {
       events.push({ next: 'should-not-fire', prev: undefined });

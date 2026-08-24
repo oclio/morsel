@@ -1,12 +1,13 @@
 import { jsonPlugin } from '@/plugins/json-plugin';
 import { selectParser } from '@/plugins/select-parser';
-import type { MorselFormatPlugin } from '@/plugins/types';
+import type { FormatPlugin } from '@/plugins/types';
 
 describe('selectParser', () => {
-  const yamlPlugin: MorselFormatPlugin = {
+  const yamlPlugin: FormatPlugin = {
     name: 'yaml',
     extensions: ['.yaml', '.yml'],
     parse: () => ({}),
+    serialize: () => '',
   };
 
   it('returns the plugin matching the file extension', () => {
@@ -16,10 +17,11 @@ describe('selectParser', () => {
   });
 
   it('returns the first matching plugin when multiple match', () => {
-    const duplicateJson: MorselFormatPlugin = {
+    const duplicateJson: FormatPlugin = {
       name: 'json2',
       extensions: ['.json'],
       parse: () => ({}),
+      serialize: () => '',
     };
 
     const result = selectParser('/fake/config.json', [

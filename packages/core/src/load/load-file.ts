@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 
-import { MorselError } from '@/errors/morsel-error';
-import { MorselNoPluginError } from '@/errors/no-plugin-error';
+import { MorselError } from '@/errors/error';
+import { NoPluginError } from '@/errors/no-plugin-error';
 import { selectParser } from '@/plugins/select-parser';
-import type { MorselFormatPlugin } from '@/plugins/types';
+import type { FormatPlugin } from '@/plugins/types';
 
 type ConfigRecord = Record<string, unknown>;
 
@@ -35,11 +35,11 @@ function toErrnoException(error: unknown): NodeJS.ErrnoException {
 function parseContent(
   content: string,
   filePath: string,
-  formatPlugins: readonly MorselFormatPlugin[],
+  formatPlugins: readonly FormatPlugin[],
 ): ConfigRecord {
   const plugin = selectParser(filePath, formatPlugins);
   if (plugin === undefined) {
-    throw new MorselNoPluginError(filePath, extensionOf(filePath));
+    throw new NoPluginError(filePath, extensionOf(filePath));
   }
 
   try {
@@ -65,7 +65,7 @@ function extensionOf(filePath: string): string {
  * - `ENOENT`: returns `{ exists: false, config: {} }` — normal flow.
  * - Other fs errors: throws `MorselError` (code `EIO`).
  * - Parse errors: throws `MorselError` (code `EPARSE`).
- * - No matching plugin: throws `MorselNoPluginError` (code `ENOPLUGIN`).
+ * - No matching plugin: throws `NoPluginError` (code `ENOPLUGIN`).
  *
  * @param filePath - Absolute path to the config file.
  * @param formatPlugins - Ordered list of format plugins.
@@ -73,7 +73,7 @@ function extensionOf(filePath: string): string {
  */
 export async function loadFile(
   filePath: string,
-  formatPlugins: readonly MorselFormatPlugin[],
+  formatPlugins: readonly FormatPlugin[],
 ): Promise<LoadFileResult> {
   let content: string;
 
@@ -101,7 +101,7 @@ export async function loadFile(
  */
 export function loadFileSync(
   filePath: string,
-  formatPlugins: readonly MorselFormatPlugin[],
+  formatPlugins: readonly FormatPlugin[],
 ): LoadFileResult {
   let content: string;
 

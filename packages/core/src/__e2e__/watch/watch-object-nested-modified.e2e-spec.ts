@@ -22,10 +22,10 @@ describe('watch-object-nested-modified — deep scalar change', () => {
     store!.on('server.db', () => {
       callOrder.push('server.db');
     });
-    store!.on('server.db.host', (next, prev) => {
+    store!.on('server.db.host', (event) => {
       callOrder.push('server.db.host');
-      expect(next).toBe('0.0.0.0');
-      expect(prev).toBe('localhost');
+      expect(event.next).toBe('0.0.0.0');
+      expect(event.prev).toBe('localhost');
     });
 
     await writeConfig(projectDirectory, 'myapp.config.json', {

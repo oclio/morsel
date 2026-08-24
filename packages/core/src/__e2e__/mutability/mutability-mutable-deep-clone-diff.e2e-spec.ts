@@ -27,8 +27,8 @@ describe('mutability-mutable-deep-clone-diff — consumer mutation does not brea
     });
 
     const events: { next: unknown; prev: unknown }[] = [];
-    store.on('port', (next, prev) => {
-      events.push({ next, prev });
+    store.on('port', (event) => {
+      events.push({ next: event.next, prev: event.prev });
     });
 
     const mutable = store.config as Record<string, unknown>;

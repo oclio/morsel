@@ -36,9 +36,9 @@ morsel starts from the premise that a configuration loader must be **lean, robus
 
 #### Pluggable pipeline, not monolith
 
-- `MorselFormatPlugin` — parsing is a contract, not a switch. `jsonPlugin` is injected by default, YAML/TOML/JSON5 are opt-in plugins. The core contains no `JSON.parse` outside of `jsonPlugin`.
-- `MorselValidationPlugin` — validation is a post-merge contract. Zod, Valibot, Yup — the user brings their schema, the core wraps the error in `MorselValidationError`. No validation dependencies in the core.
-- `MorselFormatPlugin.serialize` — pure serialization contract. Format plugins define how data is represented as a string for writes, while core orchestrates atomic I/O and target resolution.
+- `FormatPlugin` — parsing is a contract, not a switch. `jsonPlugin` is injected by default, YAML/TOML/JSON5 are opt-in plugins. The core contains no `JSON.parse` outside of `jsonPlugin`.
+- `ValidationPlugin` — validation is a post-merge contract. Zod, Valibot, Yup — the user brings their schema, the core wraps the error in `ValidationError`. No validation dependencies in the core.
+- `FormatPlugin.serialize` — pure serialization contract. Format plugins define how data is represented as a string for writes, while core orchestrates atomic I/O and target resolution.
 
 #### Lean by construction
 
@@ -75,17 +75,35 @@ morsel starts from the premise that a configuration loader must be **lean, robus
 
 ---
 
-### 1.3 Extensibility via Lifecycle (`MorselHook`)
+### 1.3 Extensibility via Lifecycle (`LayerHook`, `EventHook`)
 
-The core provides three pluggable contracts:
+The core provides four pluggable contracts:
 
-1. **`MorselFormatPlugin`** — parses a file into a `Record` (bytes → structure).
-2. **`MorselValidationPlugin`** — validates and transforms the merged configuration.
-3. **`MorselHook`** — inserts into the pipeline lifecycle, produces a dynamic layer.
+1. **`FormatPlugin`** — parses a file into a `Record` (bytes → structure).
+2. **`ValidationPlugin`** — validates and transforms the merged configuration.
+3. **`LayerHook`** — inserts into the pipeline lifecycle, produces a dynamic layer. Optional `init`/`dispose` methods allow stateful hooks to manage external connections.
+4. **`EventHook`** — reacts to lifecycle events (e.g. `after:write`) without producing a layer. Side-effect only (logging, metrics, audit).
 
-A hook attaches to a specific lifecycle point and produces a `Record<string, unknown>` that inserts as a layer in the cascade, just like `defaults` or `overrides`.
+A layer hook attaches to a specific lifecycle point and produces a `Record<string, unknown>` that inserts as a layer in the cascade, just like `defaults` or `overrides`. An event hook reacts to events (e.g. successful writes) and does not produce a layer.
 
-#### 8 lifecycle points (before/after for each layer)
+#### Stateful hooks (`init`/`dispose`)
+
+Layer hooks may optionally define `init(ctx)` and `dispose()` methods for stateful use cases (remote config polling, WebSocket subscriptions, etcd watch):
+
+- `init` is called once after the store is created in `watchConfig` — use it to open connections, start pollers, etc. If `init` throws, a `MorselError` (`EHOOK`) is thrown and the store is not returned.
+- `dispose` is called once when the store is stopped via `stop()` — use it to close connections, clear timers, etc. Errors in `dispose` are caught and logged via `onDebug` — they do not block `stop()`.
+- Neither `init` nor `dispose` is called in `loadConfig`/`loadConfigSync` (one-shot, no lifecycle).
+- `EventHook` does not have `init`/`dispose` — it is purely event-driven.
+
+#### `triggerRemerge`
+
+The `HookContext` provides `triggerRemerge()` — a function that requests a re-merge of the configuration. This enables hooks to react to external changes (remote config updated, etcd key changed) and trigger a fresh merge cycle:
+
+- In `watchConfig`, calling `triggerRemerge()` schedules a re-merge via the store's internal `remerge` function (coalesced by the debounce mechanism).
+- In `loadConfig`/`loadConfigSync`, `triggerRemerge` is a noop — there is no store lifecycle.
+- Safe to call multiple times — coalesced by the re-merge debouncer.
+
+#### 8 layer lifecycle points + 1 event point (before/after for each layer + after:write)
 
 ```text
 before:defaults → defaults → after:defaults
@@ -93,12 +111,15 @@ before:defaults → defaults → after:defaults
 → before:project → project → after:project
 → before:overrides → overrides → after:overrides
 → merge → validation
+→ after:write (event hook, triggered on successful write)
 ```
 
 - `before:X` hooks produce a layer that stacks **before** layer `X` (lower priority).
 - `after:X` hooks produce a layer that stacks **after** layer `X` (higher priority).
+- `after:write` is an event hook — it does not produce a layer, it reacts to a successful write via `onWrite(event: WriteEvent)`.
 - Hooks are executed in `hooks[]` array order for the same lifecycle point.
-- **Stateless** — the core calls the hook on each merge, the hook returns a `Record`, no state is kept between merges.
+- **Stateless `load`, stateful `init`/`dispose`** — the core calls `load` on each merge (no state between merges). Optional `init`/`dispose` methods allow stateful hooks to manage external connections across the store lifecycle.
+- **Event hook errors are non-fatal** — if an `EventHook`'s `onWrite` throws, the error is logged via `onDebug` and the mutation is not rolled back (the write is already confirmed on disk).
 
 ---
 
@@ -164,19 +185,23 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 ### Public Types & Interfaces
 
 - `MorselOptions` — common configuration options (`name`, `cwd`, `defaults`, `overrides`, `globalDir`, etc.).
-- `WatchOptions` — extends `MorselOptions` with `watchDebounce`.
+- `WatchOptions` — extends `MorselOptions` with `watchDebounce` and `signal`.
 - `MorselStore<T>` — reactive store instance (`config`, `layers`, `on`, `get`, `set`, `has`, `unset`, `all`, `dotify`, `push`, `unshift`, `pop`, `shift`, `splice`, `indexOf`, `lastIndexOf`, `stop`).
 - `MorselLayer` — trace of a resolved layer (`source`, `path`, `config`, `exists`, `extendsPaths`, `hookName`).
 - `MorselError` — base error class with `path`, `code`, and `cause`.
-- `MorselErrorCode` — union of error codes (`'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK' | 'EWRITE'`).
-- `MorselNoPluginError` — thrown when no extension matches a plugin (`ENOPLUGIN`).
-- `MorselValidationError` — thrown on schema validation failure (`EVALIDATE`).
-- `MorselFormatPlugin` — format plugin contract (raw parsing → object).
-- `MorselValidationPlugin` — post-merge validation/transformation plugin contract.
-- `MorselHook` — lifecycle hook contract.
-- `MorselWatchableHook` — hook declaring watch paths (`watchPaths`).
-- `HookLifecycle` — union of the 8 lifecycle points.
-- `HookContext` — execution context provided to the hook (`cwd`, `envName`).
+- `ErrorCode` — union of error codes (`'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK' | 'EWRITE'`).
+- `NoPluginError` — thrown when no extension matches a plugin (`ENOPLUGIN`).
+- `ValidationError` — thrown on schema validation failure (`EVALIDATE`).
+- `WriteError` — thrown on write/mutation failure (`EWRITE`, + `filePath`, + `mutation`).
+- `FormatPlugin` — format plugin contract (raw parsing → object).
+- `ValidationPlugin` — post-merge validation/transformation plugin contract.
+- `LayerHook` — lifecycle hook contract.
+- `LayerWatchableHook` — hook declaring watch paths (`watchPaths`).
+- `EventHook` — event hook contract (reacts to `after:write`, no layer produced).
+- `WriteEvent` — event payload passed to `EventHook.onWrite` (`filePath`, `keyPath`, `mutation`).
+- `Hook` — union of all hook types (`LayerHook | LayerWatchableHook | EventHook`).
+- `HookLifecycle` — union of the 9 lifecycle points (8 layer points + `after:write`).
+- `HookContext` — execution context provided to the hook (`cwd`, `envName`, `triggerRemerge`).
 - `ConfigResult<T>` — result returned by `loadConfig` / `loadConfigSync`.
 - `ResolvedPaths` — theoretical paths resolved without I/O (`global`, `project`).
 - `ResolvePathsOptions` — options for `resolvePaths`.
@@ -185,7 +210,9 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `ConfigMutability` — `'frozen' | 'mutable'`.
 - `ChangeCategory` — `'added' | 'modified' | 'removed'`.
 - `KeyChange` — structure of a change `{ next, prev, category }`.
-- `Listener` — event callback `(next: unknown, prev: unknown) => void`.
+- `ChangeEvent` — event object `{ keyPath, type, next, prev }` passed to listeners.
+- `ListenerOptions` — options for `store.on()` (`once`).
+- `Listener` — event callback `(event: ChangeEvent) => void`.
 - `DebugCallback` — custom debug sink.
 - `ConfigRecord` — generic configuration object record (`Record<string, unknown>`).
 
@@ -199,6 +226,7 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `deepMerge` — deterministic deep merge with array strategy handling.
 - `diffKeys` — recursive delta computation between two configurations.
 - `flatten` — flattening to dotted notation.
+- `interpolate` — `${VAR}` env and `{{ref.path}}` cross-reference interpolation on merged config.
 - `defineConfig` — typing and options validation helper.
 - `mergeConfig` — composition of two `MorselOptions` objects.
 
@@ -215,7 +243,7 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `buildLayers` / `buildLayersSync` — orchestration of the 4 core layers and hooks resolution.
 - `resolveExtends` / `resolveExtendsSync` — recursive resolution of the local inheritance chain.
 - `handleWatchEvent` — filtering and dispatching of `fs.watch` events to concerned stores.
-- `emitChanges` — delta computation and Two-Phase Ordering dispatch to listeners.
+- `emitChanges` — delta computation and Two-Phase Ordering dispatch to listeners. Supports wildcard patterns (`foo.*`, `**`) via separate wildcard listener map.
 
 ---
 
@@ -244,6 +272,8 @@ loadConfigSync(opts) / loadConfig(opts)
 │
 └─ mergeLayers(allLayers, arrayMerge) ─── deepMerge in order
     │
+    └─ interpolate(merged) ─── ${VAR} from env, {{ref.path}} cross-refs, ECYCLE on cycles
+    │
     └─ applyValidation(config, validationPlugins) ─── if provided
     │
     └─ applyMutability(config, configMutability)
@@ -266,8 +296,8 @@ watchConfig(opts)
     ├─ store.has(path)             ─── key existence check
     ├─ store.all()                 ─── full clone snapshot
     ├─ store.dotify()              ─── 1D dotted record
-    ├─ store.set(path, val)        ─── optimistic update + writeConfigFile + rollback on failure
-    ├─ store.unset(path)           ─── optimistic removal + writeConfigFile + rollback on failure
+    ├─ store.set(path, val)        ─── optimistic update + writeConfigFile + rollback on failure + after:write hooks
+    ├─ store.unset(path)           ─── optimistic removal + writeConfigFile + rollback on failure + after:write hooks
     ├─ store.push(path, val)       ─── array append via mutateKey + index listener emit
     ├─ store.unshift(path, val)    ─── array prepend via mutateKey
     ├─ store.pop(path)             ─── array pop via mutateKey

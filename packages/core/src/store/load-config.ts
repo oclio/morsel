@@ -5,14 +5,15 @@ import { applyMutability, mergeLayers } from '@/load/merge-layers';
 import type { ResolvedLayer } from '@/load/resolve-layer';
 import { resolveLayer } from '@/load/resolve-layer';
 import { resolveLayerSync } from '@/load/resolve-layer-sync';
+import { interpolate } from '@/merge/interpolate';
 import {
   resolveGlobalPath,
   resolveGlobalPathSync,
   resolveProjectPath,
   resolveProjectPathSync,
 } from '@/paths/resolve-paths';
-import { resolveOptions } from '@/store/assert-name';
-import { toMorselLayer } from '@/store/morsel-layer';
+import { noop, resolveOptions } from '@/store/assert-name';
+import { toMorselLayer } from '@/store/layer';
 import type { ConfigRecord, ConfigResult, MorselOptions } from '@/store/types';
 
 /**
@@ -37,7 +38,7 @@ export function loadConfigSync<T extends ConfigRecord = ConfigRecord>(
     formatPlugins: resolved.formatPlugins,
   };
 
-  const context = createHookContext(resolved);
+  const context = createHookContext(resolved, noop);
   const { hooks } = resolved;
 
   const layers: ResolvedLayer[] = [
@@ -56,7 +57,8 @@ export function loadConfigSync<T extends ConfigRecord = ConfigRecord>(
   ];
 
   const merged = mergeLayers(layers, resolved.arrayMerge);
-  const validated = applyValidation(merged, resolved.validationPlugins);
+  const interpolated = interpolate(merged);
+  const validated = applyValidation(interpolated, resolved.validationPlugins);
   const config = applyMutability(validated, resolved.configMutability) as T;
 
   return {
@@ -89,7 +91,7 @@ export async function loadConfig<T extends ConfigRecord = ConfigRecord>(
     formatPlugins: resolved.formatPlugins,
   };
 
-  const context = createHookContext(resolved);
+  const context = createHookContext(resolved, noop);
   const { hooks } = resolved;
 
   const layers: ResolvedLayer[] = [
@@ -113,7 +115,8 @@ export async function loadConfig<T extends ConfigRecord = ConfigRecord>(
   ];
 
   const merged = mergeLayers(layers, resolved.arrayMerge);
-  const validated = applyValidation(merged, resolved.validationPlugins);
+  const interpolated = interpolate(merged);
+  const validated = applyValidation(interpolated, resolved.validationPlugins);
   const config = applyMutability(validated, resolved.configMutability) as T;
 
   return {

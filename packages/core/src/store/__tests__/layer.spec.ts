@@ -1,5 +1,5 @@
 import type { ResolvedLayer } from '@/load/resolve-layer';
-import { toMorselLayer } from '@/store/morsel-layer';
+import { toMorselLayer } from '@/store/layer';
 
 describe('toMorselLayer', () => {
   it('maps all fields from ResolvedLayer to MorselLayer', () => {

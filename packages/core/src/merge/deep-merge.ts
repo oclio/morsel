@@ -1,6 +1,12 @@
 import { isPlainObject } from '@/merge/merge-helpers';
 import type { ConfigRecord } from '@/store/types';
 
+const UNSAFE_KEYS = new Set(['__proto__', 'constructor']);
+
+function isUnsafeKey(key: string): boolean {
+  return UNSAFE_KEYS.has(key);
+}
+
 /**
  * Array merge strategy for `deepMerge`.
  *
@@ -32,6 +38,7 @@ function deepCloneValue(value: unknown): unknown {
   if (isPlainObject(value)) {
     const clone: ConfigRecord = {};
     for (const [key, childValue] of Object.entries(value)) {
+      if (isUnsafeKey(key)) continue;
       clone[key] = deepCloneValue(childValue);
     }
     return clone;
@@ -61,6 +68,7 @@ export function deepMerge(
   const result: ConfigRecord = { ...base };
 
   for (const [key, overrideValue] of Object.entries(override)) {
+    if (isUnsafeKey(key)) continue;
     if (overrideValue === undefined) {
       continue;
     }

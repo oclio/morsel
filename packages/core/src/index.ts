@@ -1,12 +1,16 @@
-export type { MorselErrorCode } from '@/errors/morsel-error';
-export { MorselError } from '@/errors/morsel-error';
-export { MorselNoPluginError } from '@/errors/no-plugin-error';
-export { MorselValidationError } from '@/errors/validation-error';
+export type { ErrorCode } from '@/errors/error';
+export { MorselError } from '@/errors/error';
+export { NoPluginError } from '@/errors/no-plugin-error';
+export { ValidationError } from '@/errors/validation-error';
+export { WriteError } from '@/errors/write-error';
 export type {
+  EventHook,
+  Hook,
   HookContext,
   HookLifecycle,
-  MorselHook,
-  MorselWatchableHook,
+  LayerHook,
+  LayerWatchableHook,
+  WriteEvent,
 } from '@/hooks/types';
 export type { ConfigMutability } from '@/load/merge-layers';
 export type { DebugCallback } from '@/load/resolve-env';
@@ -15,8 +19,7 @@ export type { ArrayMergeStrategy } from '@/merge/deep-merge';
 export { deepMerge } from '@/merge/deep-merge';
 export type { ChangeCategory, KeyChange } from '@/merge/diff-keys';
 export { diffKeys } from '@/merge/diff-keys';
-export { flatten } from '@/merge/flatten';
-export { dotifyObject } from '@/paths/dotify';
+export { interpolate } from '@/merge/interpolate';
 export type { PathSegment } from '@/paths/parse-path';
 export { parsePath, validatePath } from '@/paths/parse-path';
 export {
@@ -27,15 +30,14 @@ export {
 export type { ResolvedPaths, ResolvePathsOptions } from '@/paths/resolve-paths';
 export { resolvePaths } from '@/paths/resolve-paths';
 export { jsonPlugin } from '@/plugins/json-plugin';
-export type {
-  MorselFormatPlugin,
-  MorselValidationPlugin,
-} from '@/plugins/types';
+export type { FormatPlugin, ValidationPlugin } from '@/plugins/types';
 export { loadConfig, loadConfigSync } from '@/store/load-config';
 export type {
+  ChangeEvent,
   ConfigRecord,
   ConfigResult,
   Listener,
+  ListenerOptions,
   MorselLayer,
   MorselOptions,
   MorselStore,

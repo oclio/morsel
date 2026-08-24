@@ -6,9 +6,13 @@ import type { ResolvedOptions } from '@/store/assert-name';
  *
  * Stateless — a new context is created for each merge.
  */
-export function createHookContext(options: ResolvedOptions): HookContext {
+export function createHookContext(
+  options: ResolvedOptions,
+  triggerRemerge: () => void,
+): HookContext {
   return {
     cwd: options.cwd,
     envName: options.envName,
+    triggerRemerge,
   };
 }

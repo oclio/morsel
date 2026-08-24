@@ -11,11 +11,12 @@ import {
 } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
 import { resolveOptions } from '@/store/assert-name';
+import { toMorselLayer } from '@/store/layer';
 import { loadConfig, loadConfigSync } from '@/store/load-config';
-import { toMorselLayer } from '@/store/morsel-layer';
 
 vi.mock('@/store/assert-name', () => ({
   resolveOptions: vi.fn(),
+  noop: vi.fn(),
 }));
 vi.mock('@/paths/resolve-paths', () => ({
   resolveGlobalPath: vi.fn(),
@@ -33,7 +34,7 @@ vi.mock('@/load/merge-layers', () => ({
   mergeLayers: vi.fn(),
   applyMutability: vi.fn(),
 }));
-vi.mock('@/store/morsel-layer', () => ({
+vi.mock('@/store/layer', () => ({
   toMorselLayer: vi.fn(),
 }));
 vi.mock('@/hooks/run-hooks', () => ({

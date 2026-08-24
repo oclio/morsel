@@ -1,14 +1,24 @@
-import { MorselError } from '@/errors/morsel-error';
-import { runHooks, runHooksSync } from '@/hooks/run-hooks';
-import type { HookContext, HookLifecycle, MorselHook } from '@/hooks/types';
+import { MorselError } from '@/errors/error';
+import { runHooks, runHooksSync, runWriteHooks } from '@/hooks/run-hooks';
+import type {
+  EventHook,
+  HookContext,
+  HookLifecycle,
+  LayerHook,
+  WriteEvent,
+} from '@/hooks/types';
 
-const context: HookContext = { cwd: '/fake', envName: 'test' };
+const context: HookContext = {
+  cwd: '/fake',
+  envName: 'test',
+  triggerRemerge: () => {},
+};
 
 function makeHook(
   name: string,
   lifecycle: HookLifecycle,
-  load: MorselHook['load'],
-): MorselHook {
+  load: LayerHook['load'],
+): LayerHook {
   return { name, lifecycle, load };
 }
 
@@ -214,4 +224,161 @@ describe('runHooks', () => {
       ).rejects.toMatchObject({ code: 'EHOOK' });
     },
   );
+});
+
+describe('runWriteHooks', () => {
+  const writeEvent: WriteEvent = {
+    filePath: '/project/config.json',
+    keyPath: 'server.port',
+    mutation: { path: 'server.port', value: 8080 },
+  };
+  const onDebug = vi.fn();
+
+  function makeEventHook(
+    name: string,
+    onWrite: EventHook['onWrite'],
+  ): EventHook {
+    return { name, lifecycle: 'after:write', onWrite };
+  }
+
+  beforeEach(() => {
+    onDebug.mockClear();
+  });
+
+  it('calls onWrite for each after:write hook', async () => {
+    const onWrite1 = vi.fn();
+    const onWrite2 = vi.fn();
+    const hooks = [
+      makeEventHook('audit', onWrite1),
+      makeEventHook('metrics', onWrite2),
+    ];
+
+    await runWriteHooks(hooks, writeEvent, onDebug);
+
+    expect(onWrite1).toHaveBeenCalledWith(writeEvent);
+    expect(onWrite2).toHaveBeenCalledWith(writeEvent);
+  });
+
+  it('skips non-event hooks', async () => {
+    const onWrite = vi.fn();
+    const hooks = [
+      makeEventHook('audit', onWrite),
+      makeHook('env', 'before:defaults', () => ({ env: 'test' })),
+    ];
+
+    await runWriteHooks(hooks, writeEvent, onDebug);
+
+    expect(onWrite).toHaveBeenCalledTimes(1);
+    expect(onDebug).not.toHaveBeenCalled();
+  });
+
+  it('awaits async onWrite', async () => {
+    const onWrite = vi.fn().mockResolvedValue(undefined);
+    const hooks = [makeEventHook('async-audit', onWrite)];
+
+    await runWriteHooks(hooks, writeEvent, onDebug);
+
+    expect(onWrite).toHaveBeenCalledTimes(1);
+  });
+
+  it('catches and logs onWrite errors via onDebug', async () => {
+    const onWrite = vi.fn().mockRejectedValue(new Error('log server down'));
+    const hooks = [makeEventHook('audit', onWrite)];
+
+    await runWriteHooks(hooks, writeEvent, onDebug);
+
+    expect(onDebug).toHaveBeenCalledWith(
+      'hook "audit" failed in after:write: log server down',
+      { hookName: 'audit', event: writeEvent },
+    );
+  });
+
+  it('continues running remaining hooks after one fails', async () => {
+    const onWrite1 = vi.fn().mockRejectedValue(new Error('fail'));
+    const onWrite2 = vi.fn();
+    const hooks = [
+      makeEventHook('failing', onWrite1),
+      makeEventHook('ok', onWrite2),
+    ];
+
+    await runWriteHooks(hooks, writeEvent, onDebug);
+
+    expect(onWrite2).toHaveBeenCalledWith(writeEvent);
+  });
+
+  it('does nothing with empty hooks', async () => {
+    await runWriteHooks([], writeEvent, onDebug);
+
+    expect(onDebug).not.toHaveBeenCalled();
+  });
+});
+
+describe('EventHook integration with runHooksSync/runHooks', () => {
+  const context: HookContext = {
+    cwd: '/fake',
+    envName: 'test',
+    triggerRemerge: () => {},
+  };
+
+  it('runHooksSync skips EventHook even when lifecycle matches', () => {
+    const onWrite = vi.fn();
+    const eventHook: EventHook = {
+      name: 'audit',
+      lifecycle: 'after:write',
+      onWrite,
+    };
+
+    const layers = runHooksSync([eventHook], 'after:write', context);
+
+    expect(layers).toEqual([]);
+    expect(onWrite).not.toHaveBeenCalled();
+  });
+
+  it('runHooksSync skips EventHook alongside LayerHook', () => {
+    const eventHook: EventHook = {
+      name: 'audit',
+      lifecycle: 'after:write',
+      onWrite: vi.fn(),
+    };
+
+    const layers = runHooksSync(
+      [eventHook, makeHook('env', 'before:defaults', () => ({ env: 'test' }))],
+      'before:defaults',
+      context,
+    );
+
+    expect(layers).toHaveLength(1);
+    expect(layers[0]!.hookName).toBe('env');
+  });
+
+  it('runHooks skips EventHook even when lifecycle matches', async () => {
+    const onWrite = vi.fn();
+    const eventHook: EventHook = {
+      name: 'audit',
+      lifecycle: 'after:write',
+      onWrite,
+    };
+
+    const layers = await runHooks([eventHook], 'after:write', context);
+
+    expect(layers).toEqual([]);
+    expect(onWrite).not.toHaveBeenCalled();
+  });
+
+  it('runHooks skips EventHook alongside LayerHook', async () => {
+    const eventHook: EventHook = {
+      name: 'audit',
+      lifecycle: 'after:write',
+      onWrite: vi.fn(),
+    };
+
+    const layers = await runHooks(
+      [eventHook, makeHook('env', 'before:defaults', () => ({ env: 'test' }))],
+      'before:defaults',
+      context,
+    );
+
+    expect(layers).toHaveLength(1);
+    expect(layers[0]!.hookName).toBe('env');
+  });
 });

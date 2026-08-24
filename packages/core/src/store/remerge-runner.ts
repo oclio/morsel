@@ -1,12 +1,13 @@
-import { MorselError } from '@/errors/morsel-error';
+import { MorselError } from '@/errors/error';
 import { applyValidation } from '@/load/apply-validation';
 import { buildLayers } from '@/load/build-layers';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
 import type { ResolvedLayer } from '@/load/resolve-layer';
+import { interpolate } from '@/merge/interpolate';
 import { resolveGlobalPath, resolveProjectPath } from '@/paths/resolve-paths';
 import { noop } from '@/store/assert-name';
 import { emitChanges } from '@/store/emit-changes';
-import { toMorselLayer } from '@/store/morsel-layer';
+import { toMorselLayer } from '@/store/layer';
 import type { StoreState } from '@/store/store-state';
 import { deepCloneConfig } from '@/store/store-state';
 import { updateWatchedFiles, updateWatchers } from '@/store/watcher-setup';
@@ -101,6 +102,7 @@ export function createRemerge<T extends ConfigRecord>(): (
         options_,
         remergeGlobalPath,
         remergeProjectPath,
+        () => void remerge(store),
       );
 
       if (hasDisappearedLayers(newLayers, store)) {
@@ -108,7 +110,11 @@ export function createRemerge<T extends ConfigRecord>(): (
       }
 
       const newConfig = mergeLayers(newLayers, options_.arrayMerge);
-      const validated = applyValidation(newConfig, options_.validationPlugins);
+      const interpolated = interpolate(newConfig);
+      const validated = applyValidation(
+        interpolated,
+        options_.validationPlugins,
+      );
       const oldConfig = store.lastConfig;
 
       const newLastConfig =
@@ -140,7 +146,12 @@ export function createRemerge<T extends ConfigRecord>(): (
         throw watcherError;
       }
 
-      emitChanges(oldConfig, validated, store.listeners);
+      emitChanges(
+        oldConfig,
+        validated,
+        store.listeners,
+        store.wildcardListeners,
+      );
     } catch (error) {
       const message = `morsel: re-merge failed — keeping last valid config`;
       const context: Record<string, unknown> = { error: String(error) };

@@ -1,11 +1,11 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
-import { MorselError } from '@/errors/morsel-error';
+import { WriteError } from '@/errors/write-error';
 import { hasRemovedPathValue, setPathValue } from '@/paths/path-access';
 import { jsonPlugin } from '@/plugins/json-plugin';
 import { selectParser } from '@/plugins/select-parser';
-import type { MorselFormatPlugin } from '@/plugins/types';
+import type { FormatPlugin } from '@/plugins/types';
 
 /**
  * Describes a mutation to apply to a configuration file.
@@ -45,7 +45,7 @@ async function enqueueWrite<T>(
 
 async function readOrCreateLayerContent(
   filePath: string,
-  plugin: MorselFormatPlugin,
+  plugin: FormatPlugin,
 ): Promise<Record<string, unknown>> {
   try {
     const raw = await fs.readFile(filePath, 'utf8');
@@ -69,7 +69,7 @@ async function readOrCreateLayerContent(
 export async function writeConfigFile(
   filePath: string,
   mutation: MutationOperation,
-  plugins: readonly MorselFormatPlugin[] = [jsonPlugin],
+  plugins: readonly FormatPlugin[] = [jsonPlugin],
 ): Promise<void> {
   await enqueueWrite(filePath, async () => {
     try {
@@ -86,20 +86,16 @@ export async function writeConfigFile(
         setPathValue(data, mutation.path, mutation.value);
       }
 
-      const serializeFunction =
-        plugin.serialize ??
-        ((object: Record<string, unknown>) =>
-          JSON.stringify(object, undefined, 2) + '\n');
-      const serialized = serializeFunction(data);
+      const serialized = plugin.serialize(data);
 
       await fs.mkdir(path.dirname(filePath), { recursive: true });
       const temporaryPath = `${filePath}.tmp.${Date.now()}`;
       await fs.writeFile(temporaryPath, serialized, 'utf8');
       await fs.rename(temporaryPath, filePath);
     } catch (error) {
-      throw new MorselError(
+      throw new WriteError(
         filePath,
-        'EWRITE',
+        mutation,
         error instanceof Error ? error : new Error(String(error)),
       );
     }

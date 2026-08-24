@@ -6,6 +6,7 @@ describe('resolve-paths-multi-plugin — first plugin determines extension', () 
       name: 'yaml',
       extensions: ['.yaml'],
       parse: () => ({}),
+      serialize: () => '',
     };
 
     const result = resolvePaths({ name: 'myapp', cwd: '/project' }, [

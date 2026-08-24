@@ -1,5 +1,5 @@
-import type { MorselErrorCode } from '@/errors/morsel-error';
-import { MorselError } from '@/errors/morsel-error';
+import type { ErrorCode } from '@/errors/error';
+import { MorselError } from '@/errors/error';
 
 describe('MorselError', () => {
   describe('properties', () => {
@@ -7,7 +7,7 @@ describe('MorselError', () => {
       name: string;
       property: 'name' | 'path' | 'code';
       path: string | undefined;
-      code: MorselErrorCode;
+      code: ErrorCode;
       expected: unknown;
     }>([
       {
@@ -50,7 +50,7 @@ describe('MorselError', () => {
     it.each<{
       name: string;
       path: string | undefined;
-      code: MorselErrorCode;
+      code: ErrorCode;
       causeMessage: string;
       expected: string;
     }>([

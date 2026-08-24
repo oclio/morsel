@@ -16,8 +16,8 @@ describe('watch-scalar-removed — remove key from project file', () => {
     });
 
     const events: { next: unknown; prev: unknown }[] = [];
-    store!.on('host', (next, prev) => {
-      events.push({ next, prev });
+    store!.on('host', (event) => {
+      events.push({ next: event.next, prev: event.prev });
     });
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });

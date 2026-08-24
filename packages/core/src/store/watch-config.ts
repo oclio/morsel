@@ -1,11 +1,15 @@
+import { MorselError } from '@/errors/error';
+import { createHookContext } from '@/hooks/hook-context';
 import { applyValidation } from '@/load/apply-validation';
 import { buildLayers } from '@/load/build-layers';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
+import { interpolate } from '@/merge/interpolate';
 import { resolveGlobalPath, resolveProjectPath } from '@/paths/resolve-paths';
 import { resolveOptions } from '@/store/assert-name';
-import { toMorselLayer } from '@/store/morsel-layer';
-import { createMorselStore } from '@/store/morsel-store';
+import { toMorselLayer } from '@/store/layer';
 import { createRemerge } from '@/store/remerge-runner';
+import { createMorselStore } from '@/store/store';
+import type { StoreState } from '@/store/store-state';
 import { createStoreState } from '@/store/store-state';
 import type { ConfigRecord, MorselStore, WatchOptions } from '@/store/types';
 import { collectWatchedFiles, setupWatchers } from '@/store/watcher-setup';
@@ -33,15 +37,29 @@ export async function watchConfig<T extends ConfigRecord = ConfigRecord>(
     resolved.formatPlugins,
   );
 
-  const layers = await buildLayers(resolved, globalPath, projectPath);
+  const remerge = createRemerge<T>();
+
+  let stateReference: StoreState<T> | undefined;
+  const triggerRemerge = () => {
+    if (stateReference !== undefined) {
+      void remerge(stateReference);
+    }
+  };
+
+  const layers = await buildLayers(
+    resolved,
+    globalPath,
+    projectPath,
+    triggerRemerge,
+  );
 
   const merged = mergeLayers(layers, resolved.arrayMerge);
-  const validated = applyValidation(merged, resolved.validationPlugins);
+  const interpolated = interpolate(merged);
+  const validated = applyValidation(interpolated, resolved.validationPlugins);
   const config = applyMutability(validated, resolved.configMutability) as T;
   const morselLayers = layers.map((layer) => toMorselLayer(layer));
 
   const debounceMs = options.watchDebounce ?? 300;
-  const remerge = createRemerge<T>();
 
   const state = createStoreState<T>(
     config,
@@ -51,6 +69,7 @@ export async function watchConfig<T extends ConfigRecord = ConfigRecord>(
     debounceMs,
     remerge,
   );
+  stateReference = state;
 
   collectWatchedFiles(state, layers);
 
@@ -64,5 +83,35 @@ export async function watchConfig<T extends ConfigRecord = ConfigRecord>(
     throw error;
   }
 
-  return createMorselStore(state, resolved.configMutability);
+  const store = createMorselStore(state, resolved.configMutability);
+
+  if (options.signal !== undefined) {
+    const signal = options.signal;
+    if (signal.aborted) {
+      await store.stop();
+    } else {
+      signal.addEventListener('abort', () => {
+        void store.stop();
+      });
+    }
+  }
+
+  const initContext = createHookContext(resolved, triggerRemerge);
+  for (const hook of resolved.hooks) {
+    if (hook.lifecycle === 'after:write') continue;
+    if (hook.init === undefined) continue;
+    try {
+      await hook.init(initContext);
+    } catch (error) {
+      throw new MorselError(
+        undefined,
+        'EHOOK',
+        new Error(
+          `hook "${hook.name}" failed in init: ${(error as Error).message}`,
+        ),
+      );
+    }
+  }
+
+  return store;
 }

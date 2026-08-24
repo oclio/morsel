@@ -1,6 +1,7 @@
 import { applyMutability } from '@/load/merge-layers';
 import { dotifyObject } from '@/paths/dotify';
 import { getPathValue } from '@/paths/path-access';
+import { isWildcardPattern } from '@/store/match-wildcard';
 import { createStableProxy } from '@/store/stable-proxy';
 import {
   deleteKey as deleteKeyMutator,
@@ -14,8 +15,10 @@ import {
 import type { StoreState } from '@/store/store-state';
 import { deepCloneConfig } from '@/store/store-state';
 import type {
+  ChangeEvent,
   DeleteTarget,
   Listener,
+  ListenerOptions,
   MorselLayer,
   MorselStore,
   StoreTarget,
@@ -46,19 +49,30 @@ export function createMorselStore<T extends ConfigRecord>(
     get layers(): MorselLayer[] {
       return [...state._layers];
     },
-    on(key: string, listener: Listener): () => void {
+    on(key: string, listener: Listener, options?: ListenerOptions): () => void {
       if (state.stopped) {
         throw new Error('morsel: store is stopped');
       }
-      let set = state.listeners.get(key);
+      const map = isWildcardPattern(key)
+        ? state.wildcardListeners
+        : state.listeners;
+      let set = map.get(key);
       if (set === undefined) {
         set = new Set();
-        state.listeners.set(key, set);
+        map.set(key, set);
       }
-      set.add(listener);
+
+      const wrapped = options?.once
+        ? (event: ChangeEvent): void => {
+            set.delete(wrapped);
+            listener(event);
+          }
+        : listener;
+
+      set.add(wrapped);
 
       return () => {
-        set.delete(listener);
+        set.delete(wrapped);
       };
     },
     get<V = unknown>(
@@ -179,7 +193,22 @@ export function createMorselStore<T extends ConfigRecord>(
         releaseWatcher(directory, state);
       }
       state.watchers.clear();
+
+      for (const hook of state.options.hooks) {
+        if (hook.lifecycle === 'after:write') continue;
+        if (hook.dispose === undefined) continue;
+        try {
+          await hook.dispose();
+        } catch (error) {
+          state.options.onDebug(
+            `hook "${hook.name}" failed in dispose: ${(error as Error).message}`,
+            { hookName: hook.name },
+          );
+        }
+      }
+
       state.listeners.clear();
+      state.wildcardListeners.clear();
     },
   };
 

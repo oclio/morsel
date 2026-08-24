@@ -1,4 +1,4 @@
-import { MorselError } from '@/errors/morsel-error';
+import { MorselError } from '@/errors/error';
 import { buildLayers } from '@/load/build-layers';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
 import type { ResolvedLayer } from '@/load/resolve-layer';
@@ -6,7 +6,7 @@ import { resolveGlobalPath, resolveProjectPath } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
 import { noop } from '@/store/assert-name';
 import { emitChanges } from '@/store/emit-changes';
-import { toMorselLayer } from '@/store/morsel-layer';
+import { toMorselLayer } from '@/store/layer';
 import { createRemerge } from '@/store/remerge-runner';
 import type { StoreState } from '@/store/store-state';
 import { deepCloneConfig } from '@/store/store-state';
@@ -26,7 +26,7 @@ vi.mock('@/paths/resolve-paths', () => ({
 vi.mock('@/store/emit-changes', () => ({
   emitChanges: vi.fn(),
 }));
-vi.mock('@/store/morsel-layer', () => ({
+vi.mock('@/store/layer', () => ({
   toMorselLayer: vi.fn(),
 }));
 vi.mock('@/store/store-state', () => ({
@@ -57,6 +57,7 @@ function makeState(overrides: Partial<StoreState> = {}): StoreState {
     _stoppedConfig: undefined,
     _layers: [],
     listeners: new Map(),
+    wildcardListeners: new Map(),
     stopped: false,
     watchers: new Set(),
     watchedFiles: new Map(),
@@ -184,7 +185,30 @@ describe('createRemerge', () => {
       expect.objectContaining({ name: 'myapp' }),
       '/global/myapp.config.json',
       '/project/myapp.config.json',
+      expect.any(Function),
     );
+  });
+
+  it('passes a triggerRemerge closure that calls remerge on the store', async () => {
+    const state = makeState();
+    let capturedTrigger: (() => void) | undefined;
+    let isPendingDuringMerge = false;
+    vi.mocked(buildLayers).mockImplementationOnce(
+      async (_options, _g, _p, trigger) => {
+        capturedTrigger = trigger;
+        return [makeResolvedLayer({ source: 'defaults', config: {} })];
+      },
+    );
+    vi.mocked(mergeLayers).mockImplementationOnce(() => {
+      capturedTrigger!();
+      isPendingDuringMerge = state.pendingRemerge;
+      return { merged: true };
+    });
+
+    await remerge(state);
+
+    expect(capturedTrigger).toBeDefined();
+    expect(isPendingDuringMerge).toBe(true);
   });
 
   it('resolves remergeDone promise in finally', async () => {
@@ -273,6 +297,7 @@ describe('createRemerge', () => {
       { old: true },
       { merged: true },
       state.listeners,
+      state.wildcardListeners,
     );
   });
 
