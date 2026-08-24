@@ -1,11 +1,6 @@
 import { isPlainObject } from '@/merge/merge-helpers';
 import type { ConfigRecord } from '@/store/types';
-
-const UNSAFE_KEYS = new Set(['__proto__', 'constructor']);
-
-function isUnsafeKey(key: string): boolean {
-  return UNSAFE_KEYS.has(key);
-}
+import { isUnsafeKey } from '@/utils/unsafe-keys';
 
 /**
  * Array merge strategy for `deepMerge`.

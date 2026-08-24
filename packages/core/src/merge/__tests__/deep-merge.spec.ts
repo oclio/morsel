@@ -281,4 +281,36 @@ describe('deepMerge — prototype pollution protection', () => {
     expect((items[0] as Record<string, unknown>)['polluted']).toBeUndefined();
     expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
   });
+
+  it('skips prototype key from override', () => {
+    const result = deepMerge(
+      { foo: 'bar' },
+      { prototype: { polluted: true } } as Record<string, unknown>,
+      'replace',
+    );
+
+    expect(result).toEqual({ foo: 'bar' });
+    expect(result).not.toHaveProperty('prototype');
+  });
+
+  it('skips prototype in nested objects during merge', () => {
+    const result = deepMerge(
+      { nested: {} },
+      { nested: { prototype: { polluted: true } } } as Record<string, unknown>,
+      'replace',
+    );
+
+    expect(result['nested'] as Record<string, unknown>).toEqual({});
+  });
+
+  it('skips prototype in deepCloneValue for arrays', () => {
+    const result = deepMerge(
+      {},
+      { items: [{ prototype: { polluted: true } }] } as Record<string, unknown>,
+      'replace',
+    );
+
+    const items = result['items'] as unknown[];
+    expect(items[0]).toEqual({});
+  });
 });
