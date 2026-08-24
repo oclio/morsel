@@ -27,12 +27,15 @@ export type WatcherRegistry = Map<string, WatcherEntry>;
 const registry: WatcherRegistry = new Map();
 
 /**
- * Log a message to stderr and route it to each non-stopped store's onDebug.
+ * Route a debug message to each non-stopped store via its configured channel.
  *
- * Used by the watcher retry logic — since a watcher is shared between stores,
- * the message is forwarded to every store's onDebug callback (if real), or to
- * stderr once if any store has the default noop onDebug (spec §5.2: onDebug
- * routes messages instead of stderr, not in addition to).
+ * Since a watcher is shared between stores, the message is delivered to every
+ * active store: stores with a real `onDebug` callback receive it there, while
+ * stores using the default `noop` receive it via a single `console.error`
+ * emission (stderr is a shared channel, so it is written once for all noop
+ * stores rather than once per store). This respects spec §5.2 per-store: each
+ * store gets the message through exactly one channel — its own `onDebug` if
+ * configured, or stderr otherwise.
  */
 function logToStores(
   entry: WatcherEntry,
