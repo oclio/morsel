@@ -1,4 +1,6 @@
 import { MorselError } from '@/errors/error';
+import { runWriteHooks } from '@/hooks/run-hooks';
+import type { WriteEvent } from '@/hooks/types';
 import { applyMutability } from '@/load/merge-layers';
 import { parsePath } from '@/paths/parse-path';
 import {
@@ -63,11 +65,12 @@ export async function mutateKey<T extends ConfigRecord>(
     state.wildcardListeners,
   );
 
+  const mutation = { path: dottedPath, value };
   const mutatedConfig = state._config;
   try {
     await writeConfigFile(
       targetFilePath,
-      { path: dottedPath, value },
+      mutation,
       state.options.formatPlugins,
     );
   } catch (error) {
@@ -82,6 +85,13 @@ export async function mutateKey<T extends ConfigRecord>(
     }
     throw error;
   }
+
+  const writeEvent: WriteEvent = {
+    filePath: targetFilePath,
+    keyPath: dottedPath,
+    mutation,
+  };
+  await runWriteHooks(state.options.hooks, writeEvent, state.options.onDebug);
 }
 
 /**
@@ -131,16 +141,12 @@ export async function deleteKey<T extends ConfigRecord>(
     state.wildcardListeners,
   );
 
+  const deleteMutation = { isDelete: true, path: dottedPath } as const;
   const mutatedConfig = state._config;
   try {
     for (const file of targetFiles) {
-      await writeConfigFile(
-        file,
-        { isDelete: true, path: dottedPath },
-        state.options.formatPlugins,
-      );
+      await writeConfigFile(file, deleteMutation, state.options.formatPlugins);
     }
-    return true;
   } catch (error) {
     if (state._config === mutatedConfig) {
       state._config = applyMutability(previousSnapshot as T, mutability);
@@ -153,6 +159,17 @@ export async function deleteKey<T extends ConfigRecord>(
     }
     throw error;
   }
+
+  for (const file of targetFiles) {
+    const writeEvent: WriteEvent = {
+      filePath: file,
+      keyPath: dottedPath,
+      mutation: deleteMutation,
+    };
+    await runWriteHooks(state.options.hooks, writeEvent, state.options.onDebug);
+  }
+
+  return true;
 }
 
 function assertArray(

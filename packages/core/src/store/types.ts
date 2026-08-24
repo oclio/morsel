@@ -1,4 +1,4 @@
-import type { LayerHook, LayerWatchableHook } from '@/hooks/types';
+import type { Hook } from '@/hooks/types';
 import type { ConfigMutability } from '@/load/merge-layers';
 import type { DebugCallback } from '@/load/resolve-env';
 import type { LayerSource } from '@/load/resolve-layer';
@@ -97,11 +97,12 @@ export interface MorselOptions<
   readonly validationPlugins?: readonly ValidationPlugin[];
   /**
    * Hooks inserted into the pipeline at their lifecycle point.
-   * Each hook produces a Record that becomes a layer.
+   * Layer hooks produce a Record that becomes a layer.
+   * Event hooks (`after:write`) react to successful writes without producing a layer.
    * Async hooks (Promise) → TypeError in loadConfigSync.
    * LayerWatchableHook → watchPaths watched by the core.
    */
-  readonly hooks?: readonly (LayerHook | LayerWatchableHook)[];
+  readonly hooks?: readonly Hook[];
 }
 
 /**

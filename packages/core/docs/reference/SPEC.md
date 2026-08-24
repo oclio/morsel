@@ -14,16 +14,16 @@
 
 ## 1. Normative Invariants
 
-1. **Pluggable architecture**: parsing is provided by format plugins (`FormatPlugin`). The core provides `jsonPlugin` by default. No format is hardcoded in the core — `JSON.parse` lives in `jsonPlugin`, not in `loadFile`. Pipeline extensibility is provided by hooks (`LayerHook`) that insert at specific lifecycle points.
+1. **Pluggable architecture**: parsing is provided by format plugins (`FormatPlugin`). The core provides `jsonPlugin` by default. No format is hardcoded in the core — `JSON.parse` lives in `jsonPlugin`, not in `loadFile`. Pipeline extensibility is provided by hooks (`LayerHook`, `EventHook`) that insert at specific lifecycle points or react to events.
 2. **Zero runtime dependencies**: `node:fs`, `node:path`, `node:os` only. No external packages.
 3. **Watch resilience, one-shot throw**: `loadConfig`/`loadConfigSync` throw `MorselError` on fs or parse errors. `watchConfig` throws `MorselError` if the initial load (first pass) fails — there is no "last valid state" at boot. For subsequent re-merges (fs.watch fire), `watchConfig` catches internally, keeps the last valid state, logs the error to `stderr`, and routes to `onDebug` (noop by default). Programming errors (`name` missing, `name` invalid, `on()` after `stop()`) throw in both modes.
 4. **Reserved keyword cleanup**: `extends` and `$env` are **absolute reserved keywords** of the engine — they cannot be used as business keys in the final config. They are stripped from each layer before inter-layer merge. Never present in the final `config`. If an application needs a key named `$env` or `extends` for business purposes, it must be renamed (`$envConfig`, `extendsList`, etc.).
 5. **Sync-first & distinct async**: `loadConfigSync` is synchronous, `loadConfig` and `watchConfig` are async. No `watch: true/false` option — the chosen function determines the behavior. Async `loadConfig` avoids blocking the event loop during reads — useful for apps that load multiple configs in parallel with `Promise.all`. `watchConfig` is async because boot performs reads (`readFile`) before setting up watchers.
 6. **Watch ref-counting**: a single `fs.watch` per directory, shared across all stores. Closed when the last store calls `stop()`. Includes directories of `extends` files and `watchPaths` of watchable hooks — a change in an inherited file triggers a re-merge.
 7. **Parsing / semantics separation**: the plugin parses raw content → `Record<string, unknown>`. Semantic concepts (`extends`, `$env`, cleanup) are core. The plugin knows nothing about `extends` or `$env`.
-8. **Lifecycle hooks**: hooks (`LayerHook`) insert at 8 pipeline points (before/after for each layer). A hook produces a `Record` that becomes a layer in the cascade. Stateless — the core calls the hook on each merge, no state between merges.
+8. **Lifecycle hooks**: layer hooks (`LayerHook`) insert at 8 pipeline points (before/after for each layer). A layer hook produces a `Record` that becomes a layer in the cascade. Stateless — the core calls the hook on each merge, no state between merges. Event hooks (`EventHook`) react to lifecycle events (e.g. `after:write`) without producing a layer — they are side-effect only (logging, metrics, audit).
 9. **Native path parsing & prototype protection**: the core provides robust path parsing supporting dot notation (`a.b.c`), indexed arrays (`users[0].name`, `users.0.name`), and escaped dots (`app\.config.host`). Any attempt to access or mutate `__proto__`, `constructor`, or `prototype` is rejected (`TypeError`).
-10. **Transactional mutation & optimistic write**: `mutateKey` and `deleteKey` update the in-memory config optimistically, emit key-level change events, and persist changes via atomic read-modify-write on the source layer. Writes are serialized per file path. In case of I/O or serialization failure, the in-memory state is automatically rolled back, revert events are emitted, and a `MorselError` (`EWRITE`) is thrown.
+10. **Transactional mutation & optimistic write**: `mutateKey` and `deleteKey` update the in-memory config optimistically, emit key-level change events, and persist changes via atomic read-modify-write on the source layer. Writes are serialized per file path. In case of I/O or serialization failure, the in-memory state is automatically rolled back, revert events are emitted, and a `MorselError` (`EWRITE`) is thrown. After a successful write, `after:write` event hooks (`EventHook`) are triggered with a `WriteEvent` — errors in these hooks are caught and logged via `onDebug`, they do not roll back the mutation.
 
 ---
 
@@ -101,7 +101,7 @@ export interface MorselOptions<
   readonly overrides?: Partial<T> | Record<string, unknown>;
   readonly formatPlugins?: readonly FormatPlugin[];
   readonly validationPlugins?: readonly ValidationPlugin[];
-  readonly hooks?: readonly (LayerHook | LayerWatchableHook)[];
+  readonly hooks?: readonly Hook[];
   readonly arrayMerge?: ArrayMergeStrategy;
   readonly configMutability?: ConfigMutability;
   readonly envName?: string;
@@ -241,6 +241,20 @@ export interface LayerWatchableHook extends LayerHook {
   readonly watchPaths: readonly string[];
 }
 
+export interface WriteEvent {
+  readonly filePath: string;
+  readonly keyPath: string;
+  readonly mutation: MutationOperation;
+}
+
+export interface EventHook {
+  readonly name: string;
+  readonly lifecycle: 'after:write';
+  onWrite(event: WriteEvent): void | Promise<void>;
+}
+
+export type Hook = LayerHook | LayerWatchableHook | EventHook;
+
 export type HookLifecycle =
   | 'before:defaults'
   | 'after:defaults'
@@ -249,7 +263,8 @@ export type HookLifecycle =
   | 'before:project'
   | 'after:project'
   | 'before:overrides'
-  | 'after:overrides';
+  | 'after:overrides'
+  | 'after:write';
 
 export interface HookContext {
   readonly cwd: string;
@@ -344,7 +359,7 @@ export interface ResolvedOptions {
   readonly onDebug: DebugCallback;
   readonly formatPlugins: readonly FormatPlugin[];
   readonly validationPlugins: readonly ValidationPlugin[];
-  readonly hooks: readonly (LayerHook | LayerWatchableHook)[];
+  readonly hooks: readonly Hook[];
 }
 
 /**

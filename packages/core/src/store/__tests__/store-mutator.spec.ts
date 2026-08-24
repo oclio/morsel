@@ -1,3 +1,4 @@
+import { runWriteHooks } from '@/hooks/run-hooks';
 import { applyMutability } from '@/load/merge-layers';
 import { parsePath } from '@/paths/parse-path';
 import {
@@ -20,6 +21,9 @@ import { deepCloneConfig } from '@/store/store-state';
 import { resolveKeyOrigin } from '@/writer/resolve-origin';
 import { writeConfigFile } from '@/writer/write-config';
 
+vi.mock('@/hooks/run-hooks', () => ({
+  runWriteHooks: vi.fn(),
+}));
 vi.mock('@/load/merge-layers', () => ({
   applyMutability: vi.fn(),
 }));
@@ -105,6 +109,7 @@ describe('store-mutator', () => {
       exists: true,
     });
     vi.mocked(writeConfigFile).mockResolvedValue(undefined);
+    vi.mocked(runWriteHooks).mockResolvedValue(undefined);
   });
 
   describe('mutateKey', () => {
@@ -166,6 +171,48 @@ describe('store-mutator', () => {
         { path: 'server.port', value: 8080 },
         state.options.formatPlugins,
       );
+    });
+
+    it('calls runWriteHooks after successful write', async () => {
+      const state = createState({
+        _config: { server: { port: 3000 } } as never,
+        _layers: [
+          {
+            source: 'project',
+            path: '/project/config.json',
+            config: {},
+            exists: true,
+            extendsPaths: [],
+          },
+        ] as never,
+      });
+
+      await mutateKey(state, 'server.port', 8080, undefined, 'mutable');
+
+      expect(runWriteHooks).toHaveBeenCalledTimes(1);
+      expect(runWriteHooks).toHaveBeenCalledWith(
+        state.options.hooks,
+        expect.objectContaining({
+          filePath: '/project/config.json',
+          keyPath: 'server.port',
+          mutation: { path: 'server.port', value: 8080 },
+        }),
+        state.options.onDebug,
+      );
+    });
+
+    it('does not call runWriteHooks on write failure', async () => {
+      vi.mocked(writeConfigFile).mockRejectedValue(new Error('EWRITE'));
+
+      const state = createState({
+        _config: { server: { port: 3000 } } as never,
+      });
+
+      await expect(
+        mutateKey(state, 'server.port', 8080, undefined, 'mutable'),
+      ).rejects.toThrow('EWRITE');
+
+      expect(runWriteHooks).not.toHaveBeenCalled();
     });
 
     it('rolls back config on write failure', async () => {
@@ -680,6 +727,75 @@ describe('store-mutator', () => {
 
       expect(state._config).toBe(remergedConfig);
       expect(emitChanges).toHaveBeenCalledTimes(1);
+    });
+
+    it('calls runWriteHooks after successful delete with correct WriteEvent', async () => {
+      const state = createState({
+        _config: { server: { port: 3000 } } as never,
+        _layers: [
+          {
+            source: 'global',
+            path: '/global/config.json',
+            config: {},
+            exists: true,
+            extendsPaths: [],
+          },
+          {
+            source: 'project',
+            path: '/project/config.json',
+            config: {},
+            exists: true,
+            extendsPaths: [],
+          },
+        ] as never,
+      });
+
+      await deleteKey(state, 'server.port', 'all', 'mutable');
+
+      expect(runWriteHooks).toHaveBeenCalledTimes(2);
+      expect(runWriteHooks).toHaveBeenNthCalledWith(
+        1,
+        state.options.hooks,
+        {
+          filePath: '/global/config.json',
+          keyPath: 'server.port',
+          mutation: { isDelete: true, path: 'server.port' },
+        },
+        state.options.onDebug,
+      );
+      expect(runWriteHooks).toHaveBeenNthCalledWith(
+        2,
+        state.options.hooks,
+        {
+          filePath: '/project/config.json',
+          keyPath: 'server.port',
+          mutation: { isDelete: true, path: 'server.port' },
+        },
+        state.options.onDebug,
+      );
+    });
+
+    it('does not call runWriteHooks on delete write failure', async () => {
+      vi.mocked(writeConfigFile).mockRejectedValue(new Error('EWRITE'));
+
+      const state = createState({
+        _config: { server: { port: 3000 } } as never,
+        _layers: [
+          {
+            source: 'project',
+            path: '/project/config.json',
+            config: {},
+            exists: true,
+            extendsPaths: [],
+          },
+        ] as never,
+      });
+
+      await expect(
+        deleteKey(state, 'server.port', undefined, 'mutable'),
+      ).rejects.toThrow('EWRITE');
+
+      expect(runWriteHooks).not.toHaveBeenCalled();
     });
   });
 
