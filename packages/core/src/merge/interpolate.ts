@@ -4,7 +4,7 @@ import { getPathValue } from '@/paths/path-access';
 
 type ConfigRecord = Record<string, unknown>;
 
-const ENV_PATTERN = /\$\{([^}]+)\}/g;
+const ENV_PATTERN = /\$\{([^{}]+)\}/g;
 const REF_PATTERN = /\{\{([^{}]+)\}\}/g;
 const SINGLE_REF_PATTERN = /^\{\{([^{}]+)\}\}$/;
 
