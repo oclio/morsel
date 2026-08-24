@@ -124,6 +124,11 @@ export interface MorselStore<
 > {
   readonly config: T;
   readonly layers: readonly MorselLayer[];
+  /**
+   * Listen to key changes. Supports wildcard patterns:
+   * `foo.*` matches one segment, `**` matches any depth.
+   * See §4.5 for wildcard semantics and two-phase ordering.
+   */
   on(
     keyPath: string,
     listener: Listener,
@@ -377,6 +382,7 @@ export interface StoreState<T extends ConfigRecord = ConfigRecord> {
   _layers: MorselLayer[];
   options: ResolvedOptions;
   listeners: Map<string, Set<Listener>>;
+  wildcardListeners: Map<string, Set<Listener>>;
   stopped: boolean;
   watchers: Set<string>;
   watchedFiles: Map<string, Set<string>>;
@@ -441,6 +447,11 @@ export function diffKeys(
 ): Map<string, KeyChange>;
 
 export function flatten(obj: Record<string, unknown>): Map<string, unknown>;
+
+export function interpolate(
+  config: Record<string, unknown>,
+  env?: Record<string, string | undefined>,
+): Record<string, unknown>;
 
 export function defineConfig<
   T extends Record<string, unknown> = Record<string, unknown>,
@@ -532,7 +543,7 @@ export function clearRegistry(): void;
 
 1. Checks if the configuration file already exists via `resolveProjectPathSync`. If yes → returns the existing path without modifying anything (idempotence).
 2. If no: `mkdirSync(dirname, { recursive: true })` — creates the parent directory if needed.
-3. Writes `content` (or `fallbackContent`, or `{}`) as JSON via atomic write: `writeFileSync` to `<path>.tmp` then `renameSync` to `<path>` (avoids partial reads in case of crash).
+3. Writes `content` (or `fallbackContent`, or `{}`) as JSON via atomic write: `writeFileSync` to `<path>.tmp.<timestamp>` then `renameSync` to `<path>` (avoids partial reads in case of crash).
 4. Returns the created path.
 5. On write failure (`writeFileSync` or `renameSync` throws): throws `MorselError` (`EIO`) with the project path and original error as cause.
 
@@ -548,7 +559,7 @@ export function clearRegistry(): void;
 2. Parses the existing content via the matching format plugin (or `{}` if empty).
 3. Applies the mutation (`set` or `delete`) to the parsed config.
 4. Serializes the result via the plugin's `serialize` method.
-5. Writes to a temporary file (`<path>.tmp`), then atomically renames to the target path.
+5. Writes to a temporary file (`<path>.tmp.<timestamp>`), then atomically renames to the target path.
 6. Writes are serialized per file path via a promise queue — concurrent mutations to the same file are queued.
 
 On I/O or serialization failure, a `MorselError` (`EWRITE`) is thrown. The caller (`mutateKey`/`deleteKey`) is responsible for rolling back the in-memory state.
@@ -746,8 +757,6 @@ In `frozen` mode, `store.config` is backed by a stable Proxy (`stable-proxy.ts`)
 5. `defaults` and `overrides` apply `$env` and clean up `extends`, but do not follow an `extends` chain (files only).
 6. `initConfig` initializes only the project configuration, never the global configuration.
 7. `extends` and `$env` are absolute reserved keywords.
-8. No wildcards (`*`) in events.
-9. Stateless hooks only in the current version (no runtime mutators).
 
 ---
 
