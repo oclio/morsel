@@ -5,7 +5,7 @@ import { WriteError } from '@/errors/write-error';
 import { hasRemovedPathValue, setPathValue } from '@/paths/path-access';
 import { jsonPlugin } from '@/plugins/json-plugin';
 import { selectParser } from '@/plugins/select-parser';
-import type { MorselFormatPlugin } from '@/plugins/types';
+import type { FormatPlugin } from '@/plugins/types';
 
 /**
  * Describes a mutation to apply to a configuration file.
@@ -45,7 +45,7 @@ async function enqueueWrite<T>(
 
 async function readOrCreateLayerContent(
   filePath: string,
-  plugin: MorselFormatPlugin,
+  plugin: FormatPlugin,
 ): Promise<Record<string, unknown>> {
   try {
     const raw = await fs.readFile(filePath, 'utf8');
@@ -69,7 +69,7 @@ async function readOrCreateLayerContent(
 export async function writeConfigFile(
   filePath: string,
   mutation: MutationOperation,
-  plugins: readonly MorselFormatPlugin[] = [jsonPlugin],
+  plugins: readonly FormatPlugin[] = [jsonPlugin],
 ): Promise<void> {
   await enqueueWrite(filePath, async () => {
     try {

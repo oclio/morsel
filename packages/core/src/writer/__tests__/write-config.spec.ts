@@ -4,7 +4,7 @@ import path from 'node:path';
 
 import { MorselError } from '@/errors/morsel-error';
 import { jsonPlugin } from '@/plugins/json-plugin';
-import type { MorselFormatPlugin } from '@/plugins/types';
+import type { FormatPlugin } from '@/plugins/types';
 import { writeConfigFile } from '@/writer/write-config';
 
 describe('writeConfigFile', () => {
@@ -73,7 +73,7 @@ describe('writeConfigFile', () => {
     });
 
     it('delete removes key from object rather than setting to undefined', async () => {
-      const preservingPlugin: MorselFormatPlugin = {
+      const preservingPlugin: FormatPlugin = {
         name: 'preserving-json',
         extensions: ['.json'],
         parse: jsonPlugin.parse,
@@ -110,7 +110,7 @@ describe('writeConfigFile', () => {
     });
 
     it('passes string content to plugin parse, not Buffer', async () => {
-      const strictPlugin: MorselFormatPlugin = {
+      const strictPlugin: FormatPlugin = {
         name: 'strict-json',
         extensions: ['.json'],
         parse(content: string, _filePath: string) {
@@ -160,7 +160,7 @@ describe('writeConfigFile', () => {
     });
 
     it('wraps non-Error throws from plugin parse into MorselError', async () => {
-      const throwingPlugin: MorselFormatPlugin = {
+      const throwingPlugin: FormatPlugin = {
         name: 'throwing',
         extensions: ['.json'],
         parse: () => {

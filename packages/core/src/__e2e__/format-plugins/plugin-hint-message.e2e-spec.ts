@@ -31,9 +31,7 @@ describe('plugin-hint-message — ENOPLUGIN message includes install hints', () 
         globalDir: `${directory}/global`,
       });
     } catch (error) {
-      expect((error as Error).message).toContain(
-        'Register a MorselFormatPlugin',
-      );
+      expect((error as Error).message).toContain('Register a FormatPlugin');
     }
   });
 
@@ -61,9 +59,7 @@ describe('plugin-hint-message — ENOPLUGIN message includes install hints', () 
         globalDir: `${directory}/global`,
       });
     } catch (error) {
-      expect((error as Error).message).toContain(
-        'Register a MorselFormatPlugin',
-      );
+      expect((error as Error).message).toContain('Register a FormatPlugin');
     }
   });
 });

@@ -4,10 +4,7 @@ import type { DebugCallback } from '@/load/resolve-env';
 import type { LayerSource } from '@/load/resolve-layer';
 import type { ArrayMergeStrategy } from '@/merge/deep-merge';
 import type { ChangeCategory } from '@/merge/diff-keys';
-import type {
-  MorselFormatPlugin,
-  MorselValidationPlugin,
-} from '@/plugins/types';
+import type { FormatPlugin, ValidationPlugin } from '@/plugins/types';
 
 /**
  * Generic configuration object record with unknown values.
@@ -90,14 +87,14 @@ export interface MorselOptions<
   Order = match priority by extension.
   First plugin whose extensions include path.extname(filePath) wins.
   */
-  readonly formatPlugins?: readonly MorselFormatPlugin[];
+  readonly formatPlugins?: readonly FormatPlugin[];
   /**
   Validation plugins. Default: [].
   Applied on the final config (post-merge), in order.
   Each plugin can validate and transform the config (coercion, defaults, strip).
   If a plugin throws → ValidationError. Boot: throw. Re-merge: catch + keep previous.
   */
-  readonly validationPlugins?: readonly MorselValidationPlugin[];
+  readonly validationPlugins?: readonly ValidationPlugin[];
   /**
    * Hooks inserted into the pipeline at their lifecycle point.
    * Each hook produces a Record that becomes a layer.

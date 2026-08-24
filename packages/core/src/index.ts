@@ -27,10 +27,7 @@ export {
 export type { ResolvedPaths, ResolvePathsOptions } from '@/paths/resolve-paths';
 export { resolvePaths } from '@/paths/resolve-paths';
 export { jsonPlugin } from '@/plugins/json-plugin';
-export type {
-  MorselFormatPlugin,
-  MorselValidationPlugin,
-} from '@/plugins/types';
+export type { FormatPlugin, ValidationPlugin } from '@/plugins/types';
 export { loadConfig, loadConfigSync } from '@/store/load-config';
 export type {
   ConfigRecord,

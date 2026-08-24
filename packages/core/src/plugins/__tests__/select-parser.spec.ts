@@ -1,9 +1,9 @@
 import { jsonPlugin } from '@/plugins/json-plugin';
 import { selectParser } from '@/plugins/select-parser';
-import type { MorselFormatPlugin } from '@/plugins/types';
+import type { FormatPlugin } from '@/plugins/types';
 
 describe('selectParser', () => {
-  const yamlPlugin: MorselFormatPlugin = {
+  const yamlPlugin: FormatPlugin = {
     name: 'yaml',
     extensions: ['.yaml', '.yml'],
     parse: () => ({}),
@@ -17,7 +17,7 @@ describe('selectParser', () => {
   });
 
   it('returns the first matching plugin when multiple match', () => {
-    const duplicateJson: MorselFormatPlugin = {
+    const duplicateJson: FormatPlugin = {
       name: 'json2',
       extensions: ['.json'],
       parse: () => ({}),

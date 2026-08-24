@@ -15,13 +15,13 @@ describe('NoPluginError', () => {
   it('includes generic hint for known extensions', () => {
     const error = new NoPluginError('/path/config.yaml', '.yaml');
 
-    expect(error.message).toContain('Register a MorselFormatPlugin');
+    expect(error.message).toContain('Register a FormatPlugin');
   });
 
   it('includes generic hint for unknown extensions', () => {
     const error = new NoPluginError('/path/config.xml', '.xml');
 
-    expect(error.message).toContain('Register a MorselFormatPlugin');
+    expect(error.message).toContain('Register a FormatPlugin');
   });
 
   it('includes specific hint when file has no extension', () => {

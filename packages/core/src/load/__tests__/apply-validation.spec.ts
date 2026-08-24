@@ -1,11 +1,11 @@
 import { ValidationError } from '@/errors/validation-error';
 import { applyValidation } from '@/load/apply-validation';
-import type { MorselValidationPlugin } from '@/plugins/types';
+import type { ValidationPlugin } from '@/plugins/types';
 
 function makePlugin(
   name: string,
   validate: (config: Record<string, unknown>) => Record<string, unknown>,
-): MorselValidationPlugin {
+): ValidationPlugin {
   return { name, validate };
 }
 

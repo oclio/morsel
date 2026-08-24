@@ -4,10 +4,7 @@ import type { DebugCallback } from '@/load/resolve-env';
 import type { ArrayMergeStrategy } from '@/merge/deep-merge';
 import { resolveGlobalDirectory } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
-import type {
-  MorselFormatPlugin,
-  MorselValidationPlugin,
-} from '@/plugins/types';
+import type { FormatPlugin, ValidationPlugin } from '@/plugins/types';
 import type { MorselOptions } from '@/store/types';
 
 type ConfigRecord = Record<string, unknown>;
@@ -26,8 +23,8 @@ export interface ResolvedOptions {
   readonly configMutability: ConfigMutability;
   readonly verbose: boolean;
   readonly onDebug: DebugCallback;
-  readonly formatPlugins: readonly MorselFormatPlugin[];
-  readonly validationPlugins: readonly MorselValidationPlugin[];
+  readonly formatPlugins: readonly FormatPlugin[];
+  readonly validationPlugins: readonly ValidationPlugin[];
   readonly hooks: readonly (LayerHook | LayerWatchableHook)[];
 }
 

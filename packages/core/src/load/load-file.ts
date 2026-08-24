@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { MorselError } from '@/errors/morsel-error';
 import { NoPluginError } from '@/errors/no-plugin-error';
 import { selectParser } from '@/plugins/select-parser';
-import type { MorselFormatPlugin } from '@/plugins/types';
+import type { FormatPlugin } from '@/plugins/types';
 
 type ConfigRecord = Record<string, unknown>;
 
@@ -35,7 +35,7 @@ function toErrnoException(error: unknown): NodeJS.ErrnoException {
 function parseContent(
   content: string,
   filePath: string,
-  formatPlugins: readonly MorselFormatPlugin[],
+  formatPlugins: readonly FormatPlugin[],
 ): ConfigRecord {
   const plugin = selectParser(filePath, formatPlugins);
   if (plugin === undefined) {
@@ -73,7 +73,7 @@ function extensionOf(filePath: string): string {
  */
 export async function loadFile(
   filePath: string,
-  formatPlugins: readonly MorselFormatPlugin[],
+  formatPlugins: readonly FormatPlugin[],
 ): Promise<LoadFileResult> {
   let content: string;
 
@@ -101,7 +101,7 @@ export async function loadFile(
  */
 export function loadFileSync(
   filePath: string,
-  formatPlugins: readonly MorselFormatPlugin[],
+  formatPlugins: readonly FormatPlugin[],
 ): LoadFileResult {
   let content: string;
 

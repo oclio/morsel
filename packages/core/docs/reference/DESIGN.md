@@ -36,9 +36,9 @@ morsel starts from the premise that a configuration loader must be **lean, robus
 
 #### Pluggable pipeline, not monolith
 
-- `MorselFormatPlugin` — parsing is a contract, not a switch. `jsonPlugin` is injected by default, YAML/TOML/JSON5 are opt-in plugins. The core contains no `JSON.parse` outside of `jsonPlugin`.
-- `MorselValidationPlugin` — validation is a post-merge contract. Zod, Valibot, Yup — the user brings their schema, the core wraps the error in `ValidationError`. No validation dependencies in the core.
-- `MorselFormatPlugin.serialize` — pure serialization contract. Format plugins define how data is represented as a string for writes, while core orchestrates atomic I/O and target resolution.
+- `FormatPlugin` — parsing is a contract, not a switch. `jsonPlugin` is injected by default, YAML/TOML/JSON5 are opt-in plugins. The core contains no `JSON.parse` outside of `jsonPlugin`.
+- `ValidationPlugin` — validation is a post-merge contract. Zod, Valibot, Yup — the user brings their schema, the core wraps the error in `ValidationError`. No validation dependencies in the core.
+- `FormatPlugin.serialize` — pure serialization contract. Format plugins define how data is represented as a string for writes, while core orchestrates atomic I/O and target resolution.
 
 #### Lean by construction
 
@@ -79,8 +79,8 @@ morsel starts from the premise that a configuration loader must be **lean, robus
 
 The core provides three pluggable contracts:
 
-1. **`MorselFormatPlugin`** — parses a file into a `Record` (bytes → structure).
-2. **`MorselValidationPlugin`** — validates and transforms the merged configuration.
+1. **`FormatPlugin`** — parses a file into a `Record` (bytes → structure).
+2. **`ValidationPlugin`** — validates and transforms the merged configuration.
 3. **`LayerHook`** — inserts into the pipeline lifecycle, produces a dynamic layer.
 
 A hook attaches to a specific lifecycle point and produces a `Record<string, unknown>` that inserts as a layer in the cascade, just like `defaults` or `overrides`.
@@ -172,8 +172,8 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `NoPluginError` — thrown when no extension matches a plugin (`ENOPLUGIN`).
 - `ValidationError` — thrown on schema validation failure (`EVALIDATE`).
 - `WriteError` — thrown on write/mutation failure (`EWRITE`, + `filePath`, + `mutation`).
-- `MorselFormatPlugin` — format plugin contract (raw parsing → object).
-- `MorselValidationPlugin` — post-merge validation/transformation plugin contract.
+- `FormatPlugin` — format plugin contract (raw parsing → object).
+- `ValidationPlugin` — post-merge validation/transformation plugin contract.
 - `LayerHook` — lifecycle hook contract.
 - `LayerWatchableHook` — hook declaring watch paths (`watchPaths`).
 - `HookLifecycle` — union of the 8 lifecycle points.

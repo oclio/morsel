@@ -1,6 +1,6 @@
 type ConfigRecord = Record<string, unknown>;
 
-interface MorselFormatPlugin {
+interface FormatPlugin {
   readonly name: string;
   readonly extensions: readonly string[];
   parse(content: string, filePath: string): Record<string, unknown>;
@@ -17,7 +17,7 @@ export function mockPlugin(
   parse: (content: string, filePath: string) => ConfigRecord = () => ({}),
   serialize: (data: Record<string, unknown>) => string = (data) =>
     JSON.stringify(data, undefined, 2) + '\n',
-): MorselFormatPlugin {
+): FormatPlugin {
   return {
     name,
     extensions,

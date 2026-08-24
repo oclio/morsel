@@ -12,7 +12,7 @@ import {
   resolveProjectPathSync,
 } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
-import type { MorselFormatPlugin } from '@/plugins/types';
+import type { FormatPlugin } from '@/plugins/types';
 
 vi.mock('node:fs', () => ({
   existsSync: vi.fn(),
@@ -268,7 +268,7 @@ describe('resolveProjectPath — not found', () => {
 });
 
 describe('resolveProjectPath — multi-plugin', () => {
-  const yamlPlugin: MorselFormatPlugin = {
+  const yamlPlugin: FormatPlugin = {
     name: 'yaml',
     extensions: ['.yaml', '.yml'],
     parse: () => ({}),
@@ -296,7 +296,7 @@ describe('resolveProjectPath — multi-plugin', () => {
   });
 
   it('deduplicates extensions across plugins', async () => {
-    const duplicatePlugin: MorselFormatPlugin = {
+    const duplicatePlugin: FormatPlugin = {
       name: 'json2',
       extensions: ['.json'],
       parse: () => ({}),

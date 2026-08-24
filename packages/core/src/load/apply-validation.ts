@@ -1,5 +1,5 @@
 import { ValidationError } from '@/errors/validation-error';
-import type { MorselValidationPlugin } from '@/plugins/types';
+import type { ValidationPlugin } from '@/plugins/types';
 
 type ConfigRecord = Record<string, unknown>;
 
@@ -19,7 +19,7 @@ type ConfigRecord = Record<string, unknown>;
  */
 export function applyValidation(
   config: ConfigRecord,
-  plugins: readonly MorselValidationPlugin[],
+  plugins: readonly ValidationPlugin[],
 ): ConfigRecord {
   let result = config;
   for (const plugin of plugins) {

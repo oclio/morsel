@@ -1,4 +1,4 @@
-# Schema Validation (`MorselValidationPlugin`)
+# Schema Validation (`ValidationPlugin`)
 
 Configuration errors (missing fields, incorrect types, invalid formats) should fail fast with clear, actionable diagnostics before your application starts listening on ports or establishing database connections.
 
@@ -33,16 +33,14 @@ Cascade (defaults → global → project → overrides → hooks)
 
 ## Writing a Validation Plugin (Zod Example)
 
-You can wrap any schema validator (Zod, Valibot, ArkType, Yup) into a `MorselValidationPlugin` in just a few lines:
+You can wrap any schema validator (Zod, Valibot, ArkType, Yup) into a `ValidationPlugin` in just a few lines:
 
 ```typescript
 import { z } from 'zod';
 import { loadConfigSync, ValidationError } from '@oclio/morsel';
-import type { MorselValidationPlugin } from '@oclio/morsel';
+import type { ValidationPlugin } from '@oclio/morsel';
 
-export function createZodValidator(
-  schema: z.ZodTypeAny,
-): MorselValidationPlugin {
+export function createZodValidator(schema: z.ZodTypeAny): ValidationPlugin {
   return {
     name: 'zod',
     validate(config: Record<string, unknown>) {

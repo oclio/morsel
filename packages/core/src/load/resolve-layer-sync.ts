@@ -4,14 +4,14 @@ import type { DebugCallback } from '@/load/resolve-env';
 import { resolveEnv } from '@/load/resolve-env';
 import { resolveExtendsSync } from '@/load/resolve-extends-sync';
 import type { LayerSource, ResolvedLayer } from '@/load/resolve-layer';
-import type { MorselFormatPlugin } from '@/plugins/types';
+import type { FormatPlugin } from '@/plugins/types';
 
 type ConfigRecord = Record<string, unknown>;
 
 interface ResolveLayerSyncOptions {
   readonly envName: string | undefined;
   readonly onDebug: DebugCallback | undefined;
-  readonly formatPlugins: readonly MorselFormatPlugin[];
+  readonly formatPlugins: readonly FormatPlugin[];
 }
 
 /**

@@ -1,4 +1,4 @@
-import type { MorselFormatPlugin } from '@/plugins/types';
+import type { FormatPlugin } from '@/plugins/types';
 
 type ConfigRecord = Record<string, unknown>;
 
@@ -9,7 +9,7 @@ type ConfigRecord = Record<string, unknown>;
  * (not null, array, or primitive). Throws `SyntaxError` on invalid JSON,
  * which core wraps into `MorselError` (code `EPARSE`).
  */
-export const jsonPlugin: MorselFormatPlugin = {
+export const jsonPlugin: FormatPlugin = {
   name: 'json',
   extensions: ['.json'],
   parse(content: string, _filePath: string): ConfigRecord {

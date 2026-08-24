@@ -3,7 +3,7 @@ import { buildFileLayer, buildRawLayer } from '@/load/layer-helpers';
 import type { DebugCallback } from '@/load/resolve-env';
 import { resolveEnv } from '@/load/resolve-env';
 import { resolveExtends } from '@/load/resolve-extends';
-import type { MorselFormatPlugin } from '@/plugins/types';
+import type { FormatPlugin } from '@/plugins/types';
 
 type ConfigRecord = Record<string, unknown>;
 
@@ -28,7 +28,7 @@ export interface ResolvedLayer {
 interface ResolveLayerOptions {
   readonly envName: string | undefined;
   readonly onDebug: DebugCallback | undefined;
-  readonly formatPlugins: readonly MorselFormatPlugin[];
+  readonly formatPlugins: readonly FormatPlugin[];
 }
 
 /**

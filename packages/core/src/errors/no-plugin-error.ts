@@ -11,8 +11,8 @@ export class NoPluginError extends MorselError {
 
   constructor(filePath: string, extension: string) {
     const message = extension
-      ? `no format plugin found for ${extension}. Register a MorselFormatPlugin via options.formatPlugins.`
-      : `file has no extension. Register a MorselFormatPlugin via options.formatPlugins.`;
+      ? `no format plugin found for ${extension}. Register a FormatPlugin via options.formatPlugins.`
+      : `file has no extension. Register a FormatPlugin via options.formatPlugins.`;
 
     super(filePath, 'ENOPLUGIN', new Error(message));
     this.name = 'NoPluginError';

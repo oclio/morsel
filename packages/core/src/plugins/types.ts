@@ -6,7 +6,7 @@
  *
  * If parsing fails, the plugin throws; core wraps it into `MorselError` (code `EPARSE`).
  */
-export interface MorselFormatPlugin {
+export interface FormatPlugin {
   /**
   Unique plugin name, ex: "json", "yaml".
   */
@@ -38,7 +38,7 @@ export interface MorselFormatPlugin {
  * The plugin must return a new reference — do not mutate the argument.
  * The input is not guaranteed mutable (a previous plugin may return a frozen object).
  */
-export interface MorselValidationPlugin {
+export interface ValidationPlugin {
   /**
   Unique plugin name, ex: "zod", "valibot".
   */
