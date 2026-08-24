@@ -310,7 +310,7 @@ describe('resolveProjectPath — multi-plugin', () => {
       duplicatePlugin,
     ]);
 
-    expect(vi.mocked(access)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(access)).toHaveBeenCalledTimes(2);
     expect(vi.mocked(access)).toHaveBeenCalledWith(
       '/project/myapp.config.json',
     );
@@ -352,6 +352,90 @@ describe('resolveProjectPathSync', () => {
     expect(() =>
       resolveProjectPathSync({ name: 'myapp', cwd: '/project' }, []),
     ).toThrow(TypeError);
+  });
+});
+
+describe('resolveProjectPath — .config/ directory', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('falls back to .config/<name>.<ext> when root-level file does not exist', async () => {
+    vi.mocked(access).mockImplementation((p: unknown) => {
+      if (String(p).includes('.config/')) {
+        return Promise.resolve();
+      }
+      return Promise.reject(new Error('ENOENT'));
+    });
+
+    const result = await resolveProjectPath(
+      { name: 'myapp', cwd: '/project' },
+      [jsonPlugin],
+    );
+
+    expect(result).toBe('/project/.config/myapp.json');
+  });
+
+  it('prefers root-level file over .config/ directory', async () => {
+    vi.mocked(access).mockResolvedValue(undefined);
+
+    const result = await resolveProjectPath(
+      { name: 'myapp', cwd: '/project' },
+      [jsonPlugin],
+    );
+
+    expect(result).toBe('/project/myapp.config.json');
+  });
+
+  it('tries .config/ candidates in extension order', async () => {
+    const yamlPlugin: FormatPlugin = {
+      name: 'yaml',
+      extensions: ['.yaml', '.yml'],
+      parse: () => ({}),
+      serialize: () => '',
+    };
+
+    vi.mocked(access).mockImplementation((p: unknown) => {
+      if (String(p).endsWith('.config/myapp.yaml')) {
+        return Promise.resolve();
+      }
+      return Promise.reject(new Error('ENOENT'));
+    });
+
+    const result = await resolveProjectPath(
+      { name: 'myapp', cwd: '/project' },
+      [jsonPlugin, yamlPlugin],
+    );
+
+    expect(result).toBe('/project/.config/myapp.yaml');
+  });
+});
+
+describe('resolveProjectPathSync — .config/ directory', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('falls back to .config/<name>.<ext> when root-level file does not exist', () => {
+    vi.mocked(existsSync).mockImplementation((p: unknown) => {
+      return String(p).includes('.config/');
+    });
+
+    const result = resolveProjectPathSync({ name: 'myapp', cwd: '/project' }, [
+      jsonPlugin,
+    ]);
+
+    expect(result).toBe('/project/.config/myapp.json');
+  });
+
+  it('prefers root-level file over .config/ directory', () => {
+    vi.mocked(existsSync).mockReturnValue(true);
+
+    const result = resolveProjectPathSync({ name: 'myapp', cwd: '/project' }, [
+      jsonPlugin,
+    ]);
+
+    expect(result).toBe('/project/myapp.config.json');
   });
 });
 

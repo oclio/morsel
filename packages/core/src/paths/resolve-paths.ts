@@ -69,7 +69,11 @@ function collectExtensions(formatPlugins: readonly FormatPlugin[]): string[] {
 }
 
 /**
- * Build candidate project paths: `<cwd>/<name>.config<ext>` for each extension.
+ * Build candidate project paths.
+ *
+ * Checks `<cwd>/<name>.config<ext>` first, then `<cwd>/.config/<name><ext>`
+ * for each extension (`.config/` directory convention adopted by Vite, ESLint,
+ * c12, cosmiconfig).
  */
 function candidateProjectPaths(
   options: ResolvePathsOptions,
@@ -77,9 +81,13 @@ function candidateProjectPaths(
 ): string[] {
   const cwd = options.cwd || process.cwd();
   const extensions = collectExtensions(formatPlugins);
-  return extensions.map((extension) =>
+  const rootCandidates = extensions.map((extension) =>
     path.resolve(cwd, `${options.name}.config${extension}`),
   );
+  const configDirectoryCandidates = extensions.map((extension) =>
+    path.resolve(cwd, '.config', `${options.name}${extension}`),
+  );
+  return [...rootCandidates, ...configDirectoryCandidates];
 }
 
 /**
