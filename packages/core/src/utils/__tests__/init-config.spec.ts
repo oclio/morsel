@@ -1,12 +1,13 @@
-import { mkdirSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, renameSync, writeFileSync } from 'node:fs';
 
 import { MorselError } from '@/errors/error';
-import { resolvePaths, resolveProjectPathSync } from '@/paths/resolve-paths';
+import { resolveProjectPathSync } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
 import { resolveOptions } from '@/store/assert-name';
 import { initConfig } from '@/utils/init-config';
 
 vi.mock('node:fs', () => ({
+  existsSync: vi.fn(),
   mkdirSync: vi.fn(),
   renameSync: vi.fn(),
   writeFileSync: vi.fn(),
@@ -43,10 +44,7 @@ describe('initConfig', () => {
     vi.mocked(resolveProjectPathSync).mockReturnValue(
       '/project/myapp.config.json',
     );
-    vi.mocked(resolvePaths).mockReturnValue({
-      global: '/global/myapp.config.json',
-      project: '/project/myapp.config.json',
-    });
+    vi.mocked(existsSync).mockReturnValue(false);
   });
 
   it('returns existing path without writing when file exists', () => {
@@ -145,12 +143,9 @@ describe('initConfig', () => {
   });
 
   it('creates parent directory with recursive: true', () => {
-    mockResolved();
+    mockResolved({ cwd: '/project/nested' });
     vi.mocked(resolveProjectPathSync).mockReturnValue(undefined);
-    vi.mocked(resolvePaths).mockReturnValue({
-      global: '/global/myapp.config.json',
-      project: '/project/nested/myapp.config.json',
-    });
+    vi.mocked(existsSync).mockReturnValue(false);
 
     initConfig({ name: 'myapp', content: {} as never });
 
@@ -275,6 +270,88 @@ describe('initConfig', () => {
     initConfig(options as never);
 
     expect(resolveOptions).toHaveBeenCalledWith(options);
+  });
+
+  it('writes to .config/ directory when it already exists', () => {
+    mockResolved();
+    vi.mocked(resolveProjectPathSync).mockReturnValue(undefined);
+    vi.mocked(existsSync).mockReturnValue(true);
+
+    const result = initConfig({
+      name: 'myapp',
+      content: { port: 8080 } as never,
+    });
+
+    expect(result).toBe('/project/.config/myapp.json');
+    expect(mkdirSync).toHaveBeenCalledWith('/project/.config', {
+      recursive: true,
+    });
+    expect(writeFileSync).toHaveBeenCalledWith(
+      '/project/.config/myapp.json.tmp',
+      '{\n  "port": 8080\n}\n',
+      'utf8',
+    );
+    expect(renameSync).toHaveBeenCalledWith(
+      '/project/.config/myapp.json.tmp',
+      '/project/.config/myapp.json',
+    );
+  });
+
+  it('writes to project root when .config/ does not exist', () => {
+    mockResolved();
+    vi.mocked(resolveProjectPathSync).mockReturnValue(undefined);
+    vi.mocked(existsSync).mockReturnValue(false);
+
+    const result = initConfig({
+      name: 'myapp',
+      content: { port: 8080 } as never,
+    });
+
+    expect(result).toBe('/project/myapp.config.json');
+  });
+
+  it('falls back to process.cwd() when cwd is undefined', () => {
+    mockResolved({ cwd: undefined });
+    vi.mocked(resolveProjectPathSync).mockReturnValue(undefined);
+    vi.mocked(existsSync).mockReturnValue(false);
+    vi.spyOn(process, 'cwd').mockReturnValue('/fallback-dir');
+
+    const result = initConfig({ name: 'myapp', content: {} as never });
+
+    expect(result).toBe('/fallback-dir/myapp.config.json');
+    vi.mocked(process.cwd).mockRestore();
+  });
+
+  it('falls back to .json extension when formatPlugins is empty', () => {
+    const emptyPlugin = {
+      name: 'empty',
+      extensions: [],
+      parse: () => ({}),
+      serialize: () => '',
+    };
+    mockResolved({ formatPlugins: [emptyPlugin] });
+    vi.mocked(resolveProjectPathSync).mockReturnValue(undefined);
+    vi.mocked(existsSync).mockReturnValue(false);
+
+    const result = initConfig({ name: 'myapp', content: {} as never });
+
+    expect(result).toBe('/project/myapp.config.json');
+  });
+
+  it('uses the first plugin extension for the written file path', () => {
+    const yamlPlugin = {
+      name: 'yaml',
+      extensions: ['.yaml', '.yml'],
+      parse: () => ({}),
+      serialize: () => '',
+    };
+    mockResolved({ formatPlugins: [yamlPlugin] });
+    vi.mocked(resolveProjectPathSync).mockReturnValue(undefined);
+    vi.mocked(existsSync).mockReturnValue(false);
+
+    const result = initConfig({ name: 'myapp', content: {} as never });
+
+    expect(result).toBe('/project/myapp.config.yaml');
   });
 
   it('calls resolveProjectPathSync with resolved options', () => {
