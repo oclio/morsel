@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 
 import { MorselError } from '@/errors/error';
 import { NoPluginError } from '@/errors/no-plugin-error';
@@ -39,7 +40,7 @@ function parseContent(
 ): ConfigRecord {
   const plugin = selectParser(filePath, formatPlugins);
   if (plugin === undefined) {
-    throw new NoPluginError(filePath, extensionOf(filePath));
+    throw new NoPluginError(filePath, path.extname(filePath));
   }
 
   try {
@@ -52,11 +53,6 @@ function parseContent(
     );
     throw new MorselError(filePath, 'EPARSE', synthetic);
   }
-}
-
-function extensionOf(filePath: string): string {
-  const index = filePath.lastIndexOf('.');
-  return index === -1 ? '' : filePath.slice(index);
 }
 
 /**
