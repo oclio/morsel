@@ -225,7 +225,6 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `initConfig` — atomic and idempotent configuration file initialization.
 - `deepMerge` — deterministic deep merge with array strategy handling.
 - `diffKeys` — recursive delta computation between two configurations.
-- `flatten` — flattening to dotted notation.
 - `interpolate` — `${VAR}` env and `{{ref.path}}` cross-reference interpolation on merged config.
 - `defineConfig` — typing and options validation helper.
 - `mergeConfig` — composition of two `MorselOptions` objects.

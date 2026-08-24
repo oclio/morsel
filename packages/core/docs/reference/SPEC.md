@@ -77,7 +77,7 @@ Layers resolved independently, with hooks interleaved (4 core layers + hook laye
 
 ### 3.2 External Dependencies
 
-**None.** The `package.json` has `dependencies: {}`.
+**None.** The `package.json` declares no runtime dependencies.
 
 ### 3.3 Compatibility Constraints
 
@@ -115,9 +115,6 @@ export interface WatchOptions<
   readonly watchDebounce?: number;
   readonly signal?: AbortSignal;
 }
-
-export type StoreTarget = 'global' | 'project';
-export type DeleteTarget = 'all' | 'global' | 'project';
 
 export interface MorselStore<
   T extends Record<string, unknown> = Record<string, unknown>,
@@ -392,6 +389,49 @@ export interface StoreState<T extends ConfigRecord = ConfigRecord> {
   remerge: (store: StoreState) => Promise<void>;
   enoentLogged: Set<string>;
 }
+
+/**
+ * Target layer for set and mutate operations. Internal — inferred from
+ * `MorselStore.set` / `mutateKey` / `push` / etc. via string literals.
+ */
+export type StoreTarget = 'global' | 'project';
+
+/**
+ * Target layer(s) for delete operations. Internal — inferred from
+ * `MorselStore.unset` / `deleteKey` via string literals.
+ */
+export type DeleteTarget = 'all' | 'global' | 'project';
+
+/**
+ * Describes a mutation applied to a configuration file. Internal — surfaced
+ * via `WriteEvent.mutation` consumed by `EventHook.onWrite`.
+ */
+export interface MutationOperation {
+  readonly path: string;
+  readonly value?: unknown;
+  readonly isDelete?: boolean;
+}
+
+/**
+ * Result of resolving which layer and file path owns a given key. Internal —
+ * `resolveKeyOrigin` is not part of the public API.
+ */
+export interface KeyOrigin {
+  readonly layer: MorselLayer | undefined;
+  readonly filePath: string | undefined;
+  readonly isWritable: boolean;
+  readonly exists: boolean;
+}
+
+/**
+ * Flatten a nested object into a 1D record with dotted paths. Internal —
+ * `MorselStore.dotify()` is the public equivalent for store config.
+ */
+export function dotifyObject(
+  object: unknown,
+  prefix?: string,
+  result?: Record<string, unknown>,
+): Record<string, unknown>;
 ```
 
 ---
@@ -488,30 +528,9 @@ export function hasRemovedPathValue(
   path: string | readonly PathSegment[],
 ): boolean;
 
-export function dotifyObject(
-  object: unknown,
-  prefix?: string,
-  result?: Record<string, unknown>,
-): Record<string, unknown>;
-
 // ── Format Plugin ──
 
 export const jsonPlugin: FormatPlugin;
-
-// ── Writer Internals ──
-
-export interface MutationOperation {
-  readonly path: string;
-  readonly value?: unknown;
-  readonly isDelete?: boolean;
-}
-
-export interface KeyOrigin {
-  readonly layer: MorselLayer | undefined;
-  readonly filePath: string | undefined;
-  readonly isWritable: boolean;
-  readonly exists: boolean;
-}
 
 // ── Watcher Registry ──
 
@@ -543,7 +562,7 @@ export function clearRegistry(): void;
 
 1. Checks if the configuration file already exists via `resolveProjectPathSync`. If yes → returns the existing path without modifying anything (idempotence).
 2. If no: `mkdirSync(dirname, { recursive: true })` — creates the parent directory if needed.
-3. Writes `content` (or `fallbackContent`, or `{}`) as JSON via atomic write: `writeFileSync` to `<path>.tmp.<timestamp>` then `renameSync` to `<path>` (avoids partial reads in case of crash).
+3. Writes `content` (or `fallbackContent`, or `{}`) via the first format plugin's `serialize` method via atomic write: `writeFileSync` to `<path>.tmp.<timestamp>` then `renameSync` to `<path>` (avoids partial reads in case of crash).
 4. Returns the created path.
 5. On write failure (`writeFileSync` or `renameSync` throws): throws `MorselError` (`EIO`) with the project path and original error as cause.
 
@@ -613,7 +632,7 @@ Wildcard listeners are emitted after exact-match listeners for each key, within 
 - **`cycle` (circular `extends`, `visited` Set + `MAX_DEPTH = 10`)** — One-shot: throws `MorselError` (`ECYCLE`). Watch boot: throws. Re-merge: caught, keeps previous config, `onDebug`/stderr.
 - **`hook` (hook throws in `load()`)** — One-shot: throws `MorselError` (`EHOOK`). Watch boot: throws. Re-merge: caught, keeps previous config, `onDebug`/stderr.
 - **`hook async` (hook returns a Promise in `loadConfigSync`)** — Throws `TypeError('morsel: hook "<name>" is async — use loadConfig or watchConfig')`. Programming error.
-- **`env` (`$env` present but `envName` undefined)** — Warns `onDebug` only (not stderr), `$env` ignored. Same in one-shot and watch.
+- **`env` (`$env` present but `envName` undefined)** — Warns via `onDebug` (or stderr if `onDebug` is not provided), `$env` ignored. Same in one-shot and watch.
 - **`program` (`name` missing, `name` invalid, `on()` after `stop()`)** — Throws `TypeError`/`Error`. Same in one-shot and watch.
 
 ### 5.2 Priority & Debug Channels
