@@ -52,7 +52,7 @@ export function initConfig<T extends ConfigRecord = ConfigRecord>(
 
   try {
     mkdirSync(path.dirname(projectPath), { recursive: true });
-    const temporaryPath = `${projectPath}.tmp`;
+    const temporaryPath = `${projectPath}.tmp.${Date.now()}`;
     writeFileSync(temporaryPath, json, 'utf8');
     renameSync(temporaryPath, projectPath);
     return projectPath;

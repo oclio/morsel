@@ -70,12 +70,12 @@ describe('initConfig', () => {
     expect(result).toBe('/project/myapp.config.json');
     expect(mkdirSync).toHaveBeenCalledWith('/project', { recursive: true });
     expect(writeFileSync).toHaveBeenCalledWith(
-      '/project/myapp.config.json.tmp',
+      expect.stringMatching(/^\/project\/myapp\.config\.json\.tmp\.\d+$/),
       '{\n  "port": 8080\n}\n',
       'utf8',
     );
     expect(renameSync).toHaveBeenCalledWith(
-      '/project/myapp.config.json.tmp',
+      expect.stringMatching(/^\/project\/myapp\.config\.json\.tmp\.\d+$/),
       '/project/myapp.config.json',
     );
   });
@@ -90,7 +90,7 @@ describe('initConfig', () => {
     });
 
     expect(writeFileSync).toHaveBeenCalledWith(
-      '/project/myapp.config.json.tmp',
+      expect.stringMatching(/^\/project\/myapp\.config\.json\.tmp\.\d+$/),
       '{\n  "port": 3000,\n  "host": "localhost"\n}\n',
       'utf8',
     );
@@ -103,7 +103,7 @@ describe('initConfig', () => {
     initConfig({ name: 'myapp' });
 
     expect(writeFileSync).toHaveBeenCalledWith(
-      '/project/myapp.config.json.tmp',
+      expect.stringMatching(/^\/project\/myapp\.config\.json\.tmp\.\d+$/),
       '{}\n',
       'utf8',
     );
@@ -132,12 +132,12 @@ describe('initConfig', () => {
     initConfig({ name: 'myapp', content: { port: 8080 } as never });
 
     expect(writeFileSync).toHaveBeenCalledWith(
-      '/project/myapp.config.json.tmp',
+      expect.stringMatching(/^\/project\/myapp\.config\.json\.tmp\.\d+$/),
       expect.any(String),
       'utf8',
     );
     expect(renameSync).toHaveBeenCalledWith(
-      '/project/myapp.config.json.tmp',
+      expect.stringMatching(/^\/project\/myapp\.config\.json\.tmp\.\d+$/),
       '/project/myapp.config.json',
     );
   });
@@ -257,7 +257,7 @@ describe('initConfig', () => {
     initConfig({ name: 'myapp', content: circular as never });
 
     expect(writeFileSync).toHaveBeenCalledWith(
-      '/project/myapp.config.json.tmp',
+      expect.stringMatching(/^\/project\/myapp\.config\.json\.tmp\.\d+$/),
       '{}\n',
       'utf8',
     );
@@ -287,12 +287,12 @@ describe('initConfig', () => {
       recursive: true,
     });
     expect(writeFileSync).toHaveBeenCalledWith(
-      '/project/.config/myapp.json.tmp',
+      expect.stringMatching(/^\/project\/\.config\/myapp\.json\.tmp\.\d+$/),
       '{\n  "port": 8080\n}\n',
       'utf8',
     );
     expect(renameSync).toHaveBeenCalledWith(
-      '/project/.config/myapp.json.tmp',
+      expect.stringMatching(/^\/project\/\.config\/myapp\.json\.tmp\.\d+$/),
       '/project/.config/myapp.json',
     );
   });
