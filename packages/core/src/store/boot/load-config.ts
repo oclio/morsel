@@ -39,21 +39,21 @@ export function loadConfigSync<T extends ConfigRecord = ConfigRecord>(
   };
 
   const context = createHookContext(resolved, noop);
-  const { hooks } = resolved;
+  const { hooks, onDebug } = resolved;
 
   const layers: ResolvedLayer[] = [
-    ...runHooksSync(hooks, 'before:defaults', context),
+    ...runHooksSync(hooks, 'before:defaults', context, onDebug),
     resolveLayerSync('defaults', undefined, resolved.defaults, layerOptions),
-    ...runHooksSync(hooks, 'after:defaults', context),
-    ...runHooksSync(hooks, 'before:global', context),
+    ...runHooksSync(hooks, 'after:defaults', context, onDebug),
+    ...runHooksSync(hooks, 'before:global', context, onDebug),
     resolveLayerSync('global', globalPath, undefined, layerOptions),
-    ...runHooksSync(hooks, 'after:global', context),
-    ...runHooksSync(hooks, 'before:project', context),
+    ...runHooksSync(hooks, 'after:global', context, onDebug),
+    ...runHooksSync(hooks, 'before:project', context, onDebug),
     resolveLayerSync('project', projectPath, undefined, layerOptions),
-    ...runHooksSync(hooks, 'after:project', context),
-    ...runHooksSync(hooks, 'before:overrides', context),
+    ...runHooksSync(hooks, 'after:project', context, onDebug),
+    ...runHooksSync(hooks, 'before:overrides', context, onDebug),
     resolveLayerSync('overrides', undefined, resolved.overrides, layerOptions),
-    ...runHooksSync(hooks, 'after:overrides', context),
+    ...runHooksSync(hooks, 'after:overrides', context, onDebug),
   ];
 
   const merged = mergeLayers(layers, resolved.arrayMerge);
@@ -92,26 +92,26 @@ export async function loadConfig<T extends ConfigRecord = ConfigRecord>(
   };
 
   const context = createHookContext(resolved, noop);
-  const { hooks } = resolved;
+  const { hooks, onDebug } = resolved;
 
   const layers: ResolvedLayer[] = [
-    ...(await runHooks(hooks, 'before:defaults', context)),
+    ...(await runHooks(hooks, 'before:defaults', context, onDebug)),
     await resolveLayer('defaults', undefined, resolved.defaults, layerOptions),
-    ...(await runHooks(hooks, 'after:defaults', context)),
-    ...(await runHooks(hooks, 'before:global', context)),
+    ...(await runHooks(hooks, 'after:defaults', context, onDebug)),
+    ...(await runHooks(hooks, 'before:global', context, onDebug)),
     await resolveLayer('global', globalPath, undefined, layerOptions),
-    ...(await runHooks(hooks, 'after:global', context)),
-    ...(await runHooks(hooks, 'before:project', context)),
+    ...(await runHooks(hooks, 'after:global', context, onDebug)),
+    ...(await runHooks(hooks, 'before:project', context, onDebug)),
     await resolveLayer('project', projectPath, undefined, layerOptions),
-    ...(await runHooks(hooks, 'after:project', context)),
-    ...(await runHooks(hooks, 'before:overrides', context)),
+    ...(await runHooks(hooks, 'after:project', context, onDebug)),
+    ...(await runHooks(hooks, 'before:overrides', context, onDebug)),
     await resolveLayer(
       'overrides',
       undefined,
       resolved.overrides,
       layerOptions,
     ),
-    ...(await runHooks(hooks, 'after:overrides', context)),
+    ...(await runHooks(hooks, 'after:overrides', context, onDebug)),
   ];
 
   const merged = mergeLayers(layers, resolved.arrayMerge);

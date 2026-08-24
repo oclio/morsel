@@ -153,6 +153,7 @@ describe('buildLayers', () => {
       [hook],
       'before:defaults',
       expect.any(Object),
+      expect.any(Function),
     );
   });
 

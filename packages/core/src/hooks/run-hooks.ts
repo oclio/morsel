@@ -6,8 +6,36 @@ import type {
   HookLifecycle,
   WriteEvent,
 } from '@/hooks/types';
+import { stripExtends } from '@/load/extends/extends-helpers';
 import { buildHookLayer } from '@/load/layer-helpers';
+import type { DebugCallback } from '@/load/resolve-env';
+import { resolveEnv } from '@/load/resolve-env';
 import type { ResolvedLayer } from '@/load/resolve-layer';
+import { isPlainObject } from '@/merge/merge-helpers';
+import { noop } from '@/store/boot/assert-name';
+
+type ConfigRecord = Record<string, unknown>;
+
+/**
+ * Apply reserved-key cleanup (`$env` resolution + `extends` stripping) to a
+ * hook's raw output, mirroring the treatment applied to defaults/overrides and
+ * file layers (spec §1.4: reserved keywords are never present in layer.config).
+ *
+ * Non-object results (contract violations) are passed through as-is — the
+ * cleanup only applies to plain objects.
+ */
+function cleanupHookResult(
+  result: ConfigRecord,
+  context: HookContext,
+  onDebug: DebugCallback,
+): ConfigRecord {
+  if (!isPlainObject(result)) {
+    return result;
+  }
+  return stripExtends(
+    resolveEnv(result, { envName: context.envName, onDebug }),
+  );
+}
 
 function isEventHook(hook: Hook): hook is EventHook {
   return hook.lifecycle === 'after:write';
@@ -32,6 +60,7 @@ export function runHooksSync(
   hooks: readonly Hook[],
   lifecycle: HookLifecycle,
   context: HookContext,
+  onDebug: DebugCallback = noop,
 ): ResolvedLayer[] {
   const layers: ResolvedLayer[] = [];
 
@@ -58,7 +87,9 @@ export function runHooksSync(
       );
     }
 
-    layers.push(buildHookLayer(hook.name, result));
+    layers.push(
+      buildHookLayer(hook.name, cleanupHookResult(result, context, onDebug)),
+    );
   }
 
   return layers;
@@ -73,6 +104,7 @@ export async function runHooks(
   hooks: readonly Hook[],
   lifecycle: HookLifecycle,
   context: HookContext,
+  onDebug: DebugCallback = noop,
 ): Promise<ResolvedLayer[]> {
   const layers: ResolvedLayer[] = [];
 
@@ -106,7 +138,9 @@ export async function runHooks(
       );
     }
 
-    layers.push(buildHookLayer(hook.name, resolved));
+    layers.push(
+      buildHookLayer(hook.name, cleanupHookResult(resolved, context, onDebug)),
+    );
   }
 
   return layers;

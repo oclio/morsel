@@ -39,7 +39,7 @@
 
 Layers resolved independently, with hooks interleaved (4 core layers + hook layers):
 
-- `[hooks before:defaults]`: for each hook with `lifecycle: 'before:defaults'`, `hook.load(ctx)` → `Record`. Result inserted as layer (`source: 'hook'`, `hookName: hook.name`).
+- `[hooks before:defaults]`: for each hook with `lifecycle: 'before:defaults'`, `hook.load(ctx)` → `Record`. `$env` resolved according to `envName`, `extends` silently stripped (same cleanup as core layers). Result inserted as layer (`source: 'hook'`, `hookName: hook.name`).
 - `defaults`: raw object passed as option. `$env` resolved according to `envName`, `extends` silently stripped (no throw, no warn). `path: undefined`, `exists: true`.
 - `[hooks after:defaults]`: same, `lifecycle: 'after:defaults'`.
 - `[hooks before:global]`: same.

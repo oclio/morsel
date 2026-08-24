@@ -34,25 +34,25 @@ export async function buildLayers(
     onDebug: resolved.onDebug,
     formatPlugins: resolved.formatPlugins,
   };
-  const { hooks } = resolved;
+  const { hooks, onDebug } = resolved;
 
   return [
-    ...(await runHooks(hooks, 'before:defaults', context)),
+    ...(await runHooks(hooks, 'before:defaults', context, onDebug)),
     await resolveLayer('defaults', undefined, resolved.defaults, layerOptions),
-    ...(await runHooks(hooks, 'after:defaults', context)),
-    ...(await runHooks(hooks, 'before:global', context)),
+    ...(await runHooks(hooks, 'after:defaults', context, onDebug)),
+    ...(await runHooks(hooks, 'before:global', context, onDebug)),
     await resolveLayer('global', globalPath, undefined, layerOptions),
-    ...(await runHooks(hooks, 'after:global', context)),
-    ...(await runHooks(hooks, 'before:project', context)),
+    ...(await runHooks(hooks, 'after:global', context, onDebug)),
+    ...(await runHooks(hooks, 'before:project', context, onDebug)),
     await resolveLayer('project', projectPath, undefined, layerOptions),
-    ...(await runHooks(hooks, 'after:project', context)),
-    ...(await runHooks(hooks, 'before:overrides', context)),
+    ...(await runHooks(hooks, 'after:project', context, onDebug)),
+    ...(await runHooks(hooks, 'before:overrides', context, onDebug)),
     await resolveLayer(
       'overrides',
       undefined,
       resolved.overrides,
       layerOptions,
     ),
-    ...(await runHooks(hooks, 'after:overrides', context)),
+    ...(await runHooks(hooks, 'after:overrides', context, onDebug)),
   ];
 }
