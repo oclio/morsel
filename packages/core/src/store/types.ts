@@ -22,14 +22,15 @@ export interface ChangeEvent {
 }
 
 /**
- * Options for future use by `store.on()`.
+ * Options for `store.on()`.
  *
- * Reserved but not yet implemented. Future options may include:
  * - `once: true` — auto-unsubscribe after first event
- * - `signal: AbortSignal` — unsubscribe via AbortController
- * - `includeChildren: boolean` — emit for child key changes
+ * - Future: `signal: AbortSignal` — unsubscribe via AbortController
+ * - Future: `includeChildren: boolean` — emit for child key changes
  */
-export type ListenerOptions = Record<string, never>;
+export interface ListenerOptions {
+  readonly once?: boolean;
+}
 
 /**
  * Callback invoked when a watched dotted key changes.

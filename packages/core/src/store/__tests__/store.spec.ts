@@ -1,4 +1,5 @@
 import { applyMutability } from '@/load/merge-layers';
+import { emitChanges } from '@/store/emit-changes';
 import { createStableProxy } from '@/store/stable-proxy';
 import { createMorselStore } from '@/store/store';
 import {
@@ -207,6 +208,90 @@ describe('createMorselStore', () => {
 
       expect(state.wildcardListeners.get('**')).toBeDefined();
       expect(state.listeners.get('**')).toBeUndefined();
+    });
+
+    it('auto-unsubscribes after first event when once is true', () => {
+      const state = createState();
+      const store = createMorselStore(state, 'frozen');
+
+      const listener = vi.fn();
+      store.on('foo', listener, { once: true });
+
+      emitChanges(
+        { foo: 0 },
+        { foo: 1 },
+        state.listeners,
+        state.wildcardListeners,
+      );
+      emitChanges(
+        { foo: 1 },
+        { foo: 2 },
+        state.listeners,
+        state.wildcardListeners,
+      );
+
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(state.listeners.get('foo')!.size).toBe(0);
+    });
+
+    it('auto-unsubscribes wildcard listener after first event when once is true', () => {
+      const state = createState();
+      const store = createMorselStore(state, 'frozen');
+
+      const listener = vi.fn();
+      store.on('foo.*', listener, { once: true });
+
+      emitChanges(
+        {},
+        { foo: { bar: 1 } },
+        state.listeners,
+        state.wildcardListeners,
+      );
+      emitChanges(
+        { foo: { bar: 1 } },
+        { foo: { baz: 2 } },
+        state.listeners,
+        state.wildcardListeners,
+      );
+
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(state.wildcardListeners.get('foo.*')!.size).toBe(0);
+    });
+
+    it('manual unsubscribe works with once listener', () => {
+      const state = createState();
+      const store = createMorselStore(state, 'frozen');
+
+      const listener = vi.fn();
+      const unsub = store.on('foo', listener, { once: true });
+
+      unsub();
+
+      expect(state.listeners.get('foo')!.size).toBe(0);
+    });
+
+    it('does not auto-unsubscribe when once is not set', () => {
+      const state = createState();
+      const store = createMorselStore(state, 'frozen');
+
+      const listener = vi.fn();
+      store.on('foo', listener);
+
+      emitChanges(
+        { foo: 0 },
+        { foo: 1 },
+        state.listeners,
+        state.wildcardListeners,
+      );
+      emitChanges(
+        { foo: 1 },
+        { foo: 2 },
+        state.listeners,
+        state.wildcardListeners,
+      );
+
+      expect(listener).toHaveBeenCalledTimes(2);
+      expect(state.listeners.get('foo')!.size).toBe(1);
     });
   });
 
