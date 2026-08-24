@@ -85,6 +85,17 @@ export async function watchConfig<T extends ConfigRecord = ConfigRecord>(
 
   const store = createMorselStore(state, resolved.configMutability);
 
+  if (options.signal !== undefined) {
+    const signal = options.signal;
+    if (signal.aborted) {
+      await store.stop();
+    } else {
+      signal.addEventListener('abort', () => {
+        void store.stop();
+      });
+    }
+  }
+
   const initContext = createHookContext(resolved, triggerRemerge);
   for (const hook of resolved.hooks) {
     if (hook.lifecycle === 'after:write') continue;

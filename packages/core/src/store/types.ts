@@ -116,6 +116,10 @@ export interface WatchOptions<
   Default: 300. Watch debounce in ms.
   */
   readonly watchDebounce?: number;
+  /**
+  AbortSignal to stop watching. When aborted, `store.stop()` is called automatically.
+  */
+  readonly signal?: AbortSignal;
 }
 
 /**

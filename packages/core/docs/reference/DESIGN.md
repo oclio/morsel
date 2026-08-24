@@ -185,7 +185,7 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 ### Public Types & Interfaces
 
 - `MorselOptions` — common configuration options (`name`, `cwd`, `defaults`, `overrides`, `globalDir`, etc.).
-- `WatchOptions` — extends `MorselOptions` with `watchDebounce`.
+- `WatchOptions` — extends `MorselOptions` with `watchDebounce` and `signal`.
 - `MorselStore<T>` — reactive store instance (`config`, `layers`, `on`, `get`, `set`, `has`, `unset`, `all`, `dotify`, `push`, `unshift`, `pop`, `shift`, `splice`, `indexOf`, `lastIndexOf`, `stop`).
 - `MorselLayer` — trace of a resolved layer (`source`, `path`, `config`, `exists`, `extendsPaths`, `hookName`).
 - `MorselError` — base error class with `path`, `code`, and `cause`.
@@ -211,7 +211,7 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `ChangeCategory` — `'added' | 'modified' | 'removed'`.
 - `KeyChange` — structure of a change `{ next, prev, category }`.
 - `ChangeEvent` — event object `{ keyPath, type, next, prev }` passed to listeners.
-- `ListenerOptions` — reserved options slot for `store.on()` (empty for now).
+- `ListenerOptions` — options for `store.on()` (`once`).
 - `Listener` — event callback `(event: ChangeEvent) => void`.
 - `DebugCallback` — custom debug sink.
 - `ConfigRecord` — generic configuration object record (`Record<string, unknown>`).

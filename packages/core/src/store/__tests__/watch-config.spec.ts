@@ -485,4 +485,33 @@ describe('watchConfig', () => {
       expect(mockRemerge).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('signal — AbortSignal support', () => {
+    it('calls store.stop() when signal is already aborted', async () => {
+      const controller = new AbortController();
+      controller.abort();
+
+      await watchConfig({ name: 'myapp', signal: controller.signal });
+
+      expect(mockStore.stop).toHaveBeenCalledTimes(1);
+    });
+
+    it('calls store.stop() when signal aborts after boot', async () => {
+      const controller = new AbortController();
+
+      await watchConfig({ name: 'myapp', signal: controller.signal });
+
+      expect(mockStore.stop).not.toHaveBeenCalled();
+
+      controller.abort();
+
+      expect(mockStore.stop).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not call store.stop() when no signal is provided', async () => {
+      await watchConfig({ name: 'myapp' });
+
+      expect(mockStore.stop).not.toHaveBeenCalled();
+    });
+  });
 });

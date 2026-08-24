@@ -113,6 +113,7 @@ export interface WatchOptions<
   T extends Record<string, unknown> = Record<string, unknown>,
 > extends MorselOptions<T> {
   readonly watchDebounce?: number;
+  readonly signal?: AbortSignal;
 }
 
 export type StoreTarget = 'global' | 'project';
@@ -310,7 +311,9 @@ export interface ChangeEvent {
   readonly prev: unknown;
 }
 
-export type ListenerOptions = Record<string, never>;
+export interface ListenerOptions {
+  readonly once?: boolean;
+}
 
 export type Listener = (event: ChangeEvent) => void;
 export type DebugCallback = (
