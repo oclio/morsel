@@ -571,6 +571,10 @@ export function clearRegistry(): void;
 
 `stop()` is async (`Promise<void>`). `stopped = true` is assigned **synchronously** at the start, before any `await`. Watchers whose `refCount` reaches zero are closed. All registered listeners are cleared. `store.config` and `store.layers` remain readable after stop at the last known state. Any subsequent call to `store.on()` throws `Error('morsel: store is stopped')`.
 
+#### `signal` — AbortSignal
+
+If `WatchOptions.signal` is provided, it is checked **after** hook `init` completes and the store is fully bootstrapped. If the signal is already aborted at that point, `store.stop()` is called immediately. Otherwise, an `abort` listener is registered to call `store.stop()` when the signal fires. This ordering ensures that hooks are initialized before the store can be stopped.
+
 #### `writeConfigFile` — Atomic Write Engine
 
 `writeConfigFile` performs an atomic read-modify-write on a config file:
@@ -586,7 +590,7 @@ On I/O or serialization failure, a `MorselError` (`EWRITE`) is thrown. The calle
 
 #### `DeleteTarget: 'all'`
 
-When `unset` or `deleteKey` is called with `target: 'all'` (the default), the deletion is applied to **every writable layer** that has a file path — both `project` and `global`. The key is removed from each file in sequence via `writeConfigFile`. If the key does not exist in the in-memory config, the operation returns `false` without writing. Rollback applies to all files if any write fails.
+When `unset` or `deleteKey` is called with `target: 'all'` (the default), the deletion is applied to **every writable layer** that has a file path — both `project` and `global`. The key is removed from each file in sequence via `writeConfigFile`. If the key does not exist in the in-memory config, the operation returns `false` without writing. On write failure, the in-memory state is rolled back and revert events are emitted. Already-written files on disk are not reverted — eventual consistency is restored on the next re-merge (fs.watch fire or manual reload), which re-reads all files and re-merges from disk state.
 
 ---
 

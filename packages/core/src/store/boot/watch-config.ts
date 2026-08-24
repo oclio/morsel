@@ -122,6 +122,9 @@ export async function watchConfig<T extends ConfigRecord = ConfigRecord>(
 
   const store = createMorselStore(state, resolved.configMutability);
 
+  const initContext = createHookContext(resolved, triggerRemerge);
+  await initHooks(state, resolved.hooks, initContext);
+
   if (options.signal !== undefined) {
     const signal = options.signal;
     if (signal.aborted) {
@@ -132,9 +135,6 @@ export async function watchConfig<T extends ConfigRecord = ConfigRecord>(
       });
     }
   }
-
-  const initContext = createHookContext(resolved, triggerRemerge);
-  await initHooks(state, resolved.hooks, initContext);
 
   return store;
 }
