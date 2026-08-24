@@ -48,4 +48,4 @@ Hooks inject dynamic configuration at 8 lifecycle points in the pipeline.
 
 ## Authoring Plugins
 
-Want to build your own plugin? See the [Authoring Plugins guide](../extensibility/authoring-plugins) for the full `MorselFormatPlugin`, `MorselValidationPlugin`, and `MorselHook` contracts.
+Want to build your own plugin? See the [Authoring Plugins guide](../extensibility/authoring-plugins) for the full `MorselFormatPlugin`, `MorselValidationPlugin`, and `LayerHook` contracts.

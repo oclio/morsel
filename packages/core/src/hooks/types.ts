@@ -40,7 +40,7 @@ export interface HookContext {
  * Sync (Record) or async (Promise<Record>). Async hooks throw TypeError in loadConfigSync.
  * If `load` throws → MorselError (code EHOOK).
  */
-export interface MorselHook {
+export interface LayerHook {
   /**
   Unique hook name, ex: "env", "package-json". Becomes hookName in MorselLayer.
   */
@@ -60,13 +60,13 @@ export interface MorselHook {
 }
 
 /**
- * Watchable hook — extends MorselHook with static watchPaths.
+ * Watchable hook — extends LayerHook with static watchPaths.
  *
  * The core watches these paths the same way as extends files:
  * collectWatchedFiles and collectDirectories include them.
  * watchPaths is static (the hook is stateless).
  */
-export interface MorselWatchableHook extends MorselHook {
+export interface LayerWatchableHook extends LayerHook {
   /**
   Paths watched by the core. The core creates a watcher per directory.
   */

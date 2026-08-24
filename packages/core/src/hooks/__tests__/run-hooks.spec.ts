@@ -1,14 +1,14 @@
 import { MorselError } from '@/errors/morsel-error';
 import { runHooks, runHooksSync } from '@/hooks/run-hooks';
-import type { HookContext, HookLifecycle, MorselHook } from '@/hooks/types';
+import type { HookContext, HookLifecycle, LayerHook } from '@/hooks/types';
 
 const context: HookContext = { cwd: '/fake', envName: 'test' };
 
 function makeHook(
   name: string,
   lifecycle: HookLifecycle,
-  load: MorselHook['load'],
-): MorselHook {
+  load: LayerHook['load'],
+): LayerHook {
   return { name, lifecycle, load };
 }
 

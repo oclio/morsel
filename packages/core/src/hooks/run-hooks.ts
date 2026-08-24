@@ -1,5 +1,5 @@
 import { MorselError } from '@/errors/morsel-error';
-import type { HookContext, HookLifecycle, MorselHook } from '@/hooks/types';
+import type { HookContext, HookLifecycle, LayerHook } from '@/hooks/types';
 import { buildHookLayer } from '@/load/layer-helpers';
 import type { ResolvedLayer } from '@/load/resolve-layer';
 
@@ -19,7 +19,7 @@ function isPromise<T>(value: T | Promise<T>): value is Promise<T> {
  * If a hook's `load` throws → MorselError (code EHOOK).
  */
 export function runHooksSync(
-  hooks: readonly MorselHook[],
+  hooks: readonly LayerHook[],
   lifecycle: HookLifecycle,
   context: HookContext,
 ): ResolvedLayer[] {
@@ -59,7 +59,7 @@ export function runHooksSync(
  * Hooks are awaited in order. If a hook's `load` throws → MorselError (EHOOK).
  */
 export async function runHooks(
-  hooks: readonly MorselHook[],
+  hooks: readonly LayerHook[],
   lifecycle: HookLifecycle,
   context: HookContext,
 ): Promise<ResolvedLayer[]> {

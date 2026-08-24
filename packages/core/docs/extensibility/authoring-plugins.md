@@ -6,7 +6,7 @@ Instead, the entire system is built around three pluggable contracts:
 
 1. **`MorselFormatPlugin`** — parses raw file bytes into a JavaScript object.
 2. **`MorselValidationPlugin`** — validates and transforms the merged configuration.
-3. **`MorselHook`** — injects dynamic layers during pipeline lifecycle stages.
+3. **`LayerHook`** — injects dynamic layers during pipeline lifecycle stages.
 
 ---
 
@@ -96,7 +96,7 @@ export const portRangeValidator: MorselValidationPlugin = {
 
 ---
 
-## 3. Writing a Hook Plugin (`MorselHook` / `MorselWatchableHook`)
+## 3. Writing a Hook Plugin (`LayerHook` / `LayerWatchableHook`)
 
 Hooks produce dynamic layers inserted before or after core layers.
 
@@ -105,11 +105,9 @@ Hooks produce dynamic layers inserted before or after core layers.
 ```typescript
 import fs from 'node:fs';
 import path from 'node:path';
-import type { MorselWatchableHook, HookContext } from '@oclio/morsel';
+import type { LayerWatchableHook, HookContext } from '@oclio/morsel';
 
-export function createPackageJsonHook(
-  cwd = process.cwd(),
-): MorselWatchableHook {
+export function createPackageJsonHook(cwd = process.cwd()): LayerWatchableHook {
   const pkgPath = path.resolve(cwd, 'package.json');
   return {
     name: 'package-json',

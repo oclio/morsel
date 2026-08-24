@@ -6,8 +6,8 @@ export { MorselWriteError } from '@/errors/write-error';
 export type {
   HookContext,
   HookLifecycle,
-  MorselHook,
-  MorselWatchableHook,
+  LayerHook,
+  LayerWatchableHook,
 } from '@/hooks/types';
 export type { ConfigMutability } from '@/load/merge-layers';
 export type { DebugCallback } from '@/load/resolve-env';

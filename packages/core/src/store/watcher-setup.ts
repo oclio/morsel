@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import type { MorselWatchableHook } from '@/hooks/types';
+import type { LayerWatchableHook } from '@/hooks/types';
 import type { ResolvedLayer } from '@/load/resolve-layer';
 import type { StoreState } from '@/store/store-state';
 import { createWatcher, releaseWatcher } from '@/watch/watcher-registry';
@@ -19,7 +19,7 @@ function addWatchedFile(map: Map<string, Set<string>>, filePath: string): void {
 
 function isWatchableHook(hook: {
   readonly name: string;
-}): hook is MorselWatchableHook {
+}): hook is LayerWatchableHook {
   return 'watchPaths' in hook;
 }
 

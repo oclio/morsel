@@ -75,13 +75,13 @@ morsel starts from the premise that a configuration loader must be **lean, robus
 
 ---
 
-### 1.3 Extensibility via Lifecycle (`MorselHook`)
+### 1.3 Extensibility via Lifecycle (`LayerHook`)
 
 The core provides three pluggable contracts:
 
 1. **`MorselFormatPlugin`** — parses a file into a `Record` (bytes → structure).
 2. **`MorselValidationPlugin`** — validates and transforms the merged configuration.
-3. **`MorselHook`** — inserts into the pipeline lifecycle, produces a dynamic layer.
+3. **`LayerHook`** — inserts into the pipeline lifecycle, produces a dynamic layer.
 
 A hook attaches to a specific lifecycle point and produces a `Record<string, unknown>` that inserts as a layer in the cascade, just like `defaults` or `overrides`.
 
@@ -174,8 +174,8 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `MorselWriteError` — thrown on write/mutation failure (`EWRITE`, + `filePath`, + `mutation`).
 - `MorselFormatPlugin` — format plugin contract (raw parsing → object).
 - `MorselValidationPlugin` — post-merge validation/transformation plugin contract.
-- `MorselHook` — lifecycle hook contract.
-- `MorselWatchableHook` — hook declaring watch paths (`watchPaths`).
+- `LayerHook` — lifecycle hook contract.
+- `LayerWatchableHook` — hook declaring watch paths (`watchPaths`).
 - `HookLifecycle` — union of the 8 lifecycle points.
 - `HookContext` — execution context provided to the hook (`cwd`, `envName`).
 - `ConfigResult<T>` — result returned by `loadConfig` / `loadConfigSync`.

@@ -244,7 +244,7 @@ describe('collectWatchedFiles', () => {
     expect(fileCount(state.watchedFiles)).toBe(3);
   });
 
-  it('adds watchPaths from MorselWatchableHook hooks', () => {
+  it('adds watchPaths from LayerWatchableHook hooks', () => {
     const state = makeState({
       watchedFiles: new Map(),
       options: {

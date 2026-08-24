@@ -1,4 +1,4 @@
-import type { MorselHook, MorselWatchableHook } from '@/hooks/types';
+import type { LayerHook, LayerWatchableHook } from '@/hooks/types';
 import type { ConfigMutability } from '@/load/merge-layers';
 import type { DebugCallback } from '@/load/resolve-env';
 import type { ArrayMergeStrategy } from '@/merge/deep-merge';
@@ -28,7 +28,7 @@ export interface ResolvedOptions {
   readonly onDebug: DebugCallback;
   readonly formatPlugins: readonly MorselFormatPlugin[];
   readonly validationPlugins: readonly MorselValidationPlugin[];
-  readonly hooks: readonly (MorselHook | MorselWatchableHook)[];
+  readonly hooks: readonly (LayerHook | LayerWatchableHook)[];
 }
 
 const VALID_NAME = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
