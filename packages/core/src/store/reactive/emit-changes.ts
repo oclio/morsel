@@ -17,7 +17,7 @@ type ConfigRecord = Record<string, unknown>;
  *    listeners see the new type before child listeners fire.
  *
  * Wildcard listeners (`foo.*`, `**`) are emitted after exact listeners
- * in each phase, sorted by pattern specificity (shallower first).
+ * in each phase, in insertion order.
  *
  * @param oldConfig - The previous config snapshot.
  * @param newConfig - The new config snapshot.
