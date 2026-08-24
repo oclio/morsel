@@ -7,7 +7,7 @@ export default defineConfig([
     // `Promise.withResolvers` requires Node 20.10+ / 22+, but the package
     // declares `engines.node: ">=18"`. The classic `new Promise` pattern
     // keeps the re-merge runner compatible with Node 18.
-    files: ['src/store/remerge-runner.ts'],
+    files: ['src/store/watch/remerge-runner.ts'],
     rules: {
       'unicorn/prefer-promise-with-resolvers': 'off',
     },
@@ -19,7 +19,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/paths/resolve-paths.ts', 'src/store/assert-name.ts'],
+    files: ['src/paths/resolve-paths.ts', 'src/store/boot/assert-name.ts'],
     rules: {
       'turbo/no-undeclared-env-vars': 'off',
     },
@@ -31,7 +31,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/store/watch-config.ts'],
+    files: ['src/store/boot/watch-config.ts'],
     rules: {
       'prefer-const': 'off',
     },

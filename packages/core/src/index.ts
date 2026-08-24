@@ -31,7 +31,8 @@ export type { ResolvedPaths, ResolvePathsOptions } from '@/paths/resolve-paths';
 export { resolvePaths } from '@/paths/resolve-paths';
 export { jsonPlugin } from '@/plugins/json-plugin';
 export type { FormatPlugin, ValidationPlugin } from '@/plugins/types';
-export { loadConfig, loadConfigSync } from '@/store/load-config';
+export { loadConfig, loadConfigSync } from '@/store/boot/load-config';
+export { watchConfig } from '@/store/boot/watch-config';
 export type {
   ChangeEvent,
   ConfigRecord,
@@ -43,7 +44,6 @@ export type {
   MorselStore,
   WatchOptions,
 } from '@/store/types';
-export { watchConfig } from '@/store/watch-config';
 export { defineConfig, mergeConfig } from '@/utils/define-config';
 export { initConfig } from '@/utils/init-config';
 export type { WatcherEntry, WatcherRegistry } from '@/watch/watcher-registry';

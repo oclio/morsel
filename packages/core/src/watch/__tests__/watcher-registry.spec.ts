@@ -1,7 +1,7 @@
 import { existsSync, watch } from 'node:fs';
 
 import type { DebugCallback } from '@/load/resolve-env';
-import { noop } from '@/store/assert-name';
+import { noop } from '@/store/boot/assert-name';
 import type { StoreState } from '@/store/store-state';
 import {
   clearRegistry,

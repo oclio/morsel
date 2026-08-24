@@ -7,13 +7,13 @@ import {
   processLoadedFile,
   type ResolveExtendsOptions,
   type ResolveExtendsResult,
-} from '@/load/extends-core';
+} from '@/load/extends/extends-core';
 import { loadFileSync } from '@/load/load-file';
 
 export type {
   ResolveExtendsOptions,
   ResolveExtendsResult,
-} from '@/load/extends-core';
+} from '@/load/extends/extends-core';
 
 /**
  * Synchronously resolve a config file and its `extends` chain.

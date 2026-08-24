@@ -1,6 +1,6 @@
 import { deepMerge } from '@/merge/deep-merge';
 import { isPlainObject } from '@/merge/merge-helpers';
-import { noop } from '@/store/assert-name';
+import { noop } from '@/store/boot/assert-name';
 
 type ConfigRecord = Record<string, unknown>;
 

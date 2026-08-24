@@ -1,4 +1,4 @@
-import { normalizeExtends, stripExtends } from '@/load/extends-helpers';
+import { normalizeExtends, stripExtends } from '@/load/extends/extends-helpers';
 
 describe('stripExtends', () => {
   it.each([

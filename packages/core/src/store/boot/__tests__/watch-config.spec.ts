@@ -3,14 +3,17 @@ import { buildLayers } from '@/load/build-layers';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
 import { resolveGlobalPath, resolveProjectPath } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
-import { resolveOptions } from '@/store/assert-name';
-import { noop } from '@/store/assert-name';
+import { resolveOptions } from '@/store/boot/assert-name';
+import { noop } from '@/store/boot/assert-name';
+import { watchConfig } from '@/store/boot/watch-config';
 import { toMorselLayer } from '@/store/layer';
-import { createRemerge } from '@/store/remerge-runner';
 import { createMorselStore } from '@/store/store';
 import { createStoreState } from '@/store/store-state';
-import { watchConfig } from '@/store/watch-config';
-import { collectWatchedFiles, setupWatchers } from '@/store/watcher-setup';
+import { createRemerge } from '@/store/watch/remerge-runner';
+import {
+  collectWatchedFiles,
+  setupWatchers,
+} from '@/store/watch/watcher-setup';
 import { releaseWatcher } from '@/watch/watcher-registry';
 
 vi.mock('@/load/build-layers', () => ({
@@ -24,8 +27,9 @@ vi.mock('@/paths/resolve-paths', () => ({
   resolveGlobalPath: vi.fn(),
   resolveProjectPath: vi.fn(),
 }));
-vi.mock('@/store/assert-name', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/store/assert-name')>();
+vi.mock('@/store/boot/assert-name', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@/store/boot/assert-name')>();
   return {
     ...actual,
     resolveOptions: vi.fn(),
@@ -34,7 +38,7 @@ vi.mock('@/store/assert-name', async (importOriginal) => {
 vi.mock('@/store/layer', () => ({
   toMorselLayer: vi.fn(),
 }));
-vi.mock('@/store/remerge-runner', () => ({
+vi.mock('@/store/watch/remerge-runner', () => ({
   createRemerge: vi.fn(),
 }));
 vi.mock('@/store/store', () => ({
@@ -43,7 +47,7 @@ vi.mock('@/store/store', () => ({
 vi.mock('@/store/store-state', () => ({
   createStoreState: vi.fn(),
 }));
-vi.mock('@/store/watcher-setup', () => ({
+vi.mock('@/store/watch/watcher-setup', () => ({
   collectWatchedFiles: vi.fn(),
   setupWatchers: vi.fn(),
 }));

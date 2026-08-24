@@ -1,6 +1,6 @@
 import { resolveEnv } from '@/load/resolve-env';
 import { deepMerge } from '@/merge/deep-merge';
-import { noop } from '@/store/assert-name';
+import { noop } from '@/store/boot/assert-name';
 
 vi.mock('@/merge/deep-merge', () => ({
   deepMerge: vi.fn(

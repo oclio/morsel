@@ -1,6 +1,6 @@
 import { resolveGlobalDirectory } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
-import { resolveOptions } from '@/store/assert-name';
+import { resolveOptions } from '@/store/boot/assert-name';
 
 vi.mock('@/paths/resolve-paths', () => ({
   resolveGlobalDirectory: vi.fn(),

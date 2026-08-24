@@ -4,7 +4,7 @@ import { buildLayers } from '@/load/build-layers';
 import type { ResolvedLayer } from '@/load/resolve-layer';
 import { resolveLayer } from '@/load/resolve-layer';
 import { jsonPlugin } from '@/plugins/json-plugin';
-import type { ResolvedOptions } from '@/store/assert-name';
+import type { ResolvedOptions } from '@/store/boot/assert-name';
 
 vi.mock('@/hooks/hook-context', () => ({
   createHookContext: vi

@@ -1,6 +1,6 @@
 import { applyMutability } from '@/load/merge-layers';
-import { emitChanges } from '@/store/emit-changes';
-import { createStableProxy } from '@/store/stable-proxy';
+import { emitChanges } from '@/store/reactive/emit-changes';
+import { createStableProxy } from '@/store/reactive/stable-proxy';
 import { createMorselStore } from '@/store/store';
 import {
   deleteKey,
@@ -17,7 +17,7 @@ import { releaseWatcher } from '@/watch/watcher-registry';
 vi.mock('@/load/merge-layers', () => ({
   applyMutability: vi.fn(),
 }));
-vi.mock('@/store/stable-proxy', () => ({
+vi.mock('@/store/reactive/stable-proxy', () => ({
   createStableProxy: vi.fn(),
 }));
 vi.mock('@/store/store-mutator', () => ({

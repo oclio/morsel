@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, renameSync, writeFileSync } from 'node:fs';
 import { MorselError } from '@/errors/error';
 import { resolveProjectPathSync } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
-import { resolveOptions } from '@/store/assert-name';
+import { resolveOptions } from '@/store/boot/assert-name';
 import { initConfig } from '@/utils/init-config';
 
 vi.mock('node:fs', () => ({
@@ -13,7 +13,7 @@ vi.mock('node:fs', () => ({
   writeFileSync: vi.fn(),
 }));
 vi.mock('@/paths/resolve-paths');
-vi.mock('@/store/assert-name');
+vi.mock('@/store/boot/assert-name');
 
 function mockResolved(overrides: Record<string, unknown> = {}) {
   const resolved = {

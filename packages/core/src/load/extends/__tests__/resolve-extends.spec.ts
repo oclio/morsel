@@ -1,20 +1,21 @@
-import { checkCycleOrDepth } from '@/load/extends-core';
-import { normalizeExtends, stripExtends } from '@/load/extends-helpers';
+import { checkCycleOrDepth } from '@/load/extends/extends-core';
+import { normalizeExtends, stripExtends } from '@/load/extends/extends-helpers';
+import { resolveExtends } from '@/load/extends/resolve-extends';
 import { loadFile } from '@/load/load-file';
 import { resolveEnv } from '@/load/resolve-env';
-import { resolveExtends } from '@/load/resolve-extends';
 import { deepMerge } from '@/merge/deep-merge';
 import { jsonPlugin } from '@/plugins/json-plugin';
 
-vi.mock('@/load/extends-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/load/extends-core')>();
+vi.mock('@/load/extends/extends-core', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@/load/extends/extends-core')>();
   return {
     ...actual,
     checkCycleOrDepth: vi.fn(),
   };
 });
 
-vi.mock('@/load/extends-helpers', () => ({
+vi.mock('@/load/extends/extends-helpers', () => ({
   normalizeExtends: vi.fn(),
   stripExtends: vi.fn(),
 }));

@@ -8,7 +8,7 @@ import {
   hasRemovedPathValue,
   setPathValue,
 } from '@/paths/path-access';
-import { emitChanges } from '@/store/emit-changes';
+import { emitChanges } from '@/store/reactive/emit-changes';
 import type { StoreState } from '@/store/store-state';
 import { deepCloneConfig } from '@/store/store-state';
 import type { DeleteTarget, StoreTarget } from '@/store/types';

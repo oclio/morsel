@@ -6,7 +6,7 @@ import {
   hasRemovedPathValue,
   setPathValue,
 } from '@/paths/path-access';
-import { emitChanges } from '@/store/emit-changes';
+import { emitChanges } from '@/store/reactive/emit-changes';
 import {
   deleteKey,
   mutateKey,
@@ -35,7 +35,7 @@ vi.mock('@/paths/path-access', () => ({
   hasRemovedPathValue: vi.fn(),
   setPathValue: vi.fn(),
 }));
-vi.mock('@/store/emit-changes', () => ({
+vi.mock('@/store/reactive/emit-changes', () => ({
   emitChanges: vi.fn(),
 }));
 vi.mock('@/store/store-state', () => ({

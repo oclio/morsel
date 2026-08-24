@@ -1,5 +1,5 @@
 import { diffKeys } from '@/merge/diff-keys';
-import { compareAsc, emitChanges } from '@/store/emit-changes';
+import { compareAsc, emitChanges } from '@/store/reactive/emit-changes';
 import type { Listener } from '@/store/types';
 
 vi.mock('@/merge/diff-keys', () => ({

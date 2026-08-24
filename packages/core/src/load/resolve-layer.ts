@@ -1,8 +1,8 @@
-import { stripExtends } from '@/load/extends-helpers';
+import { stripExtends } from '@/load/extends/extends-helpers';
+import { resolveExtends } from '@/load/extends/resolve-extends';
 import { buildFileLayer, buildRawLayer } from '@/load/layer-helpers';
 import type { DebugCallback } from '@/load/resolve-env';
 import { resolveEnv } from '@/load/resolve-env';
-import { resolveExtends } from '@/load/resolve-extends';
 import type { FormatPlugin } from '@/plugins/types';
 
 type ConfigRecord = Record<string, unknown>;

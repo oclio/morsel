@@ -1,8 +1,8 @@
 import { applyMutability } from '@/load/merge-layers';
 import { dotifyObject } from '@/paths/dotify';
 import { getPathValue } from '@/paths/path-access';
-import { isWildcardPattern } from '@/store/match-wildcard';
-import { createStableProxy } from '@/store/stable-proxy';
+import { isWildcardPattern } from '@/store/reactive/match-wildcard';
+import { createStableProxy } from '@/store/reactive/stable-proxy';
 import {
   deleteKey as deleteKeyMutator,
   mutateKey as mutateKeyMutator,

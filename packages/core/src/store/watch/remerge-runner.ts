@@ -5,12 +5,15 @@ import { applyMutability, mergeLayers } from '@/load/merge-layers';
 import type { ResolvedLayer } from '@/load/resolve-layer';
 import { interpolate } from '@/merge/interpolate';
 import { resolveGlobalPath, resolveProjectPath } from '@/paths/resolve-paths';
-import { noop } from '@/store/assert-name';
-import { emitChanges } from '@/store/emit-changes';
+import { noop } from '@/store/boot/assert-name';
 import { toMorselLayer } from '@/store/layer';
+import { emitChanges } from '@/store/reactive/emit-changes';
 import type { StoreState } from '@/store/store-state';
 import { deepCloneConfig } from '@/store/store-state';
-import { updateWatchedFiles, updateWatchers } from '@/store/watcher-setup';
+import {
+  updateWatchedFiles,
+  updateWatchers,
+} from '@/store/watch/watcher-setup';
 
 type ConfigRecord = Record<string, unknown>;
 

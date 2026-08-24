@@ -1,8 +1,8 @@
-import { stripExtends } from '@/load/extends-helpers';
+import { stripExtends } from '@/load/extends/extends-helpers';
+import { resolveExtendsSync } from '@/load/extends/resolve-extends-sync';
 import { buildFileLayer, buildRawLayer } from '@/load/layer-helpers';
 import type { DebugCallback } from '@/load/resolve-env';
 import { resolveEnv } from '@/load/resolve-env';
-import { resolveExtendsSync } from '@/load/resolve-extends-sync';
 import type { LayerSource, ResolvedLayer } from '@/load/resolve-layer';
 import type { FormatPlugin } from '@/plugins/types';
 

@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { MorselError } from '@/errors/error';
 import { resolveProjectPathSync } from '@/paths/resolve-paths';
-import { resolveOptions } from '@/store/assert-name';
+import { resolveOptions } from '@/store/boot/assert-name';
 import type { ConfigRecord, MorselOptions } from '@/store/types';
 
 /**
