@@ -6,6 +6,7 @@ export default {
   language: 'en,fr',
   words: [
     'basenames',
+    'debouncer',
     'dotify',
     'ecycle',
     'ehook',

@@ -8,7 +8,11 @@ import type {
   WriteEvent,
 } from '@/hooks/types';
 
-const context: HookContext = { cwd: '/fake', envName: 'test' };
+const context: HookContext = {
+  cwd: '/fake',
+  envName: 'test',
+  triggerRemerge: () => {},
+};
 
 function makeHook(
   name: string,
@@ -310,7 +314,11 @@ describe('runWriteHooks', () => {
 });
 
 describe('EventHook integration with runHooksSync/runHooks', () => {
-  const context: HookContext = { cwd: '/fake', envName: 'test' };
+  const context: HookContext = {
+    cwd: '/fake',
+    envName: 'test',
+    triggerRemerge: () => {},
+  };
 
   it('runHooksSync skips EventHook even when lifecycle matches', () => {
     const onWrite = vi.fn();

@@ -21,7 +21,7 @@
 5. **Sync-first & distinct async**: `loadConfigSync` is synchronous, `loadConfig` and `watchConfig` are async. No `watch: true/false` option — the chosen function determines the behavior. Async `loadConfig` avoids blocking the event loop during reads — useful for apps that load multiple configs in parallel with `Promise.all`. `watchConfig` is async because boot performs reads (`readFile`) before setting up watchers.
 6. **Watch ref-counting**: a single `fs.watch` per directory, shared across all stores. Closed when the last store calls `stop()`. Includes directories of `extends` files and `watchPaths` of watchable hooks — a change in an inherited file triggers a re-merge.
 7. **Parsing / semantics separation**: the plugin parses raw content → `Record<string, unknown>`. Semantic concepts (`extends`, `$env`, cleanup) are core. The plugin knows nothing about `extends` or `$env`.
-8. **Lifecycle hooks**: layer hooks (`LayerHook`) insert at 8 pipeline points (before/after for each layer). A layer hook produces a `Record` that becomes a layer in the cascade. Stateless — the core calls the hook on each merge, no state between merges. Event hooks (`EventHook`) react to lifecycle events (e.g. `after:write`) without producing a layer — they are side-effect only (logging, metrics, audit).
+8. **Lifecycle hooks**: layer hooks (`LayerHook`) insert at 8 pipeline points (before/after for each layer). A layer hook produces a `Record` that becomes a layer in the cascade. The `load` method is stateless — the core calls it on each merge, no state is kept between merges. Optional `init`/`dispose` lifecycle methods allow stateful hooks to manage external connections (pollers, WebSocket, etcd watch) — `init` is called once after the store is created in `watchConfig`, `dispose` is called once when the store is stopped via `stop()`. Neither is called in `loadConfig`/`loadConfigSync` (one-shot, no lifecycle). The `HookContext` provides `triggerRemerge()` so a hook can request a re-merge of the configuration (e.g. when a remote config source changes). In `loadConfig`/`loadConfigSync`, `triggerRemerge` is a noop. Event hooks (`EventHook`) react to lifecycle events (e.g. `after:write`) without producing a layer — they are side-effect only (logging, metrics, audit).
 9. **Native path parsing & prototype protection**: the core provides robust path parsing supporting dot notation (`a.b.c`), indexed arrays (`users[0].name`, `users.0.name`), and escaped dots (`app\.config.host`). Any attempt to access or mutate `__proto__`, `constructor`, or `prototype` is rejected (`TypeError`).
 10. **Transactional mutation & optimistic write**: `mutateKey` and `deleteKey` update the in-memory config optimistically, emit key-level change events, and persist changes via atomic read-modify-write on the source layer. Writes are serialized per file path. In case of I/O or serialization failure, the in-memory state is automatically rolled back, revert events are emitted, and a `MorselError` (`EWRITE`) is thrown. After a successful write, `after:write` event hooks (`EventHook`) are triggered with a `WriteEvent` — errors in these hooks are caught and logged via `onDebug`, they do not roll back the mutation.
 
@@ -235,6 +235,8 @@ export interface LayerHook {
   load(
     ctx: HookContext,
   ): Record<string, unknown> | Promise<Record<string, unknown>>;
+  init?(ctx: HookContext): void | Promise<void>;
+  dispose?(): void | Promise<void>;
 }
 
 export interface LayerWatchableHook extends LayerHook {
@@ -269,6 +271,7 @@ export type HookLifecycle =
 export interface HookContext {
   readonly cwd: string;
   readonly envName: string | undefined;
+  readonly triggerRemerge: () => void;
 }
 
 export interface ConfigResult<

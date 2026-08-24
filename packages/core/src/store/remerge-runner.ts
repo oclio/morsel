@@ -102,6 +102,7 @@ export function createRemerge<T extends ConfigRecord>(): (
         options_,
         remergeGlobalPath,
         remergeProjectPath,
+        () => void remerge(store),
       );
 
       if (hasDisappearedLayers(newLayers, store)) {

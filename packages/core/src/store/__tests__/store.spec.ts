@@ -46,7 +46,7 @@ function createState<T extends Record<string, unknown>>(
     watchers: new Set(),
     watchedFiles: new Map(),
     projectPath: '/project/config.json',
-    options: {} as never,
+    options: { hooks: [] } as never,
     lastConfig: {},
     remergeInProgress: false,
     remergeDone: undefined,
@@ -312,6 +312,91 @@ describe('createMorselStore', () => {
       expect(clearTimeoutSpy).toHaveBeenCalledWith(timer2);
       expect(state.debounceTimers.size).toBe(0);
       clearTimeoutSpy.mockRestore();
+    });
+
+    it('calls dispose on hooks with dispose defined', async () => {
+      const dispose = vi.fn();
+      const state = createState({
+        options: {
+          hooks: [
+            {
+              name: 'test',
+              lifecycle: 'before:defaults',
+              load: () => ({}),
+              dispose,
+            },
+          ],
+        } as never,
+      });
+      const store = createMorselStore(state, 'frozen');
+
+      await store.stop();
+
+      expect(dispose).toHaveBeenCalledTimes(1);
+    });
+
+    it('skips dispose for EventHook (after:write)', async () => {
+      const dispose = vi.fn();
+      const state = createState({
+        options: {
+          hooks: [
+            {
+              name: 'audit',
+              lifecycle: 'after:write',
+              onWrite: vi.fn(),
+              dispose,
+            },
+          ],
+        } as never,
+      });
+      const store = createMorselStore(state, 'frozen');
+
+      await store.stop();
+
+      expect(dispose).not.toHaveBeenCalled();
+    });
+
+    it('skips dispose when not defined on hook', async () => {
+      const state = createState({
+        options: {
+          hooks: [
+            {
+              name: 'no-dispose',
+              lifecycle: 'before:defaults',
+              load: () => ({}),
+            },
+          ],
+        } as never,
+      });
+      const store = createMorselStore(state, 'frozen');
+
+      await expect(store.stop()).resolves.toBeUndefined();
+    });
+
+    it('logs dispose errors via onDebug without throwing', async () => {
+      const onDebug = vi.fn();
+      const state = createState({
+        options: {
+          hooks: [
+            {
+              name: 'failing',
+              lifecycle: 'before:defaults',
+              load: () => ({}),
+              dispose: () => {
+                throw new Error('cleanup failed');
+              },
+            },
+          ],
+          onDebug,
+        } as never,
+      });
+      const store = createMorselStore(state, 'frozen');
+
+      await expect(store.stop()).resolves.toBeUndefined();
+      expect(onDebug).toHaveBeenCalledWith(
+        'hook "failing" failed in dispose: cleanup failed',
+        { hookName: 'failing' },
+      );
     });
   });
 

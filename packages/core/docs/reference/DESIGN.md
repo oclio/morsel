@@ -81,10 +81,27 @@ The core provides four pluggable contracts:
 
 1. **`FormatPlugin`** — parses a file into a `Record` (bytes → structure).
 2. **`ValidationPlugin`** — validates and transforms the merged configuration.
-3. **`LayerHook`** — inserts into the pipeline lifecycle, produces a dynamic layer.
+3. **`LayerHook`** — inserts into the pipeline lifecycle, produces a dynamic layer. Optional `init`/`dispose` methods allow stateful hooks to manage external connections.
 4. **`EventHook`** — reacts to lifecycle events (e.g. `after:write`) without producing a layer. Side-effect only (logging, metrics, audit).
 
 A layer hook attaches to a specific lifecycle point and produces a `Record<string, unknown>` that inserts as a layer in the cascade, just like `defaults` or `overrides`. An event hook reacts to events (e.g. successful writes) and does not produce a layer.
+
+#### Stateful hooks (`init`/`dispose`)
+
+Layer hooks may optionally define `init(ctx)` and `dispose()` methods for stateful use cases (remote config polling, WebSocket subscriptions, etcd watch):
+
+- `init` is called once after the store is created in `watchConfig` — use it to open connections, start pollers, etc. If `init` throws, a `MorselError` (`EHOOK`) is thrown and the store is not returned.
+- `dispose` is called once when the store is stopped via `stop()` — use it to close connections, clear timers, etc. Errors in `dispose` are caught and logged via `onDebug` — they do not block `stop()`.
+- Neither `init` nor `dispose` is called in `loadConfig`/`loadConfigSync` (one-shot, no lifecycle).
+- `EventHook` does not have `init`/`dispose` — it is purely event-driven.
+
+#### `triggerRemerge`
+
+The `HookContext` provides `triggerRemerge()` — a function that requests a re-merge of the configuration. This enables hooks to react to external changes (remote config updated, etcd key changed) and trigger a fresh merge cycle:
+
+- In `watchConfig`, calling `triggerRemerge()` schedules a re-merge via the store's internal `remerge` function (coalesced by the debounce mechanism).
+- In `loadConfig`/`loadConfigSync`, `triggerRemerge` is a noop — there is no store lifecycle.
+- Safe to call multiple times — coalesced by the re-merge debouncer.
 
 #### 8 layer lifecycle points + 1 event point (before/after for each layer + after:write)
 
@@ -101,7 +118,7 @@ before:defaults → defaults → after:defaults
 - `after:X` hooks produce a layer that stacks **after** layer `X` (higher priority).
 - `after:write` is an event hook — it does not produce a layer, it reacts to a successful write via `onWrite(event: WriteEvent)`.
 - Hooks are executed in `hooks[]` array order for the same lifecycle point.
-- **Stateless** — the core calls the hook on each merge, the hook returns a `Record`, no state is kept between merges.
+- **Stateless `load`, stateful `init`/`dispose`** — the core calls `load` on each merge (no state between merges). Optional `init`/`dispose` methods allow stateful hooks to manage external connections across the store lifecycle.
 - **Event hook errors are non-fatal** — if an `EventHook`'s `onWrite` throws, the error is logged via `onDebug` and the mutation is not rolled back (the write is already confirmed on disk).
 
 ---
@@ -184,7 +201,7 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `WriteEvent` — event payload passed to `EventHook.onWrite` (`filePath`, `keyPath`, `mutation`).
 - `Hook` — union of all hook types (`LayerHook | LayerWatchableHook | EventHook`).
 - `HookLifecycle` — union of the 9 lifecycle points (8 layer points + `after:write`).
-- `HookContext` — execution context provided to the hook (`cwd`, `envName`).
+- `HookContext` — execution context provided to the hook (`cwd`, `envName`, `triggerRemerge`).
 - `ConfigResult<T>` — result returned by `loadConfig` / `loadConfigSync`.
 - `ResolvedPaths` — theoretical paths resolved without I/O (`global`, `project`).
 - `ResolvePathsOptions` — options for `resolvePaths`.

@@ -16,6 +16,7 @@ import { loadConfig, loadConfigSync } from '@/store/load-config';
 
 vi.mock('@/store/assert-name', () => ({
   resolveOptions: vi.fn(),
+  noop: vi.fn(),
 }));
 vi.mock('@/paths/resolve-paths', () => ({
   resolveGlobalPath: vi.fn(),

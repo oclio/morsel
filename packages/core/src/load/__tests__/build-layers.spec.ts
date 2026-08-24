@@ -133,7 +133,10 @@ describe('buildLayers', () => {
 
     await buildLayers(resolved, undefined, undefined);
 
-    expect(createHookContext).toHaveBeenCalledWith(resolved);
+    expect(createHookContext).toHaveBeenCalledWith(
+      resolved,
+      expect.any(Function),
+    );
   });
 
   it('passes hooks from resolved options to runHooks', async () => {

@@ -12,7 +12,7 @@ import {
   resolveProjectPath,
   resolveProjectPathSync,
 } from '@/paths/resolve-paths';
-import { resolveOptions } from '@/store/assert-name';
+import { noop, resolveOptions } from '@/store/assert-name';
 import { toMorselLayer } from '@/store/layer';
 import type { ConfigRecord, ConfigResult, MorselOptions } from '@/store/types';
 
@@ -38,7 +38,7 @@ export function loadConfigSync<T extends ConfigRecord = ConfigRecord>(
     formatPlugins: resolved.formatPlugins,
   };
 
-  const context = createHookContext(resolved);
+  const context = createHookContext(resolved, noop);
   const { hooks } = resolved;
 
   const layers: ResolvedLayer[] = [
@@ -91,7 +91,7 @@ export async function loadConfig<T extends ConfigRecord = ConfigRecord>(
     formatPlugins: resolved.formatPlugins,
   };
 
-  const context = createHookContext(resolved);
+  const context = createHookContext(resolved, noop);
   const { hooks } = resolved;
 
   const layers: ResolvedLayer[] = [

@@ -186,7 +186,30 @@ describe('createRemerge', () => {
       expect.objectContaining({ name: 'myapp' }),
       '/global/myapp.config.json',
       '/project/myapp.config.json',
+      expect.any(Function),
     );
+  });
+
+  it('passes a triggerRemerge closure that calls remerge on the store', async () => {
+    const state = makeState();
+    let capturedTrigger: (() => void) | undefined;
+    let isPendingDuringMerge = false;
+    vi.mocked(buildLayers).mockImplementationOnce(
+      async (_options, _g, _p, trigger) => {
+        capturedTrigger = trigger;
+        return [makeResolvedLayer({ source: 'defaults', config: {} })];
+      },
+    );
+    vi.mocked(mergeLayers).mockImplementationOnce(() => {
+      capturedTrigger!();
+      isPendingDuringMerge = state.pendingRemerge;
+      return { merged: true };
+    });
+
+    await remerge(state);
+
+    expect(capturedTrigger).toBeDefined();
+    expect(isPendingDuringMerge).toBe(true);
   });
 
   it('resolves remergeDone promise in finally', async () => {

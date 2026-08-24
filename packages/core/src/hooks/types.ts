@@ -32,8 +32,12 @@ export interface HookContext {
   envName resolved from options (process.env.NODE_ENV or explicit).
   */
   readonly envName: string | undefined;
-  // Future: trigger() to request a re-merge (stateful hooks)
-  // Future: state to persist between merges (stateful hooks)
+  /**
+  Request a re-merge of the store. No-op in loadConfig/loadConfigSync
+  (no store lifecycle). In watchConfig, triggers a re-merge cycle.
+  Safe to call multiple times — coalesced by the re-merge debouncer.
+  */
+  readonly triggerRemerge: () => void;
 }
 
 /**
@@ -60,6 +64,20 @@ export interface LayerHook {
   load(
     context: HookContext,
   ): Record<string, unknown> | Promise<Record<string, unknown>>;
+  /**
+   * Called once after the store is created in watchConfig.
+   * Use to open connections, start pollers, etc.
+   * Not called in loadConfig/loadConfigSync (one-shot, no lifecycle).
+   * If throw → MorselError (code EHOOK).
+   */
+  init?(context: HookContext): void | Promise<void>;
+  /**
+   * Called once when the store is stopped via stop().
+   * Use to close connections, clear timers, etc.
+   * Not called in loadConfig/loadConfigSync.
+   * Errors are caught and logged via onDebug — do not block stop().
+   */
+  dispose?(): void | Promise<void>;
 }
 
 /**

@@ -188,6 +188,20 @@ export function createMorselStore<T extends ConfigRecord>(
         releaseWatcher(directory, state);
       }
       state.watchers.clear();
+
+      for (const hook of state.options.hooks) {
+        if (hook.lifecycle === 'after:write') continue;
+        if (hook.dispose === undefined) continue;
+        try {
+          await hook.dispose();
+        } catch (error) {
+          state.options.onDebug(
+            `hook "${hook.name}" failed in dispose: ${(error as Error).message}`,
+            { hookName: hook.name },
+          );
+        }
+      }
+
       state.listeners.clear();
       state.wildcardListeners.clear();
     },
