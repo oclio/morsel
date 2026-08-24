@@ -14,7 +14,8 @@ import type { ConfigRecord, MorselOptions } from '@/store/types';
  * 3. If no: write `content` (or `fallbackContent`) — prefers `.config/` dir
  *    if it already exists, otherwise writes at the project root.
  * 4. Return the written path.
- * 5. On failure (permissions, disk full): throw `MorselError` (code `EIO`).
+ * 5. On serialize failure: throws `MorselError` (code `EWRITE`).
+ * 6. On write failure (permissions, disk full): throws `MorselError` (code `EIO`).
  *
  * @param options - `{ name, cwd?, content?, fallbackContent? }`.
  * @returns The existing or written path.
@@ -49,8 +50,12 @@ export function initConfig<T extends ConfigRecord = ConfigRecord>(
   let serialized: string;
   try {
     serialized = plugin.serialize(content);
-  } catch {
-    serialized = plugin.serialize({});
+  } catch (error) {
+    throw new MorselError(
+      projectPath,
+      'EWRITE',
+      error instanceof Error ? error : new Error(String(error)),
+    );
   }
 
   try {

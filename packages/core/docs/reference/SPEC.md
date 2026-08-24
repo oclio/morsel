@@ -564,7 +564,8 @@ export function clearRegistry(): void;
 2. If no: `mkdirSync(dirname, { recursive: true })` — creates the parent directory if needed.
 3. Writes `content` (or `fallbackContent`, or `{}`) via the first format plugin's `serialize` method via atomic write: `writeFileSync` to `<path>.tmp.<timestamp>` then `renameSync` to `<path>` (avoids partial reads in case of crash).
 4. Returns the created path.
-5. On write failure (`writeFileSync` or `renameSync` throws): throws `MorselError` (`EIO`) with the project path and original error as cause.
+5. On serialize failure (`plugin.serialize` throws): throws `MorselError` (`EWRITE`) with the project path and original error as cause — the content is not written and no fallback is applied.
+6. On write failure (`writeFileSync` or `renameSync` throws): throws `MorselError` (`EIO`) with the project path and original error as cause.
 
 #### `stop()`
 

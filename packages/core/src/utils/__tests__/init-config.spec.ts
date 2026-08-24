@@ -247,20 +247,48 @@ describe('initConfig', () => {
     expect(caught?.code).toBe('EIO');
   });
 
-  it('handles plugin.serialize throwing by falling back to empty object', () => {
+  it('throws MorselError with EWRITE when plugin.serialize throws', () => {
     mockResolved();
     vi.mocked(resolveProjectPathSync).mockReturnValue(undefined);
 
     const circular: Record<string, unknown> = {};
     circular['self'] = circular;
 
-    initConfig({ name: 'myapp', content: circular as never });
+    let caught: MorselError | undefined;
+    try {
+      initConfig({ name: 'myapp', content: circular as never });
+    } catch (error) {
+      caught = error as MorselError;
+    }
 
-    expect(writeFileSync).toHaveBeenCalledWith(
-      expect.stringMatching(/^\/project\/myapp\.config\.json\.tmp\.\d+$/),
-      jsonPlugin.serialize({}),
-      'utf8',
-    );
+    expect(caught).toBeInstanceOf(MorselError);
+    expect(caught?.code).toBe('EWRITE');
+    expect(writeFileSync).not.toHaveBeenCalled();
+  });
+
+  it('wraps non-Error throws from plugin.serialize into Error', () => {
+    const throwingPlugin = {
+      name: 'throwing',
+      extensions: ['.json'],
+      parse: () => ({}),
+      serialize: () => {
+        throw 'string error';
+      },
+    };
+    mockResolved({ formatPlugins: [throwingPlugin] });
+    vi.mocked(resolveProjectPathSync).mockReturnValue(undefined);
+
+    let caught: MorselError | undefined;
+    try {
+      initConfig({ name: 'myapp', content: {} as never });
+    } catch (error) {
+      caught = error as MorselError;
+    }
+
+    expect(caught).toBeInstanceOf(MorselError);
+    expect(caught?.code).toBe('EWRITE');
+    expect(caught?.cause).toBeInstanceOf(Error);
+    expect((caught?.cause as Error).message).toBe('string error');
   });
 
   it('calls resolveOptions with provided options', () => {
