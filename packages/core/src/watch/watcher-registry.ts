@@ -106,7 +106,7 @@ function startRecovery(entry: WatcherEntry, directoryPath: string): void {
       if (s.stopped) {
         continue;
       }
-      s.remerge(s);
+      void s.remerge(s);
     }
   };
 
