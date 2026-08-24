@@ -30,12 +30,12 @@ export { jsonPlugin } from '@/plugins/json-plugin';
 export type { FormatPlugin, ValidationPlugin } from '@/plugins/types';
 export { loadConfig, loadConfigSync } from '@/store/load-config';
 export type {
+  ChangeEvent,
   ConfigRecord,
   ConfigResult,
   Listener,
-  MorselChangeEvent,
+  ListenerOptions,
   MorselLayer,
-  MorselListenerOptions,
   MorselOptions,
   MorselStore,
   WatchOptions,

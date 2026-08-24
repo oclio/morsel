@@ -126,7 +126,7 @@ export interface MorselStore<
   on(
     keyPath: string,
     listener: Listener,
-    options?: MorselListenerOptions,
+    options?: ListenerOptions,
   ): () => void;
   get<V = unknown>(
     path: string | readonly (string | number)[],
@@ -286,16 +286,16 @@ export interface KeyChange {
   readonly category: ChangeCategory;
 }
 
-export interface MorselChangeEvent {
+export interface ChangeEvent {
   readonly keyPath: string;
   readonly type: ChangeCategory;
   readonly next: unknown;
   readonly prev: unknown;
 }
 
-export type MorselListenerOptions = Record<string, never>;
+export type ListenerOptions = Record<string, never>;
 
-export type Listener = (event: MorselChangeEvent) => void;
+export type Listener = (event: ChangeEvent) => void;
 export type DebugCallback = (
   message: string,
   context?: Record<string, unknown>,

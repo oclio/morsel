@@ -14,7 +14,7 @@ export type ConfigRecord = Record<string, unknown>;
 /**
  * Event object passed to a listener when a watched dotted key changes.
  */
-export interface MorselChangeEvent {
+export interface ChangeEvent {
   readonly keyPath: string;
   readonly type: ChangeCategory;
   readonly next: unknown;
@@ -29,12 +29,12 @@ export interface MorselChangeEvent {
  * - `signal: AbortSignal` — unsubscribe via AbortController
  * - `includeChildren: boolean` — emit for child key changes
  */
-export type MorselListenerOptions = Record<string, never>;
+export type ListenerOptions = Record<string, never>;
 
 /**
  * Callback invoked when a watched dotted key changes.
  */
-export type Listener = (event: MorselChangeEvent) => void;
+export type Listener = (event: ChangeEvent) => void;
 
 /**
  * User-facing options for `loadConfig` and `watchConfig`.
@@ -169,11 +169,7 @@ export interface MorselStore<
   `foo.*` matches any direct child of `foo`, `**` matches any key.
   Returns unsubscribe.
   */
-  on(
-    key: string,
-    listener: Listener,
-    options?: MorselListenerOptions,
-  ): () => void;
+  on(key: string, listener: Listener, options?: ListenerOptions): () => void;
   /**
   Read a value by dot or bracket path, returning defaultValue if undefined.
   */

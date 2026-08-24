@@ -17,8 +17,8 @@ import { deepCloneConfig } from '@/store/store-state';
 import type {
   DeleteTarget,
   Listener,
+  ListenerOptions,
   MorselLayer,
-  MorselListenerOptions,
   MorselStore,
   StoreTarget,
 } from '@/store/types';
@@ -51,7 +51,7 @@ export function createMorselStore<T extends ConfigRecord>(
     on(
       key: string,
       listener: Listener,
-      _options?: MorselListenerOptions,
+      _options?: ListenerOptions,
     ): () => void {
       if (state.stopped) {
         throw new Error('morsel: store is stopped');

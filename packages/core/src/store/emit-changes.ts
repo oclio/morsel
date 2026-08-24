@@ -1,6 +1,6 @@
 import { diffKeys } from '@/merge/diff-keys';
 import { isWildcardMatch } from '@/store/match-wildcard';
-import type { Listener, MorselChangeEvent } from '@/store/types';
+import type { ChangeEvent, Listener } from '@/store/types';
 
 type ConfigRecord = Record<string, unknown>;
 
@@ -65,7 +65,7 @@ function emitToListeners(
   listeners: Map<string, Set<Listener>>,
   wildcardListeners: Map<string, Set<Listener>>,
 ): void {
-  const event: MorselChangeEvent = {
+  const event: ChangeEvent = {
     keyPath: key,
     type: change.category as 'added' | 'modified' | 'removed',
     next: change.next,
