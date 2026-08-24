@@ -151,7 +151,7 @@ Each layer (`global`, `project`) resolves its own `extends` and `$env` independe
 - A modified object → recursive descent toward child scalars.
 - An entire object replaced (type change, e.g. object → string) or added/removed → emits the parent.
 - A modified array → emits the parent only (no index notation).
-- No wildcards (`*`) to keep algorithmic complexity strictly $O(N)$.
+- Wildcard patterns (`foo.*`, `**`, `foo.**`) supported in `store.on()` for ergonomic event subscription. Matching is $O(N)$ per key — see SPEC §4.5 for semantics.
 
 ### 2.4 Directory-level watching + filename filtering
 

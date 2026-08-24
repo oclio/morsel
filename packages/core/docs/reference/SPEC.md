@@ -46,7 +46,7 @@ Layers resolved independently, with hooks interleaved (4 core layers + hook laye
 - `global`: `resolveGlobalPath` (async) / `resolveGlobalPathSync` (sync) builds candidates from plugin extensions (`formatPlugins.flatMap(p => p.extensions)`), existence check on each (`fs.promises.access` in async, `existsSync` in sync), first match wins. If found → `loadFile(globalPath, formatPlugins)` (plugin parsing + `resolveExtends` + cleanup). If none → `exists: false`, `config: {}`.
 - `[hooks after:global]`: same.
 - `[hooks before:project]`: same.
-- `project`: `resolveProjectPath` (async) / `resolveProjectPathSync` (sync) in `cwd`. Same as `global`.
+- `project`: `resolveProjectPath` (async) / `resolveProjectPathSync` (sync) in `cwd`. Builds candidates from plugin extensions in two groups: first `<cwd>/<name>.config<ext>` for each extension, then `<cwd>/.config/<name><ext>` for each extension (`.config/` directory convention adopted by Vite, ESLint, c12, cosmiconfig). Existence check on each (`fs.promises.access` in async, `existsSync` in sync), first match wins. If found → `loadFile(projectPath, formatPlugins)` (plugin parsing + `resolveExtends` + cleanup). If none → `exists: false`, `config: {}`.
 - `[hooks after:project]`: same.
 - `[hooks before:overrides]`: same.
 - `overrides`: raw object passed as option. Same as `defaults`.
@@ -129,11 +129,7 @@ export interface MorselStore<
    * `foo.*` matches one segment, `**` matches any depth.
    * See §4.5 for wildcard semantics and two-phase ordering.
    */
-  on(
-    keyPath: string,
-    listener: Listener,
-    options?: ListenerOptions,
-  ): () => void;
+  on(key: string, listener: Listener, options?: ListenerOptions): () => void;
   get<V = unknown>(
     path: string | readonly (string | number)[],
     defaultValue?: V,
@@ -450,8 +446,6 @@ export function diffKeys(
   newObj: Record<string, unknown>,
 ): Map<string, KeyChange>;
 
-export function flatten(obj: Record<string, unknown>): Map<string, unknown>;
-
 export function interpolate(
   config: Record<string, unknown>,
   env?: Record<string, string | undefined>,
@@ -490,7 +484,7 @@ export function setPathValue(
 ): void;
 
 export function hasRemovedPathValue(
-  target: Record<string, unknown> | unknown[],
+  target: ConfigRecord | unknown[],
   path: string | readonly PathSegment[],
 ): boolean;
 
