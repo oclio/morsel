@@ -1,5 +1,5 @@
-export type { ErrorCode } from '@/errors/morsel-error';
-export { MorselError } from '@/errors/morsel-error';
+export type { ErrorCode } from '@/errors/error';
+export { MorselError } from '@/errors/error';
 export { NoPluginError } from '@/errors/no-plugin-error';
 export { ValidationError } from '@/errors/validation-error';
 export { WriteError } from '@/errors/write-error';

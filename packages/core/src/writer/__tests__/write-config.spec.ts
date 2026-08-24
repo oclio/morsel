@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs';
 import * as os from 'node:os';
 import path from 'node:path';
 
-import { MorselError } from '@/errors/morsel-error';
+import { MorselError } from '@/errors/error';
 import { jsonPlugin } from '@/plugins/json-plugin';
 import type { FormatPlugin } from '@/plugins/types';
 import { writeConfigFile } from '@/writer/write-config';

@@ -1,4 +1,4 @@
-import { MorselError } from '@/errors/morsel-error';
+import { MorselError } from '@/errors/error';
 import { interpolate } from '@/merge/interpolate';
 
 describe('interpolate', () => {

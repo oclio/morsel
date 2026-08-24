@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 
-import { MorselError } from '@/errors/morsel-error';
+import { MorselError } from '@/errors/error';
 import { NoPluginError } from '@/errors/no-plugin-error';
 import { selectParser } from '@/plugins/select-parser';
 import type { FormatPlugin } from '@/plugins/types';

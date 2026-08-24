@@ -1,5 +1,5 @@
-import type { ErrorCode } from '@/errors/morsel-error';
-import { MorselError } from '@/errors/morsel-error';
+import type { ErrorCode } from '@/errors/error';
+import { MorselError } from '@/errors/error';
 
 describe('MorselError', () => {
   describe('properties', () => {

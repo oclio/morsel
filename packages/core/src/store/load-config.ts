@@ -13,7 +13,7 @@ import {
   resolveProjectPathSync,
 } from '@/paths/resolve-paths';
 import { resolveOptions } from '@/store/assert-name';
-import { toMorselLayer } from '@/store/morsel-layer';
+import { toMorselLayer } from '@/store/layer';
 import type { ConfigRecord, ConfigResult, MorselOptions } from '@/store/types';
 
 /**

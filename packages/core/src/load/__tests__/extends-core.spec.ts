@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { MorselError } from '@/errors/morsel-error';
+import { MorselError } from '@/errors/error';
 import {
   checkCycleOrDepth,
   mergeExtendsResults,

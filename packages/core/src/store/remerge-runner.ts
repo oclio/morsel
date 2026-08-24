@@ -1,4 +1,4 @@
-import { MorselError } from '@/errors/morsel-error';
+import { MorselError } from '@/errors/error';
 import { applyValidation } from '@/load/apply-validation';
 import { buildLayers } from '@/load/build-layers';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
@@ -7,7 +7,7 @@ import { interpolate } from '@/merge/interpolate';
 import { resolveGlobalPath, resolveProjectPath } from '@/paths/resolve-paths';
 import { noop } from '@/store/assert-name';
 import { emitChanges } from '@/store/emit-changes';
-import { toMorselLayer } from '@/store/morsel-layer';
+import { toMorselLayer } from '@/store/layer';
 import type { StoreState } from '@/store/store-state';
 import { deepCloneConfig } from '@/store/store-state';
 import { updateWatchedFiles, updateWatchers } from '@/store/watcher-setup';

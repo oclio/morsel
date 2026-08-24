@@ -1,4 +1,4 @@
-import { MorselError } from '@/errors/morsel-error';
+import { MorselError } from '@/errors/error';
 import { applyMutability } from '@/load/merge-layers';
 import { parsePath } from '@/paths/parse-path';
 import {

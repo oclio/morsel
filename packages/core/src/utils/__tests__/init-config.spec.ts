@@ -1,6 +1,6 @@
 import { mkdirSync, renameSync, writeFileSync } from 'node:fs';
 
-import { MorselError } from '@/errors/morsel-error';
+import { MorselError } from '@/errors/error';
 import { resolvePaths, resolveProjectPathSync } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
 import { resolveOptions } from '@/store/assert-name';

@@ -1,6 +1,6 @@
 import { applyMutability } from '@/load/merge-layers';
-import { createMorselStore } from '@/store/morsel-store';
 import { createStableProxy } from '@/store/stable-proxy';
+import { createMorselStore } from '@/store/store';
 import {
   deleteKey,
   mutateKey,

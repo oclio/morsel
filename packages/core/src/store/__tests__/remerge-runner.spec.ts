@@ -1,4 +1,4 @@
-import { MorselError } from '@/errors/morsel-error';
+import { MorselError } from '@/errors/error';
 import { buildLayers } from '@/load/build-layers';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
 import type { ResolvedLayer } from '@/load/resolve-layer';
@@ -6,7 +6,7 @@ import { resolveGlobalPath, resolveProjectPath } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
 import { noop } from '@/store/assert-name';
 import { emitChanges } from '@/store/emit-changes';
-import { toMorselLayer } from '@/store/morsel-layer';
+import { toMorselLayer } from '@/store/layer';
 import { createRemerge } from '@/store/remerge-runner';
 import type { StoreState } from '@/store/store-state';
 import { deepCloneConfig } from '@/store/store-state';
@@ -26,7 +26,7 @@ vi.mock('@/paths/resolve-paths', () => ({
 vi.mock('@/store/emit-changes', () => ({
   emitChanges: vi.fn(),
 }));
-vi.mock('@/store/morsel-layer', () => ({
+vi.mock('@/store/layer', () => ({
   toMorselLayer: vi.fn(),
 }));
 vi.mock('@/store/store-state', () => ({

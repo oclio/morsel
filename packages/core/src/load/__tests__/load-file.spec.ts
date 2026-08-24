@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 
-import { MorselError } from '@/errors/morsel-error';
+import { MorselError } from '@/errors/error';
 import { NoPluginError } from '@/errors/no-plugin-error';
 import { loadFile, loadFileSync } from '@/load/load-file';
 import { jsonPlugin } from '@/plugins/json-plugin';
@@ -14,7 +14,7 @@ vi.mock('node:fs/promises', () => ({
   readFile: vi.fn(),
 }));
 
-vi.mock('@/errors/morsel-error', () => ({
+vi.mock('@/errors/error', () => ({
   MorselError: class MorselError extends Error {
     readonly path: string | undefined;
     readonly code: string;

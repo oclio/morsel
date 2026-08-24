@@ -1,4 +1,4 @@
-import { MorselError } from '@/errors/morsel-error';
+import { MorselError } from '@/errors/error';
 import { WriteError } from '@/errors/write-error';
 import type { MutationOperation } from '@/writer/write-config';
 

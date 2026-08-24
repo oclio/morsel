@@ -1,7 +1,7 @@
 import { mkdirSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { MorselError } from '@/errors/morsel-error';
+import { MorselError } from '@/errors/error';
 import { resolvePaths, resolveProjectPathSync } from '@/paths/resolve-paths';
 import { resolveOptions } from '@/store/assert-name';
 import type { ConfigRecord, MorselOptions } from '@/store/types';

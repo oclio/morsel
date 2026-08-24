@@ -4,8 +4,8 @@ import { resolveGlobalPath, resolveProjectPath } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
 import { resolveOptions } from '@/store/assert-name';
 import { noop } from '@/store/assert-name';
-import { toMorselLayer } from '@/store/morsel-layer';
-import { createMorselStore } from '@/store/morsel-store';
+import { toMorselLayer } from '@/store/layer';
+import { createMorselStore } from '@/store/store';
 import { createStoreState } from '@/store/store-state';
 import { watchConfig } from '@/store/watch-config';
 import { collectWatchedFiles, setupWatchers } from '@/store/watcher-setup';
@@ -29,10 +29,10 @@ vi.mock('@/store/assert-name', async (importOriginal) => {
     resolveOptions: vi.fn(),
   };
 });
-vi.mock('@/store/morsel-layer', () => ({
+vi.mock('@/store/layer', () => ({
   toMorselLayer: vi.fn(),
 }));
-vi.mock('@/store/morsel-store', () => ({
+vi.mock('@/store/store', () => ({
   createMorselStore: vi.fn(),
 }));
 vi.mock('@/store/store-state', () => ({

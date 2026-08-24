@@ -1,4 +1,4 @@
-import { MorselError } from '@/errors/morsel-error';
+import { MorselError } from '@/errors/error';
 
 /**
  * Thrown when a validation plugin rejects the merged config.

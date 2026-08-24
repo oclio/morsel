@@ -1,4 +1,4 @@
-import { MorselError } from '@/errors/morsel-error';
+import { MorselError } from '@/errors/error';
 import { isPlainObject } from '@/merge/merge-helpers';
 import { getPathValue } from '@/paths/path-access';
 

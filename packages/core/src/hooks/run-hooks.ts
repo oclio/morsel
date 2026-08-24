@@ -1,4 +1,4 @@
-import { MorselError } from '@/errors/morsel-error';
+import { MorselError } from '@/errors/error';
 import type { HookContext, HookLifecycle, LayerHook } from '@/hooks/types';
 import { buildHookLayer } from '@/load/layer-helpers';
 import type { ResolvedLayer } from '@/load/resolve-layer';

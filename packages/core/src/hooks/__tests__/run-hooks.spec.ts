@@ -1,4 +1,4 @@
-import { MorselError } from '@/errors/morsel-error';
+import { MorselError } from '@/errors/error';
 import { runHooks, runHooksSync } from '@/hooks/run-hooks';
 import type { HookContext, HookLifecycle, LayerHook } from '@/hooks/types';
 
