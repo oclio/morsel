@@ -7,12 +7,8 @@ type ConfigRecord = Record<string, unknown>;
  * Convert a {@link ResolvedLayer} into an immutable {@link MorselLayer}.
  * Deep-freezes the config and extendsPaths array.
  */
-export function toMorselLayer(
-  layer: ResolvedLayer,
-  configName: string,
-): MorselLayer {
+export function toMorselLayer(layer: ResolvedLayer): MorselLayer {
   const base = {
-    configName,
     source: layer.source,
     path: layer.path,
     config: deepFreeze({ ...layer.config }),

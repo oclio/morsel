@@ -187,7 +187,7 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `MorselOptions` — common configuration options (`name`, `cwd`, `defaults`, `overrides`, `globalDir`, etc.).
 - `WatchOptions` — extends `MorselOptions` with `watchDebounce`.
 - `MorselStore<T>` — reactive store instance (`config`, `layers`, `on`, `get`, `set`, `has`, `unset`, `all`, `dotify`, `push`, `unshift`, `pop`, `shift`, `splice`, `indexOf`, `lastIndexOf`, `stop`).
-- `MorselLayer` — trace of a resolved layer (`configName`, `source`, `path`, `config`, `exists`, `extendsPaths`, `hookName`).
+- `MorselLayer` — trace of a resolved layer (`source`, `path`, `config`, `exists`, `extendsPaths`, `hookName`).
 - `MorselError` — base error class with `path`, `code`, and `cause`.
 - `ErrorCode` — union of error codes (`'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK' | 'EWRITE'`).
 - `NoPluginError` — thrown when no extension matches a plugin (`ENOPLUGIN`).

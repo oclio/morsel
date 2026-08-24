@@ -186,7 +186,6 @@ export interface MorselStore<
 }
 
 export interface MorselLayer {
-  readonly configName: string;
   readonly source: LayerSource;
   readonly path: string | undefined;
   readonly config: Readonly<Record<string, unknown>>;

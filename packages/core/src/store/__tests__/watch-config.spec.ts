@@ -156,8 +156,7 @@ describe('watchConfig', () => {
 
     vi.mocked(mergeLayers).mockReturnValue({ merged: true });
     vi.mocked(applyMutability).mockReturnValue({ frozen: true });
-    vi.mocked(toMorselLayer).mockImplementation((layer, configName) => ({
-      configName,
+    vi.mocked(toMorselLayer).mockImplementation((layer) => ({
       source: layer.source,
       path: layer.path,
       config: layer.config,

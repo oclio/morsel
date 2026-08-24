@@ -57,9 +57,7 @@ export async function watchConfig<T extends ConfigRecord = ConfigRecord>(
   const interpolated = interpolate(merged);
   const validated = applyValidation(interpolated, resolved.validationPlugins);
   const config = applyMutability(validated, resolved.configMutability) as T;
-  const morselLayers = layers.map((layer) =>
-    toMorselLayer(layer, resolved.name),
-  );
+  const morselLayers = layers.map((layer) => toMorselLayer(layer));
 
   const debounceMs = options.watchDebounce ?? 300;
 

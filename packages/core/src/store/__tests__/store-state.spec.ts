@@ -26,7 +26,6 @@ const mockOptions = {
 
 function makeLayer(overrides: Partial<MorselLayer> = {}): MorselLayer {
   return {
-    configName: 'myapp',
     source: 'project',
     path: '/path/to/config.json',
     config: {},

@@ -3,7 +3,6 @@ import { resolveKeyOrigin } from '@/writer/resolve-origin';
 
 describe('resolveKeyOrigin', () => {
   const projectLayer: MorselLayer = {
-    configName: 'myapp',
     source: 'project',
     path: '/app/morsel.config.json',
     config: { server: { port: 3000 } },
@@ -12,7 +11,6 @@ describe('resolveKeyOrigin', () => {
   };
 
   const globalLayer: MorselLayer = {
-    configName: 'myapp',
     source: 'global',
     path: '/home/user/.config/morsel/morsel.config.json',
     config: { database: { host: 'localhost' } },
