@@ -10,11 +10,11 @@ import {
   resolveProjectPathSync,
 } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
-import { resolveOptions } from '@/store/assert-name';
+import { resolveOptions } from '@/store/boot/assert-name';
+import { loadConfig, loadConfigSync } from '@/store/boot/load-config';
 import { toMorselLayer } from '@/store/layer';
-import { loadConfig, loadConfigSync } from '@/store/load-config';
 
-vi.mock('@/store/assert-name', () => ({
+vi.mock('@/store/boot/assert-name', () => ({
   resolveOptions: vi.fn(),
   noop: vi.fn(),
 }));

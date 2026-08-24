@@ -1,5 +1,5 @@
 import { isPlainObject } from '@/merge/merge-helpers';
-import type { ResolvedOptions } from '@/store/assert-name';
+import type { ResolvedOptions } from '@/store/boot/assert-name';
 import { createStoreState, deepCloneConfig } from '@/store/store-state';
 
 vi.mock('@/merge/merge-helpers', () => ({

@@ -6,16 +6,8 @@ import {
   hasRemovedPathValue,
   setPathValue,
 } from '@/paths/path-access';
-import { emitChanges } from '@/store/emit-changes';
-import {
-  deleteKey,
-  mutateKey,
-  popKey,
-  pushKey,
-  shiftKey,
-  spliceKey,
-  unshiftKey,
-} from '@/store/store-mutator';
+import { emitChanges } from '@/store/reactive/emit-changes';
+import { deleteKey, mutateKey } from '@/store/store-mutator';
 import type { StoreState } from '@/store/store-state';
 import { deepCloneConfig } from '@/store/store-state';
 import { resolveKeyOrigin } from '@/writer/resolve-origin';
@@ -35,7 +27,7 @@ vi.mock('@/paths/path-access', () => ({
   hasRemovedPathValue: vi.fn(),
   setPathValue: vi.fn(),
 }));
-vi.mock('@/store/emit-changes', () => ({
+vi.mock('@/store/reactive/emit-changes', () => ({
   emitChanges: vi.fn(),
 }));
 vi.mock('@/store/store-state', () => ({
@@ -797,150 +789,5 @@ describe('store-mutator', () => {
 
       expect(runWriteHooks).not.toHaveBeenCalled();
     });
-  });
-
-  describe('pushKey', () => {
-    it('pushes a value and returns the new index', async () => {
-      const state = createState({
-        _config: { tags: ['a', 'b'] } as never,
-      });
-
-      const index = await pushKey(state, 'tags', 'c', undefined, 'mutable');
-
-      expect(index).toBe(2);
-      expect(getPathValue(state._config, 'tags')).toEqual(['a', 'b', 'c']);
-    });
-
-    it('emits index listener for the new element', async () => {
-      const listener = vi.fn();
-      const state = createState({
-        _config: { tags: ['a'] } as never,
-      });
-      state.listeners.set('tags.1', new Set([listener as never]));
-
-      await pushKey(state, 'tags', 'b', undefined, 'mutable');
-
-      expect(listener).toHaveBeenCalledWith({
-        keyPath: 'tags.1',
-        type: 'added',
-        next: 'b',
-        prev: undefined,
-      });
-    });
-  });
-
-  describe('unshiftKey', () => {
-    it('unshifts a value and returns 0', async () => {
-      const state = createState({
-        _config: { tags: ['b', 'c'] } as never,
-      });
-
-      const index = await unshiftKey(state, 'tags', 'a', undefined, 'mutable');
-
-      expect(index).toBe(0);
-      expect(getPathValue(state._config, 'tags')).toEqual(['a', 'b', 'c']);
-    });
-  });
-
-  describe('popKey', () => {
-    it('pops the last element and returns it', async () => {
-      const state = createState({
-        _config: { tags: ['a', 'b', 'c'] } as never,
-      });
-
-      const removed = await popKey(state, 'tags', undefined, 'mutable');
-
-      expect(removed).toBe('c');
-      expect(getPathValue(state._config, 'tags')).toEqual(['a', 'b']);
-    });
-  });
-
-  describe('shiftKey', () => {
-    it('shifts the first element and returns it', async () => {
-      const state = createState({
-        _config: { tags: ['a', 'b', 'c'] } as never,
-      });
-
-      const removed = await shiftKey(state, 'tags', undefined, 'mutable');
-
-      expect(removed).toBe('a');
-      expect(getPathValue(state._config, 'tags')).toEqual(['b', 'c']);
-    });
-  });
-
-  describe('spliceKey', () => {
-    it('removes and inserts elements', async () => {
-      const state = createState({
-        _config: { tags: ['a', 'b', 'c', 'd'] } as never,
-      });
-
-      const removed = await spliceKey(
-        state,
-        'tags',
-        1,
-        2,
-        ['x', 'y'],
-        undefined,
-        'mutable',
-      );
-
-      expect(removed).toEqual(['b', 'c']);
-      expect(getPathValue(state._config, 'tags')).toEqual(['a', 'x', 'y', 'd']);
-    });
-
-    it('removes only when no items provided', async () => {
-      const state = createState({
-        _config: { tags: ['a', 'b', 'c'] } as never,
-      });
-
-      const removed = await spliceKey(
-        state,
-        'tags',
-        0,
-        2,
-        [],
-        undefined,
-        'mutable',
-      );
-
-      expect(removed).toEqual(['a', 'b']);
-      expect(getPathValue(state._config, 'tags')).toEqual(['c']);
-    });
-  });
-
-  describe('array mutators — type validation', () => {
-    it.each([
-      {
-        name: 'pushKey',
-        fn: (s: StoreState) => pushKey(s, 'name', 'x', undefined, 'mutable'),
-      },
-      {
-        name: 'unshiftKey',
-        fn: (s: StoreState) => unshiftKey(s, 'name', 'x', undefined, 'mutable'),
-      },
-      {
-        name: 'popKey',
-        fn: (s: StoreState) => popKey(s, 'name', undefined, 'mutable'),
-      },
-      {
-        name: 'shiftKey',
-        fn: (s: StoreState) => shiftKey(s, 'name', undefined, 'mutable'),
-      },
-      {
-        name: 'spliceKey',
-        fn: (s: StoreState) =>
-          spliceKey(s, 'name', 0, 1, [], undefined, 'mutable'),
-      },
-    ])(
-      'throws EVALIDATE when target is not an array ($name)',
-      async ({ fn }) => {
-        const state = createState({
-          _config: { name: 'morsel' } as never,
-        });
-
-        await expect(fn(state)).rejects.toThrow('EVALIDATE');
-        await expect(fn(state)).rejects.toThrow('"name" is not an array');
-      },
-    );
   });
 });

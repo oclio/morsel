@@ -1,5 +1,5 @@
 import { createHookContext } from '@/hooks/hook-context';
-import type { ResolvedOptions } from '@/store/assert-name';
+import type { ResolvedOptions } from '@/store/boot/assert-name';
 
 function makeOptions(
   overrides: Partial<ResolvedOptions> = {},

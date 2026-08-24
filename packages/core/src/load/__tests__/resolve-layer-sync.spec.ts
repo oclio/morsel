@@ -1,11 +1,11 @@
-import { stripExtends } from '@/load/extends-helpers';
+import { stripExtends } from '@/load/extends/extends-helpers';
+import { resolveExtendsSync } from '@/load/extends/resolve-extends-sync';
 import { buildFileLayer, buildRawLayer } from '@/load/layer-helpers';
 import { resolveEnv } from '@/load/resolve-env';
-import { resolveExtendsSync } from '@/load/resolve-extends-sync';
 import { resolveLayerSync } from '@/load/resolve-layer-sync';
 import { jsonPlugin } from '@/plugins/json-plugin';
 
-vi.mock('@/load/extends-helpers', () => ({
+vi.mock('@/load/extends/extends-helpers', () => ({
   stripExtends: vi.fn(),
 }));
 
@@ -18,7 +18,7 @@ vi.mock('@/load/resolve-env', () => ({
   resolveEnv: vi.fn(),
 }));
 
-vi.mock('@/load/resolve-extends-sync', () => ({
+vi.mock('@/load/extends/resolve-extends-sync', () => ({
   resolveExtendsSync: vi.fn(),
 }));
 

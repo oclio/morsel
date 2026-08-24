@@ -4,13 +4,16 @@ import { applyMutability, mergeLayers } from '@/load/merge-layers';
 import type { ResolvedLayer } from '@/load/resolve-layer';
 import { resolveGlobalPath, resolveProjectPath } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
-import { noop } from '@/store/assert-name';
-import { emitChanges } from '@/store/emit-changes';
+import { noop } from '@/store/boot/assert-name';
 import { toMorselLayer } from '@/store/layer';
-import { createRemerge } from '@/store/remerge-runner';
+import { emitChanges } from '@/store/reactive/emit-changes';
 import type { StoreState } from '@/store/store-state';
 import { deepCloneConfig } from '@/store/store-state';
-import { updateWatchedFiles, updateWatchers } from '@/store/watcher-setup';
+import { createRemerge } from '@/store/watch/remerge-runner';
+import {
+  updateWatchedFiles,
+  updateWatchers,
+} from '@/store/watch/watcher-setup';
 
 vi.mock('@/load/build-layers', () => ({
   buildLayers: vi.fn(),
@@ -23,7 +26,7 @@ vi.mock('@/paths/resolve-paths', () => ({
   resolveGlobalPath: vi.fn(),
   resolveProjectPath: vi.fn(),
 }));
-vi.mock('@/store/emit-changes', () => ({
+vi.mock('@/store/reactive/emit-changes', () => ({
   emitChanges: vi.fn(),
 }));
 vi.mock('@/store/layer', () => ({
@@ -32,7 +35,7 @@ vi.mock('@/store/layer', () => ({
 vi.mock('@/store/store-state', () => ({
   deepCloneConfig: vi.fn(),
 }));
-vi.mock('@/store/watcher-setup', () => ({
+vi.mock('@/store/watch/watcher-setup', () => ({
   updateWatchedFiles: vi.fn(),
   updateWatchers: vi.fn(),
 }));

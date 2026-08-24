@@ -1,7 +1,7 @@
 import path from 'node:path';
 
 import { MorselError } from '@/errors/error';
-import { normalizeExtends, stripExtends } from '@/load/extends-helpers';
+import { normalizeExtends, stripExtends } from '@/load/extends/extends-helpers';
 import type { LoadFileResult } from '@/load/load-file';
 import type { DebugCallback } from '@/load/resolve-env';
 import { resolveEnv } from '@/load/resolve-env';

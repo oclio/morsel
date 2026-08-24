@@ -3,8 +3,8 @@ import { runHooks } from '@/hooks/run-hooks';
 import type { HookContext } from '@/hooks/types';
 import type { ResolvedLayer } from '@/load/resolve-layer';
 import { resolveLayer } from '@/load/resolve-layer';
-import type { ResolvedOptions } from '@/store/assert-name';
-import { noop } from '@/store/assert-name';
+import type { ResolvedOptions } from '@/store/boot/assert-name';
+import { noop } from '@/store/boot/assert-name';
 
 interface LayerResolveOptions {
   readonly envName: string | undefined;

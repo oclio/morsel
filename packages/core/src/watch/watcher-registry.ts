@@ -1,6 +1,6 @@
 import { existsSync, type FSWatcher, watch } from 'node:fs';
 
-import { noop } from '@/store/assert-name';
+import { noop } from '@/store/boot/assert-name';
 import type { StoreState } from '@/store/store-state';
 import { handleWatchEvent } from '@/watch/handle-event';
 

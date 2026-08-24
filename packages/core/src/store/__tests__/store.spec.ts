@@ -1,36 +1,37 @@
 import { applyMutability } from '@/load/merge-layers';
-import { emitChanges } from '@/store/emit-changes';
-import { createStableProxy } from '@/store/stable-proxy';
-import { createMorselStore } from '@/store/store';
 import {
-  deleteKey,
-  mutateKey,
   popKey,
   pushKey,
   shiftKey,
   spliceKey,
   unshiftKey,
-} from '@/store/store-mutator';
+} from '@/store/array-ops';
+import { stopStore } from '@/store/boot/stop-store';
+import { emitChanges } from '@/store/reactive/emit-changes';
+import { createStableProxy } from '@/store/reactive/stable-proxy';
+import { createMorselStore } from '@/store/store';
+import { deleteKey, mutateKey } from '@/store/store-mutator';
 import type { StoreState } from '@/store/store-state';
-import { releaseWatcher } from '@/watch/watcher-registry';
 
 vi.mock('@/load/merge-layers', () => ({
   applyMutability: vi.fn(),
 }));
-vi.mock('@/store/stable-proxy', () => ({
-  createStableProxy: vi.fn(),
-}));
-vi.mock('@/store/store-mutator', () => ({
-  deleteKey: vi.fn(),
-  mutateKey: vi.fn(),
+vi.mock('@/store/array-ops', () => ({
   popKey: vi.fn(),
   pushKey: vi.fn(),
   shiftKey: vi.fn(),
   spliceKey: vi.fn(),
   unshiftKey: vi.fn(),
 }));
-vi.mock('@/watch/watcher-registry', () => ({
-  releaseWatcher: vi.fn(),
+vi.mock('@/store/boot/stop-store', () => ({
+  stopStore: vi.fn(),
+}));
+vi.mock('@/store/reactive/stable-proxy', () => ({
+  createStableProxy: vi.fn(),
+}));
+vi.mock('@/store/store-mutator', () => ({
+  deleteKey: vi.fn(),
+  mutateKey: vi.fn(),
 }));
 
 function createState<T extends Record<string, unknown>>(
@@ -296,192 +297,14 @@ describe('createMorselStore', () => {
   });
 
   describe('stop', () => {
-    it('sets stopped to true', async () => {
+    it('delegates to stopStore with state', async () => {
+      vi.mocked(stopStore).mockResolvedValue(undefined);
       const state = createState();
       const store = createMorselStore(state, 'frozen');
 
       await store.stop();
 
-      expect(state.stopped).toBe(true);
-    });
-
-    it('returns early when already stopped without releasing watchers', async () => {
-      const state = createState({
-        stopped: true,
-        watchers: new Set(['/dir1', '/dir2']),
-      });
-      const store = createMorselStore(state, 'frozen');
-
-      await store.stop();
-
-      expect(releaseWatcher).not.toHaveBeenCalled();
-      expect(state.watchers.size).toBe(2);
-    });
-
-    it('awaits remergeDone promise if defined', async () => {
-      let isResolved = false;
-      const remergeDone = new Promise<void>((resolve) => {
-        setTimeout(() => {
-          isResolved = true;
-          resolve();
-        }, 10);
-      });
-      const state = createState({ remergeDone });
-      const store = createMorselStore(state, 'frozen');
-
-      await store.stop();
-
-      expect(isResolved).toBe(true);
-    });
-
-    it('releases all watchers', async () => {
-      const state = createState({
-        watchers: new Set(['/dir1', '/dir2']),
-      });
-      const store = createMorselStore(state, 'frozen');
-
-      await store.stop();
-
-      expect(releaseWatcher).toHaveBeenCalledTimes(2);
-      expect(releaseWatcher).toHaveBeenCalledWith('/dir1', state);
-      expect(releaseWatcher).toHaveBeenCalledWith('/dir2', state);
-    });
-
-    it('clears watchers set', async () => {
-      const state = createState({
-        watchers: new Set(['/dir1']),
-      });
-      const store = createMorselStore(state, 'frozen');
-
-      await store.stop();
-
-      expect(state.watchers.size).toBe(0);
-    });
-
-    it('clears listeners and wildcardListeners maps', async () => {
-      const state = createState();
-      state.listeners.set('foo', new Set([vi.fn()]));
-      state.wildcardListeners.set('**', new Set([vi.fn()]));
-      const store = createMorselStore(state, 'frozen');
-
-      await store.stop();
-
-      expect(state.listeners.size).toBe(0);
-      expect(state.wildcardListeners.size).toBe(0);
-    });
-
-    it('does not await remergeDone when undefined', async () => {
-      const state = createState({ remergeDone: undefined });
-      const store = createMorselStore(state, 'frozen');
-
-      await store.stop();
-
-      expect(state.stopped).toBe(true);
-    });
-
-    it('clears all debounce timers on stop', async () => {
-      const timer1 = setTimeout(() => {}, 1000) as unknown as NodeJS.Timeout;
-      const timer2 = setTimeout(() => {}, 2000) as unknown as NodeJS.Timeout;
-      const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
-      const state = createState({
-        debounceTimers: new Map([
-          ['key1', timer1],
-          ['key2', timer2],
-        ]),
-      });
-      const store = createMorselStore(state, 'frozen');
-
-      await store.stop();
-
-      expect(clearTimeoutSpy).toHaveBeenCalledWith(timer1);
-      expect(clearTimeoutSpy).toHaveBeenCalledWith(timer2);
-      expect(state.debounceTimers.size).toBe(0);
-      clearTimeoutSpy.mockRestore();
-    });
-
-    it('calls dispose on hooks with dispose defined', async () => {
-      const dispose = vi.fn();
-      const state = createState({
-        options: {
-          hooks: [
-            {
-              name: 'test',
-              lifecycle: 'before:defaults',
-              load: () => ({}),
-              dispose,
-            },
-          ],
-        } as never,
-      });
-      const store = createMorselStore(state, 'frozen');
-
-      await store.stop();
-
-      expect(dispose).toHaveBeenCalledTimes(1);
-    });
-
-    it('skips dispose for EventHook (after:write)', async () => {
-      const dispose = vi.fn();
-      const state = createState({
-        options: {
-          hooks: [
-            {
-              name: 'audit',
-              lifecycle: 'after:write',
-              onWrite: vi.fn(),
-              dispose,
-            },
-          ],
-        } as never,
-      });
-      const store = createMorselStore(state, 'frozen');
-
-      await store.stop();
-
-      expect(dispose).not.toHaveBeenCalled();
-    });
-
-    it('skips dispose when not defined on hook', async () => {
-      const state = createState({
-        options: {
-          hooks: [
-            {
-              name: 'no-dispose',
-              lifecycle: 'before:defaults',
-              load: () => ({}),
-            },
-          ],
-        } as never,
-      });
-      const store = createMorselStore(state, 'frozen');
-
-      await expect(store.stop()).resolves.toBeUndefined();
-    });
-
-    it('logs dispose errors via onDebug without throwing', async () => {
-      const onDebug = vi.fn();
-      const state = createState({
-        options: {
-          hooks: [
-            {
-              name: 'failing',
-              lifecycle: 'before:defaults',
-              load: () => ({}),
-              dispose: () => {
-                throw new Error('cleanup failed');
-              },
-            },
-          ],
-          onDebug,
-        } as never,
-      });
-      const store = createMorselStore(state, 'frozen');
-
-      await expect(store.stop()).resolves.toBeUndefined();
-      expect(onDebug).toHaveBeenCalledWith(
-        'hook "failing" failed in dispose: cleanup failed',
-        { hookName: 'failing' },
-      );
+      expect(stopStore).toHaveBeenCalledWith(state);
     });
   });
 

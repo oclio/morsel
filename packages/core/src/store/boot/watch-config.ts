@@ -5,14 +5,17 @@ import { buildLayers } from '@/load/build-layers';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
 import { interpolate } from '@/merge/interpolate';
 import { resolveGlobalPath, resolveProjectPath } from '@/paths/resolve-paths';
-import { resolveOptions } from '@/store/assert-name';
+import { resolveOptions } from '@/store/boot/assert-name';
 import { toMorselLayer } from '@/store/layer';
-import { createRemerge } from '@/store/remerge-runner';
 import { createMorselStore } from '@/store/store';
 import type { StoreState } from '@/store/store-state';
 import { createStoreState } from '@/store/store-state';
 import type { ConfigRecord, MorselStore, WatchOptions } from '@/store/types';
-import { collectWatchedFiles, setupWatchers } from '@/store/watcher-setup';
+import { createRemerge } from '@/store/watch/remerge-runner';
+import {
+  collectWatchedFiles,
+  setupWatchers,
+} from '@/store/watch/watcher-setup';
 import { releaseWatcher } from '@/watch/watcher-registry';
 
 /**

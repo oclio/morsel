@@ -1,4 +1,7 @@
-import { isWildcardMatch, isWildcardPattern } from '@/store/match-wildcard';
+import {
+  isWildcardMatch,
+  isWildcardPattern,
+} from '@/store/reactive/match-wildcard';
 
 describe('isWildcardMatch', () => {
   it.each<{

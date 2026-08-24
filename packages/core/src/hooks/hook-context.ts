@@ -1,5 +1,5 @@
 import type { HookContext } from '@/hooks/types';
-import type { ResolvedOptions } from '@/store/assert-name';
+import type { ResolvedOptions } from '@/store/boot/assert-name';
 
 /**
  * Build a fresh HookContext from resolved options.

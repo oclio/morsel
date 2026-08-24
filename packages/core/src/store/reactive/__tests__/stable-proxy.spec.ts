@@ -1,4 +1,4 @@
-import { createStableProxy } from '@/store/stable-proxy';
+import { createStableProxy } from '@/store/reactive/stable-proxy';
 import type { StoreState } from '@/store/store-state';
 
 function createState<T extends Record<string, unknown>>(

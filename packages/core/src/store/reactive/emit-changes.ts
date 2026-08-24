@@ -1,5 +1,5 @@
 import { diffKeys } from '@/merge/diff-keys';
-import { isWildcardMatch } from '@/store/match-wildcard';
+import { isWildcardMatch } from '@/store/reactive/match-wildcard';
 import type { ChangeEvent, Listener } from '@/store/types';
 
 type ConfigRecord = Record<string, unknown>;

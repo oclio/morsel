@@ -8,7 +8,7 @@ import {
   setupWatchers,
   updateWatchedFiles,
   updateWatchers,
-} from '@/store/watcher-setup';
+} from '@/store/watch/watcher-setup';
 import { createWatcher, releaseWatcher } from '@/watch/watcher-registry';
 
 vi.mock('@/watch/watcher-registry');

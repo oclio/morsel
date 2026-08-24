@@ -1,7 +1,7 @@
 import path from 'node:path';
 
 import { isPlainObject } from '@/merge/merge-helpers';
-import type { ResolvedOptions } from '@/store/assert-name';
+import type { ResolvedOptions } from '@/store/boot/assert-name';
 import type { ConfigRecord, Listener, MorselLayer } from '@/store/types';
 
 /**

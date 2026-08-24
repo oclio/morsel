@@ -12,7 +12,7 @@ import {
   resolveProjectPath,
   resolveProjectPathSync,
 } from '@/paths/resolve-paths';
-import { noop, resolveOptions } from '@/store/assert-name';
+import { noop, resolveOptions } from '@/store/boot/assert-name';
 import { toMorselLayer } from '@/store/layer';
 import type { ConfigRecord, ConfigResult, MorselOptions } from '@/store/types';
 
