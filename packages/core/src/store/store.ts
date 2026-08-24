@@ -1,16 +1,18 @@
 import { applyMutability } from '@/load/merge-layers';
 import { dotifyObject } from '@/paths/dotify';
 import { getPathValue } from '@/paths/path-access';
-import { isWildcardPattern } from '@/store/reactive/match-wildcard';
-import { createStableProxy } from '@/store/reactive/stable-proxy';
 import {
-  deleteKey as deleteKeyMutator,
-  mutateKey as mutateKeyMutator,
   popKey,
   pushKey,
   shiftKey,
   spliceKey,
   unshiftKey,
+} from '@/store/array-ops';
+import { isWildcardPattern } from '@/store/reactive/match-wildcard';
+import { createStableProxy } from '@/store/reactive/stable-proxy';
+import {
+  deleteKey as deleteKeyMutator,
+  mutateKey as mutateKeyMutator,
 } from '@/store/store-mutator';
 import type { StoreState } from '@/store/store-state';
 import { deepCloneConfig } from '@/store/store-state';

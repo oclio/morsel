@@ -1,21 +1,27 @@
 import { applyMutability } from '@/load/merge-layers';
-import { emitChanges } from '@/store/reactive/emit-changes';
-import { createStableProxy } from '@/store/reactive/stable-proxy';
-import { createMorselStore } from '@/store/store';
 import {
-  deleteKey,
-  mutateKey,
   popKey,
   pushKey,
   shiftKey,
   spliceKey,
   unshiftKey,
-} from '@/store/store-mutator';
+} from '@/store/array-ops';
+import { emitChanges } from '@/store/reactive/emit-changes';
+import { createStableProxy } from '@/store/reactive/stable-proxy';
+import { createMorselStore } from '@/store/store';
+import { deleteKey, mutateKey } from '@/store/store-mutator';
 import type { StoreState } from '@/store/store-state';
 import { releaseWatcher } from '@/watch/watcher-registry';
 
 vi.mock('@/load/merge-layers', () => ({
   applyMutability: vi.fn(),
+}));
+vi.mock('@/store/array-ops', () => ({
+  popKey: vi.fn(),
+  pushKey: vi.fn(),
+  shiftKey: vi.fn(),
+  spliceKey: vi.fn(),
+  unshiftKey: vi.fn(),
 }));
 vi.mock('@/store/reactive/stable-proxy', () => ({
   createStableProxy: vi.fn(),
@@ -23,11 +29,6 @@ vi.mock('@/store/reactive/stable-proxy', () => ({
 vi.mock('@/store/store-mutator', () => ({
   deleteKey: vi.fn(),
   mutateKey: vi.fn(),
-  popKey: vi.fn(),
-  pushKey: vi.fn(),
-  shiftKey: vi.fn(),
-  spliceKey: vi.fn(),
-  unshiftKey: vi.fn(),
 }));
 vi.mock('@/watch/watcher-registry', () => ({
   releaseWatcher: vi.fn(),
