@@ -115,12 +115,24 @@ function wrapReadOnlyPath<T extends ConfigRecord>(
   return proxy;
 }
 
+const EMPTY: ConfigRecord = Object.freeze({});
+
+/**
+ * Resolve a dotted path inside the config, returning an empty frozen object
+ * when the path no longer points to an object (e.g. the parent key was
+ * removed or changed to a primitive during a re-merge). This lets held nested
+ * proxies return `undefined` gracefully instead of throwing a `TypeError`
+ * (spec §7.2: consumers can hold a reference without it becoming stale).
+ */
 function resolvePath(config: ConfigRecord, path: string[]): ConfigRecord {
   let current: unknown = config;
   for (const key of path) {
+    if (current === null || typeof current !== 'object') return EMPTY;
     current = (current as ConfigRecord)[key];
   }
-  return current as ConfigRecord;
+  return typeof current === 'object' && current !== null
+    ? (current as ConfigRecord)
+    : EMPTY;
 }
 
 function shouldSet(
