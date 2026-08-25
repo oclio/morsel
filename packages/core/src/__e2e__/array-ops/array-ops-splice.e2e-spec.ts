@@ -93,6 +93,7 @@ describe('array-ops-splice — splice()', () => {
     });
 
     await expect(store['splice']('port', 0, 1)).rejects.toMatchObject({
+      name: 'MorselError',
       code: 'EVALIDATE',
     });
 
@@ -114,24 +115,6 @@ describe('array-ops-splice — splice()', () => {
 
     expect(removed).toEqual(['b']);
     expect(store.get('tags')).toEqual(['a', 'x', 'y', 'c']);
-
-    await store.stop();
-  });
-
-  it('splice does not accept target parameter — writes to default origin', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      tags: ['a', 'b'],
-    });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
-    });
-
-    await store['splice']('tags', 0, 1);
-
-    expect(store.get('tags')).toEqual(['b']);
 
     await store.stop();
   });

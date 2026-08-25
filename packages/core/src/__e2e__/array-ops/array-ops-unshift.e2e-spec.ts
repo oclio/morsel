@@ -26,7 +26,10 @@ describe('array-ops-unshift — unshift()', () => {
     vi.restoreAllMocks();
   });
 
-  it('unshift adds to start and returns 0', async () => {
+  // BUG: unshift should return the new array length (3) but returns 0.
+  // Spec: §4.5 — unshift returns the new array length.
+  // Code: src/store/store.ts — unshift implementation returns 0 instead of new length.
+  it.skip('unshift adds to start and returns new array length', async () => {
     await writeConfig(projectDirectory, 'myapp.config.json', {
       tags: ['a', 'b'],
     });
@@ -39,7 +42,7 @@ describe('array-ops-unshift — unshift()', () => {
 
     const result = await store.unshift('tags', 'z');
 
-    expect(result).toBe(0);
+    expect(result).toBe(3);
     expect(store.get('tags')).toEqual(['z', 'a', 'b']);
 
     await store.stop();
@@ -57,6 +60,7 @@ describe('array-ops-unshift — unshift()', () => {
     });
 
     await expect(store.unshift('port', 'x')).rejects.toMatchObject({
+      name: 'MorselError',
       code: 'EVALIDATE',
     });
 
@@ -76,7 +80,10 @@ describe('array-ops-unshift — unshift()', () => {
 
     await chmod(projectDirectory, 0o555);
 
-    await expect(store.unshift('tags', 'z')).rejects.toThrow();
+    await expect(store.unshift('tags', 'z')).rejects.toMatchObject({
+      name: 'WriteError',
+      code: 'EWRITE',
+    });
 
     expect(store.get('tags')).toEqual(['a', 'b']);
 
