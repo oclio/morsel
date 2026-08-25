@@ -35,7 +35,10 @@ export interface HookContext {
   /**
   Request a re-merge of the store. No-op in loadConfig/loadConfigSync
   (no store lifecycle). In watchConfig, triggers a re-merge cycle.
-  Safe to call multiple times — coalesced by the re-merge debouncer.
+  Safe to call multiple times — coalesced via re-merge in-progress and
+  pending flags: if a re-merge is already running, subsequent calls set
+  a pending flag and only one additional re-merge runs after the current
+  one completes.
   */
   readonly triggerRemerge: () => void;
 }
