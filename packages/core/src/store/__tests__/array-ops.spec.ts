@@ -1,5 +1,7 @@
 import { runWriteHooks } from '@/hooks/run-hooks';
-import { applyMutability } from '@/load/merge-layers';
+import { applyValidation } from '@/load/apply-validation';
+import { applyMutability, mergeLayers } from '@/load/merge-layers';
+import { interpolate } from '@/merge/interpolate';
 import { parsePath } from '@/paths/parse-path';
 import { getPathValue, setPathValue } from '@/paths/path-access';
 import {
@@ -9,17 +11,26 @@ import {
   spliceKey,
   unshiftKey,
 } from '@/store/array-ops';
+import { toMorselLayer } from '@/store/layer';
 import { emitChanges } from '@/store/reactive/emit-changes';
 import type { StoreState } from '@/store/store-state';
 import { deepCloneConfig } from '@/store/store-state';
+import type { MorselLayer } from '@/store/types';
 import { resolveKeyOrigin } from '@/writer/resolve-origin';
 import { writeConfigFile } from '@/writer/write-config';
 
 vi.mock('@/hooks/run-hooks', () => ({
   runWriteHooks: vi.fn(),
 }));
+vi.mock('@/load/apply-validation', () => ({
+  applyValidation: vi.fn(),
+}));
 vi.mock('@/load/merge-layers', () => ({
   applyMutability: vi.fn(),
+  mergeLayers: vi.fn(),
+}));
+vi.mock('@/merge/interpolate', () => ({
+  interpolate: vi.fn(),
 }));
 vi.mock('@/paths/parse-path', () => ({
   parsePath: vi.fn(),
@@ -27,6 +38,9 @@ vi.mock('@/paths/parse-path', () => ({
 vi.mock('@/paths/path-access', () => ({
   getPathValue: vi.fn(),
   setPathValue: vi.fn(),
+}));
+vi.mock('@/store/layer', () => ({
+  toMorselLayer: vi.fn(),
 }));
 vi.mock('@/store/reactive/emit-changes', () => ({
   emitChanges: vi.fn(),
@@ -44,17 +58,26 @@ vi.mock('@/writer/write-config', () => ({
 function createState<T extends Record<string, unknown>>(
   overrides: Partial<StoreState<T>> = {},
 ): StoreState<T> {
+  const projectPath = overrides.projectPath ?? '/project/config.json';
   return {
     _config: { foo: 'bar' } as unknown as T,
     _proxy: undefined,
     _stoppedConfig: undefined,
-    _layers: [],
+    _layers: [
+      {
+        source: 'project',
+        path: projectPath,
+        config: {},
+        exists: true,
+        extendsPaths: [],
+      },
+    ] as never,
     listeners: new Map(),
     wildcardListeners: new Map(),
     stopped: false,
     watchers: new Set(),
     watchedFiles: new Map(),
-    projectPath: '/project/config.json',
+    projectPath,
     options: {} as never,
     lastConfig: {},
     remergeInProgress: false,
@@ -71,7 +94,19 @@ function createState<T extends Record<string, unknown>>(
 describe('array-ops', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(applyValidation).mockImplementation((config) => config);
     vi.mocked(applyMutability).mockImplementation((config) => config);
+    vi.mocked(mergeLayers).mockImplementation((layers) => {
+      let merged = {};
+      for (const layer of layers) {
+        merged = { ...merged, ...layer.config };
+      }
+      return merged;
+    });
+    vi.mocked(interpolate).mockImplementation((config) => config);
+    vi.mocked(toMorselLayer).mockImplementation(
+      (layer) => layer as MorselLayer,
+    );
     vi.mocked(deepCloneConfig).mockImplementation(
       (config) => structuredClone(config) as Record<string, unknown>,
     );
@@ -81,6 +116,9 @@ describe('array-ops', () => {
     vi.mocked(setPathValue).mockImplementation((object, segments, value) => {
       let current = object as Record<string, unknown>;
       for (let index = 0; index < segments.length - 1; index++) {
+        if (current[segments[index] as string] === undefined) {
+          current[segments[index] as string] = {};
+        }
         current = current[segments[index] as string] as Record<string, unknown>;
       }
       current[segments.at(-1) as string] = value;

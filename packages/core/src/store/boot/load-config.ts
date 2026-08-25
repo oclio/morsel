@@ -1,9 +1,9 @@
 import { createHookContext } from '@/hooks/hook-context';
-import { runHooks, runHooksSync } from '@/hooks/run-hooks';
+import { runHooksSync } from '@/hooks/run-hooks';
 import { applyValidation } from '@/load/apply-validation';
+import { buildLayers } from '@/load/build-layers';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
 import type { ResolvedLayer } from '@/load/resolve-layer';
-import { resolveLayer } from '@/load/resolve-layer';
 import { resolveLayerSync } from '@/load/resolve-layer-sync';
 import { interpolate } from '@/merge/interpolate';
 import {
@@ -85,34 +85,11 @@ export async function loadConfig<T extends ConfigRecord = ConfigRecord>(
     resolved.formatPlugins,
   );
 
-  const layerOptions = {
-    envName: resolved.envName,
-    onDebug: resolved.onDebug,
-    formatPlugins: resolved.formatPlugins,
-  };
-
-  const context = createHookContext(resolved, noop);
-  const { hooks, onDebug } = resolved;
-
-  const layers: ResolvedLayer[] = [
-    ...(await runHooks(hooks, 'before:defaults', context, onDebug)),
-    await resolveLayer('defaults', undefined, resolved.defaults, layerOptions),
-    ...(await runHooks(hooks, 'after:defaults', context, onDebug)),
-    ...(await runHooks(hooks, 'before:global', context, onDebug)),
-    await resolveLayer('global', globalPath, undefined, layerOptions),
-    ...(await runHooks(hooks, 'after:global', context, onDebug)),
-    ...(await runHooks(hooks, 'before:project', context, onDebug)),
-    await resolveLayer('project', projectPath, undefined, layerOptions),
-    ...(await runHooks(hooks, 'after:project', context, onDebug)),
-    ...(await runHooks(hooks, 'before:overrides', context, onDebug)),
-    await resolveLayer(
-      'overrides',
-      undefined,
-      resolved.overrides,
-      layerOptions,
-    ),
-    ...(await runHooks(hooks, 'after:overrides', context, onDebug)),
-  ];
+  const layers: ResolvedLayer[] = await buildLayers(
+    resolved,
+    globalPath,
+    projectPath,
+  );
 
   const merged = mergeLayers(layers, resolved.arrayMerge);
   const interpolated = interpolate(merged);
