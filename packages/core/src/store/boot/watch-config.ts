@@ -1,5 +1,6 @@
 import { MorselError } from '@/errors/error';
 import { createHookContext } from '@/hooks/hook-context';
+import type { Hook, HookContext } from '@/hooks/types';
 import { applyValidation } from '@/load/apply-validation';
 import { buildLayers } from '@/load/build-layers';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
@@ -17,6 +18,42 @@ import {
   setupWatchers,
 } from '@/store/watch/watcher-setup';
 import { releaseWatcher } from '@/watch/watcher-registry';
+
+function releaseAllWatchers<T extends ConfigRecord>(
+  state: StoreState<T>,
+): void {
+  for (const directory of state.watchers) {
+    releaseWatcher(directory, state);
+  }
+  state.watchers.clear();
+}
+
+/**
+ * Initialize stateful hooks (`init` lifecycle). Releases watchers and throws
+ * `MorselError` (`EHOOK`) if any hook fails — the store is not returned.
+ */
+async function initHooks<T extends ConfigRecord>(
+  state: StoreState<T>,
+  hooks: readonly Hook[],
+  context: HookContext,
+): Promise<void> {
+  for (const hook of hooks) {
+    if (hook.lifecycle === 'after:write') continue;
+    if (hook.init === undefined) continue;
+    try {
+      await hook.init(context);
+    } catch (error) {
+      releaseAllWatchers(state);
+      throw new MorselError(
+        undefined,
+        'EHOOK',
+        new Error(
+          `hook "${hook.name}" failed in init: ${(error as Error).message}`,
+        ),
+      );
+    }
+  }
+}
 
 /**
  * Load config, watch files, and emit key-level events on change.
@@ -79,14 +116,14 @@ export async function watchConfig<T extends ConfigRecord = ConfigRecord>(
   try {
     setupWatchers(state, layers);
   } catch (error) {
-    for (const directory of state.watchers) {
-      releaseWatcher(directory, state);
-    }
-    state.watchers.clear();
+    releaseAllWatchers(state);
     throw error;
   }
 
   const store = createMorselStore(state, resolved.configMutability);
+
+  const initContext = createHookContext(resolved, triggerRemerge);
+  await initHooks(state, resolved.hooks, initContext);
 
   if (options.signal !== undefined) {
     const signal = options.signal;
@@ -96,23 +133,6 @@ export async function watchConfig<T extends ConfigRecord = ConfigRecord>(
       signal.addEventListener('abort', () => {
         void store.stop();
       });
-    }
-  }
-
-  const initContext = createHookContext(resolved, triggerRemerge);
-  for (const hook of resolved.hooks) {
-    if (hook.lifecycle === 'after:write') continue;
-    if (hook.init === undefined) continue;
-    try {
-      await hook.init(initContext);
-    } catch (error) {
-      throw new MorselError(
-        undefined,
-        'EHOOK',
-        new Error(
-          `hook "${hook.name}" failed in init: ${(error as Error).message}`,
-        ),
-      );
     }
   }
 

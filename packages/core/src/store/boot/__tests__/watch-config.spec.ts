@@ -406,10 +406,16 @@ describe('watchConfig', () => {
         validationPlugins: [],
         hooks: [hook],
       } as never);
+      mockState.watchers = new Set(['/dir1', '/dir2']);
 
       await expect(watchConfig({ name: 'myapp' })).rejects.toThrow(
         'hook "failing-hook" failed in init: connection refused',
       );
+
+      expect(releaseWatcher).toHaveBeenCalledTimes(2);
+      expect(releaseWatcher).toHaveBeenCalledWith('/dir1', mockState);
+      expect(releaseWatcher).toHaveBeenCalledWith('/dir2', mockState);
+      expect(mockState.watchers.size).toBe(0);
 
       try {
         await watchConfig({ name: 'myapp' });

@@ -253,21 +253,21 @@ loadConfigSync(opts) / loadConfig(opts)
 │
 ├─ resolveOptions(opts) ─── validation (assertName) + defaults application
 │
-├─ [hooks before:defaults] ─── load() → Record, inserted as layer
+├─ [hooks before:defaults] ─── load() → Record, $env + extends cleanup, inserted as layer
 ├─ resolveLayer('defaults', undefined, opts.defaults)  ─── raw object, no extends/$env
-├─ [hooks after:defaults]  ─── load() → Record, inserted as layer
+├─ [hooks after:defaults]  ─── load() → Record, $env + extends cleanup, inserted as layer
 │
-├─ [hooks before:global]
+├─ [hooks before:global]   ─── load() → Record, $env + extends cleanup, inserted as layer
 ├─ resolveLayer('global', globalPath, ...)            ─── loadFile + extends + $env + cleanup
-├─ [hooks after:global]
+├─ [hooks after:global]    ─── load() → Record, $env + extends cleanup, inserted as layer
 │
-├─ [hooks before:project]
+├─ [hooks before:project]  ─── load() → Record, $env + extends cleanup, inserted as layer
 ├─ resolveLayer('project', projectPath, ...)          ─── loadFile + extends + $env + cleanup
-├─ [hooks after:project]
+├─ [hooks after:project]   ─── load() → Record, $env + extends cleanup, inserted as layer
 │
-├─ [hooks before:overrides]
+├─ [hooks before:overrides] ─── load() → Record, $env + extends cleanup, inserted as layer
 ├─ resolveLayer('overrides', undefined, opts.overrides) ─── raw object, no extends/$env
-├─ [hooks after:overrides]
+├─ [hooks after:overrides]  ─── load() → Record, $env + extends cleanup, inserted as layer
 │
 └─ mergeLayers(allLayers, arrayMerge) ─── deepMerge in order
     │

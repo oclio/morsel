@@ -1,8 +1,13 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 
 import { WriteError } from '@/errors/write-error';
-import { hasRemovedPathValue, setPathValue } from '@/paths/path-access';
+import {
+  getPathValue,
+  hasRemovedPathValue,
+  setPathValue,
+} from '@/paths/path-access';
 import { jsonPlugin } from '@/plugins/json-plugin';
 import { selectParser } from '@/plugins/select-parser';
 import type { FormatPlugin } from '@/plugins/types';
@@ -80,10 +85,17 @@ export async function writeConfigFile(
 
       const data = await readOrCreateLayerContent(filePath, plugin);
 
+      let isChanged: boolean;
       if (mutation.isDelete) {
-        hasRemovedPathValue(data, mutation.path);
+        isChanged = hasRemovedPathValue(data, mutation.path);
       } else {
+        const before = getPathValue(data, mutation.path);
         setPathValue(data, mutation.path, mutation.value);
+        isChanged = !isDeepStrictEqual(before, mutation.value);
+      }
+
+      if (!isChanged) {
+        return;
       }
 
       const serialized = plugin.serialize(data);

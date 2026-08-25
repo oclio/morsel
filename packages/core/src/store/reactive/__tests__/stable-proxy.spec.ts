@@ -435,5 +435,108 @@ describe('createStableProxy', () => {
       const a2 = proxy['a'] as Record<string, unknown>;
       expect(a2['b']).toBeUndefined();
     });
+
+    it('held nested proxy returns undefined (not TypeError) after parent removed', () => {
+      const state = createState({ a: { b: { c: 1, d: 2 } } });
+      const proxy = createStableProxy(state, 'frozen');
+
+      const b = (proxy['a'] as Record<string, unknown>)['b'] as Record<
+        string,
+        unknown
+      >;
+      expect(b['c']).toBe(1);
+      expect(Object.keys(b)).toEqual(['c', 'd']);
+
+      state._config = { a: { b: undefined } } as never;
+
+      expect(b['c']).toBeUndefined();
+      expect(b['d']).toBeUndefined();
+      expect(b['missing']).toBeUndefined();
+      expect(Object.keys(b)).toEqual([]);
+      expect('c' in b).toBe(false);
+      expect(Object.getOwnPropertyDescriptor(b, 'c')).toBeUndefined();
+    });
+
+    it('held nested proxy returns undefined after parent changed to primitive', () => {
+      const state = createState({ a: { b: { c: 1 } } });
+      const proxy = createStableProxy(state, 'frozen');
+
+      const b = (proxy['a'] as Record<string, unknown>)['b'] as Record<
+        string,
+        unknown
+      >;
+
+      state._config = { a: { b: 42 } } as never;
+      expect(b['c']).toBeUndefined();
+    });
+
+    it('held nested proxy reflects live-reload after parent restored', () => {
+      const state = createState({ a: { b: { c: 1 } } });
+      const proxy = createStableProxy(state, 'frozen');
+
+      const b = (proxy['a'] as Record<string, unknown>)['b'] as Record<
+        string,
+        unknown
+      >;
+
+      state._config = { a: { b: undefined } } as never;
+      expect(b['c']).toBeUndefined();
+
+      state._config = { a: { b: { c: 100, e: 200 } } } as never;
+      expect(b['c']).toBe(100);
+      expect(b['e']).toBe(200);
+      expect(Object.keys(b)).toEqual(['c', 'e']);
+    });
+
+    it('held deep nested proxy returns undefined after mid-traversal removal', () => {
+      const state = createState({ a: { b: { c: { d: 1 } } } });
+      const proxy = createStableProxy(state, 'frozen');
+
+      const c = (
+        (proxy['a'] as Record<string, unknown>)['b'] as Record<string, unknown>
+      )['c'] as Record<string, unknown>;
+      expect(c['d']).toBe(1);
+
+      state._config = { a: { b: undefined } } as never;
+      expect(c['d']).toBeUndefined();
+    });
+
+    // `typeof null === 'object'` — without the `current === null` guard, the
+    // loop would attempt `(null as ConfigRecord)[key]` → TypeError. This test
+    // kills the mutant that removes the `current === null` branch from the
+    // mid-traversal check.
+    it('held deep nested proxy returns undefined after mid-traversal null', () => {
+      const state = createState({ a: { b: { c: { d: 1 } } } });
+      const proxy = createStableProxy(state, 'frozen');
+
+      const c = (
+        (proxy['a'] as Record<string, unknown>)['b'] as Record<string, unknown>
+      )['c'] as Record<string, unknown>;
+      expect(c['d']).toBe(1);
+
+      state._config = { a: { b: null } } as never;
+      expect(c['d']).toBeUndefined();
+      expect(Object.keys(c)).toEqual([]);
+    });
+
+    // `typeof null === 'object'` — without the final `current !== null` guard,
+    // `resolvePath` would return `null as ConfigRecord` instead of EMPTY.
+    // `Reflect.get(null, prop)` → TypeError. This test kills the mutant that
+    // removes the `current !== null` branch from the final check.
+    it('held nested proxy returns undefined after parent changed to null', () => {
+      const state = createState({ a: { b: { c: 1 } } });
+      const proxy = createStableProxy(state, 'frozen');
+
+      const b = (proxy['a'] as Record<string, unknown>)['b'] as Record<
+        string,
+        unknown
+      >;
+      expect(b['c']).toBe(1);
+
+      state._config = { a: { b: null } } as never;
+      expect(b['c']).toBeUndefined();
+      expect(Object.keys(b)).toEqual([]);
+      expect('c' in b).toBe(false);
+    });
   });
 });
