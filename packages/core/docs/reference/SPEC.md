@@ -23,7 +23,7 @@
 7. **Parsing / semantics separation**: the plugin parses raw content → `Record<string, unknown>`. Semantic concepts (`extends`, `$env`, cleanup) are core. The plugin knows nothing about `extends` or `$env`.
 8. **Lifecycle hooks**: layer hooks (`LayerHook`) insert at 8 pipeline points (before/after for each layer). A layer hook produces a `Record` that becomes a layer in the cascade. The `load` method is stateless — the core calls it on each merge, no state is kept between merges. Optional `init`/`dispose` lifecycle methods allow stateful hooks to manage external connections (pollers, WebSocket, etcd watch) — `init` is called once after the store is created in `watchConfig`, `dispose` is called once when the store is stopped via `stop()`. Neither is called in `loadConfig`/`loadConfigSync` (one-shot, no lifecycle). The `HookContext` provides `triggerRemerge()` so a hook can request a re-merge of the configuration (e.g. when a remote config source changes). In `loadConfig`/`loadConfigSync`, `triggerRemerge` is a noop. Event hooks (`EventHook`) react to lifecycle events (e.g. `after:write`) without producing a layer — they are side-effect only (logging, metrics, audit).
 9. **Native path parsing & prototype protection**: the core provides robust path parsing supporting dot notation (`a.b.c`), indexed arrays (`users[0].name`, `users.0.name`), and escaped dots (`app\.config.host`). Any attempt to access or mutate `__proto__`, `constructor`, or `prototype` is rejected (`TypeError`).
-10. **Transactional mutation & optimistic write**: `mutateKey` and `deleteKey` update the in-memory config optimistically, emit key-level change events, and persist changes via atomic read-modify-write on the source layer. Writes are serialized per file path. In case of I/O or serialization failure, the in-memory state is automatically rolled back, revert events are emitted, and a `MorselError` (`EWRITE`) is thrown. After a successful write, `after:write` event hooks (`EventHook`) are triggered with a `WriteEvent` — errors in these hooks are caught and logged via `onDebug`, they do not roll back the mutation.
+10. **Transactional mutation & optimistic write**: `mutateKey` and `deleteKey` update the in-memory config optimistically, emit key-level change events, and persist changes via atomic read-modify-write on the source layer. Writes are serialized per file path. In case of I/O or serialization failure, the in-memory state is automatically rolled back, revert events are emitted, and a `WriteError` (`EWRITE`) is thrown. `WriteError` extends `MorselError` and carries `filePath` and `mutation`. After a successful write, `after:write` event hooks (`EventHook`) are triggered with a `WriteEvent` — errors in these hooks are caught and logged via `onDebug`, they do not roll back the mutation.
 
 ---
 
@@ -564,12 +564,12 @@ export function clearRegistry(): void;
 2. If no: `mkdirSync(dirname, { recursive: true })` — creates the parent directory if needed.
 3. Writes `content` (or `fallbackContent`, or `{}`) via the first format plugin's `serialize` method via atomic write: `writeFileSync` to `<path>.tmp.<timestamp>` then `renameSync` to `<path>` (avoids partial reads in case of crash).
 4. Returns the created path.
-5. On serialize failure (`plugin.serialize` throws): throws `MorselError` (`EWRITE`) with the project path and original error as cause — the content is not written and no fallback is applied.
+5. On serialize failure (`plugin.serialize` throws): throws `WriteError` (`EWRITE`) with the project path and original error as cause — the content is not written and no fallback is applied.
 6. On write failure (`writeFileSync` or `renameSync` throws): throws `MorselError` (`EIO`) with the project path and original error as cause.
 
 #### `stop()`
 
-`stop()` is async (`Promise<void>`). `stopped = true` is assigned **synchronously** at the start, before any `await`. Watchers whose `refCount` reaches zero are closed. All registered listeners are cleared. `store.config` and `store.layers` remain readable after stop at the last known state. Any subsequent call to `store.on()` throws `Error('morsel: store is stopped')`.
+`stop()` is async (`Promise<void>`). `stopped = true` is assigned **synchronously** at the start, before any `await`. Watchers whose `refCount` reaches zero are closed. All registered listeners are cleared. `store.config` and `store.layers` remain readable after stop at the last known state. Any subsequent call to `store.on()`, `store.set()`, `store.unset()`, `store.push()`, `store.unshift()`, `store.pop()`, `store.shift()`, `store.splice()`, `store.mutateKey()`, or `store.deleteKey()` throws `Error('morsel: store is stopped')`.
 
 #### `signal` — AbortSignal
 
@@ -586,7 +586,7 @@ If `WatchOptions.signal` is provided, it is checked **after** hook `init` comple
 5. Writes to a temporary file (`<path>.tmp.<timestamp>`), then atomically renames to the target path.
 6. Writes are serialized per file path via a promise queue — concurrent mutations to the same file are queued.
 
-On I/O or serialization failure, a `MorselError` (`EWRITE`) is thrown. The caller (`mutateKey`/`deleteKey`) is responsible for rolling back the in-memory state.
+On I/O or serialization failure, a `WriteError` (`EWRITE`) is thrown. The caller (`mutateKey`/`deleteKey`) is responsible for rolling back the in-memory state.
 
 #### `DeleteTarget: 'all'`
 
@@ -605,7 +605,7 @@ Events are computed via `diffKeys` and emitted via `store.on(keyPath, listener, 
 - **Object replaced by scalar**: `event = { keyPath, type: 'modified', next: scalar, prev: oldObject }` on the parent + all child scalars as removed.
 - **Scalar replaced by object**: `event = { keyPath, type: 'modified', next: newObject, prev: scalar }` on the parent + all child scalars as added.
 - **Object added / removed**: emits on the parent + all child scalars.
-- **Array modified**: `event = { keyPath, type: 'modified', next: newArray, prev: oldArray }` on the parent (atomic replacement, no per-index diff). Array mutators (`push`, `unshift`, `pop`, `shift`, `splice`) delegate to `mutateKey` with the full replacement array. `push` additionally emits on `path.<newIndex>` for the newly added element. Type mismatch (target is not an array) throws `MorselError` (`EVALIDATE`).
+- **Array modified**: `event = { keyPath, type: 'modified', next: newArray, prev: oldArray }` on the parent (atomic replacement, no per-index diff). Array mutators (`push`, `unshift`, `pop`, `shift`, `splice`) delegate to `mutateKey` with the full replacement array. `push` additionally emits on `path.<newIndex>` for the newly added element. Type mismatch (target is not an array) throws `MorselError` (`EVALIDATE`) — applies to all array operations including `indexOf`/`lastIndexOf`. `push` returns the index of the newly added element (last position). `unshift` returns the new array length.
 
 #### Two-Phase Ordering Invariant
 
