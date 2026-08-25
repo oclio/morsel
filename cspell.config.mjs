@@ -32,6 +32,7 @@ export default {
     'unflatten',
     'unflattened',
     'unshifts',
+    'unstub',
     'unsub',
     'watchconfig',
   ],
