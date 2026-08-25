@@ -8,20 +8,26 @@ import {
 
 import { initConfig, watchConfig } from '@/index';
 
-describe('init-config-triggers-watch — initConfig during active watch', () => {
-  clearWatcherRegistry();
+describe('init-config-watch — watch integration', () => {
+  let directory: string;
+  let projectDirectory: string;
+  let globalDirectory: string;
 
-  it('initConfig creates file → fs.watch fires → re-merge → events emitted', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
-
+  beforeEach(async () => {
+    clearWatcherRegistry();
+    const env = await createTemporaryEnvironment();
+    directory = env.directory;
+    projectDirectory = `${directory}/project`;
+    globalDirectory = `${directory}/global`;
     await mkdir(projectDirectory, { recursive: true });
-    await mkdir(`${directory}/global`, { recursive: true });
+    await mkdir(globalDirectory, { recursive: true });
+  });
 
+  it('initConfig during active watch → fs.watch fires → re-merge', async () => {
     const store = await watchConfig({
       name: 'myapp',
       cwd: projectDirectory,
-      globalDir: `${directory}/global`,
+      globalDir: globalDirectory,
       defaults: { port: 3000 },
     });
 
