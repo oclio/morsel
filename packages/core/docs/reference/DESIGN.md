@@ -99,9 +99,9 @@ Layer hooks may optionally define `init(ctx)` and `dispose()` methods for statef
 
 The `HookContext` provides `triggerRemerge()` — a function that requests a re-merge of the configuration. This enables hooks to react to external changes (remote config updated, etcd key changed) and trigger a fresh merge cycle:
 
-- In `watchConfig`, calling `triggerRemerge()` schedules a re-merge via the store's internal `remerge` function (coalesced by the debounce mechanism).
+- In `watchConfig`, calling `triggerRemerge()` schedules a re-merge via the store's internal `remerge` function (coalesced via re-merge in-progress and pending flags: if a re-merge is already running, subsequent calls set a pending flag and only one additional re-merge runs after the current one completes).
 - In `loadConfig`/`loadConfigSync`, `triggerRemerge` is a noop — there is no store lifecycle.
-- Safe to call multiple times — coalesced by the re-merge debouncer.
+- Safe to call multiple times — coalesced via the re-merge in-progress and pending flags.
 
 #### 8 layer lifecycle points + 1 event point (before/after for each layer + after:write)
 
