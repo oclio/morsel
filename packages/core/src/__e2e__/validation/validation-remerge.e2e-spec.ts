@@ -1,0 +1,110 @@
+import { mkdir } from 'node:fs/promises';
+
+import {
+  clearWatcherRegistry,
+  createTemporaryEnvironment,
+  writeConfig,
+} from '@oclio/morsel-e2e-helpers';
+
+import { watchConfig } from '@/index';
+
+describe('validation-remerge — watch re-merge', () => {
+  let directory: string;
+  let projectDirectory: string;
+  let globalDirectory: string;
+
+  beforeEach(async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    clearWatcherRegistry();
+    const env = await createTemporaryEnvironment();
+    directory = env.directory;
+    projectDirectory = `${directory}/project`;
+    globalDirectory = `${directory}/global`;
+    await mkdir(projectDirectory, { recursive: true });
+    await mkdir(globalDirectory, { recursive: true });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('remerge catch: validation fail on re-merge keeps config, onDebug notified', async () => {
+    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
+
+    const debugContexts: Record<string, unknown>[] = [];
+
+    const validate = (config: Record<string, unknown>) => {
+      if (typeof config['port'] !== 'number') {
+        throw new TypeError('port must be a number');
+      }
+      return config;
+    };
+
+    const store = await watchConfig({
+      name: 'myapp',
+      cwd: projectDirectory,
+      globalDir: globalDirectory,
+      validationPlugins: [{ name: 'port-type', validate }],
+      onDebug: (_message: string, context?: Record<string, unknown>) => {
+        if (context) {
+          debugContexts.push(context);
+        }
+      },
+    });
+
+    expect(store.config).toEqual({ port: 3000 });
+
+    await writeConfig(projectDirectory, 'myapp.config.json', {
+      port: 'not-a-number',
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    expect(store.config).toEqual({ port: 3000 });
+    expect(
+      debugContexts.some((context) => context['code'] === 'EVALIDATE'),
+    ).toBe(true);
+
+    await store.stop();
+  });
+
+  it('remerge onDebug context has code: EVALIDATE', async () => {
+    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
+
+    const debugContexts: Record<string, unknown>[] = [];
+
+    const validate = (config: Record<string, unknown>) => {
+      if (config['port'] === 'invalid') {
+        throw new Error('port must not be "invalid"');
+      }
+      return config;
+    };
+
+    const store = await watchConfig({
+      name: 'myapp',
+      cwd: projectDirectory,
+      globalDir: globalDirectory,
+      validationPlugins: [{ name: 'port-type', validate }],
+      onDebug: (_message: string, context?: Record<string, unknown>) => {
+        if (context) {
+          debugContexts.push(context);
+        }
+      },
+    });
+
+    await writeConfig(projectDirectory, 'myapp.config.json', {
+      port: 'invalid',
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const validationContext = debugContexts.find(
+      (context) => context['code'] === 'EVALIDATE',
+    );
+
+    expect(validationContext).toBeDefined();
+    expect(validationContext?.['code']).toBe('EVALIDATE');
+
+    await store.stop();
+  });
+});
