@@ -1,6 +1,6 @@
 {
   "name": "@oclio/morsel",
-  "version": "0.5.2",
+  "version": "0.5.1",
   "description": "The only zero-dep config loader that does discovery, hierarchical merge, live-reload, and plugins.",
   "keywords": [
     "example"
