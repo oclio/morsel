@@ -110,7 +110,9 @@ describe('boot-watch — watchConfig specifics', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    expect(() => store.on('port', () => {})).toThrow();
+    expect(() => store.on('port', () => {})).toThrow(
+      'morsel: store is stopped',
+    );
   });
 
   it('AbortSignal aborts after boot → stop() called', async () => {
@@ -164,7 +166,7 @@ describe('boot-watch — watchConfig specifics', () => {
           },
         ],
       } as never),
-    ).rejects.toMatchObject({ code: 'EHOOK' });
+    ).rejects.toMatchObject({ name: 'MorselError', code: 'EHOOK' });
   });
 
   it('AbortSignal fires during initHooks → store stopped via signal.aborted check', async () => {

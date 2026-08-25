@@ -13,11 +13,13 @@ describe('boot-name — assertName validation', () => {
         // @ts-expect-error — intentionally missing name
         name: undefined,
       }),
-    ).rejects.toThrow(TypeError);
+    ).rejects.toThrow(new TypeError('morsel: name is required'));
   });
 
   it('throws TypeError when name is empty string', async () => {
-    await expect(loadConfig({ name: '' })).rejects.toThrow(TypeError);
+    await expect(loadConfig({ name: '' })).rejects.toThrow(
+      new TypeError('morsel: name is required'),
+    );
   });
 
   it.each([42, true, {}, null])(
@@ -28,16 +30,24 @@ describe('boot-name — assertName validation', () => {
           // @ts-expect-error — intentionally non-string name
           name: value,
         }),
-      ).rejects.toThrow(TypeError);
+      ).rejects.toThrow(new TypeError('morsel: name is required'));
     },
   );
 
   it('throws TypeError when name starts with a digit', async () => {
-    await expect(loadConfig({ name: '1app' })).rejects.toThrow(TypeError);
+    await expect(loadConfig({ name: '1app' })).rejects.toThrow(
+      new TypeError(
+        'morsel: name must start with a letter and contain only letters, digits, dashes, or underscores',
+      ),
+    );
   });
 
   it('throws TypeError when name contains special characters', async () => {
-    await expect(loadConfig({ name: 'my app!' })).rejects.toThrow(TypeError);
+    await expect(loadConfig({ name: 'my app!' })).rejects.toThrow(
+      new TypeError(
+        'morsel: name must start with a letter and contain only letters, digits, dashes, or underscores',
+      ),
+    );
   });
 
   it.each(['my-app', 'my_app', 'app123', 'a', 'A-B_C'])(
