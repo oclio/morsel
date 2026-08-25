@@ -74,6 +74,7 @@ describe('array-ops-pop — pop()', () => {
     });
 
     await expect(store.pop('port')).rejects.toMatchObject({
+      name: 'MorselError',
       code: 'EVALIDATE',
     });
 

@@ -74,6 +74,7 @@ describe('array-ops-shift — shift()', () => {
     });
 
     await expect(store.shift('port')).rejects.toMatchObject({
+      name: 'MorselError',
       code: 'EVALIDATE',
     });
 

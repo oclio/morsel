@@ -91,6 +91,7 @@ describe('array-ops-push — push()', () => {
     });
 
     await expect(store.push('port', 'x')).rejects.toMatchObject({
+      name: 'MorselError',
       code: 'EVALIDATE',
     });
 
@@ -109,6 +110,7 @@ describe('array-ops-push — push()', () => {
     });
 
     await expect(store.push('missing', 'x')).rejects.toMatchObject({
+      name: 'MorselError',
       code: 'EVALIDATE',
     });
 
@@ -152,6 +154,10 @@ describe('array-ops-push — push()', () => {
     expect(writeEvent!.filePath).toBe(
       path.resolve(projectDirectory, 'myapp.config.json'),
     );
+    expect(writeEvent!.mutation).toMatchObject({
+      path: 'tags',
+      value: ['a', 'b'],
+    });
 
     await store.stop();
   });
@@ -169,7 +175,10 @@ describe('array-ops-push — push()', () => {
 
     await chmod(projectDirectory, 0o555);
 
-    await expect(store.push('tags', 'c')).rejects.toThrow();
+    await expect(store.push('tags', 'c')).rejects.toMatchObject({
+      name: 'WriteError',
+      code: 'EWRITE',
+    });
 
     expect(store.get('tags')).toEqual(['a', 'b']);
 
@@ -211,6 +220,15 @@ describe('array-ops-push — push()', () => {
     const parentEvent = tagEvents.find((event) => event.keyPath === 'tags');
     expect(parentEvent).toBeDefined();
     expect(parentEvent!.type).toBe('modified');
+
+    const existingIndexEvents = tagEvents.filter(
+      (event) => event.keyPath === 'tags.0' || event.keyPath === 'tags.1',
+    );
+    expect(existingIndexEvents).toEqual([]);
+
+    const newIndexEvent = tagEvents.find((event) => event.keyPath === 'tags.2');
+    expect(newIndexEvent).toBeDefined();
+    expect(newIndexEvent!.type).toBe('added');
 
     await store.stop();
   });
