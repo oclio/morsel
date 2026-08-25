@@ -8,20 +8,28 @@ import {
 
 import { watchConfig } from '@/index';
 
-describe('mutability-frozen-after-stop — config frozen at last state after stop', () => {
-  clearWatcherRegistry();
+describe('mutability-frozen-after-stop — frozen after stop', () => {
+  let directory: string;
+  let projectDirectory: string;
+  let globalDirectory: string;
 
-  it('after stop(), config is frozen and readable', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
+  beforeEach(async () => {
+    clearWatcherRegistry();
+    const env = await createTemporaryEnvironment();
+    directory = env.directory;
+    projectDirectory = `${directory}/project`;
+    globalDirectory = `${directory}/global`;
+    await mkdir(projectDirectory, { recursive: true });
+    await mkdir(globalDirectory, { recursive: true });
+  });
 
+  it('frozen after stop: config frozen at last state, readable', async () => {
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-    await mkdir(`${directory}/global`, { recursive: true });
 
     const store = await watchConfig({
       name: 'myapp',
       cwd: projectDirectory,
-      globalDir: `${directory}/global`,
+      globalDir: globalDirectory,
     });
 
     expect(store.config).toEqual({ port: 3000 });
