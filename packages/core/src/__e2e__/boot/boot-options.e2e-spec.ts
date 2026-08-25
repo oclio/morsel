@@ -7,7 +7,6 @@ import {
   setupTest,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
-import { vi } from 'vitest';
 
 import { loadConfig } from '@/index';
 
