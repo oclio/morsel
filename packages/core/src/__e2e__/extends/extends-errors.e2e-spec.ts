@@ -103,6 +103,40 @@ describe('extends-errors — cycle and depth errors', () => {
     await store.stop();
   });
 
+  it('cycle recovery: fix cycle via edit → config updates', async () => {
+    await writeConfig(projectDirectory, 'base.config.json', {
+      port: 3000,
+    });
+    await writeConfig(projectDirectory, 'myapp.config.json', {
+      extends: './base.config.json',
+    });
+
+    const { callback } = createDebugCollector();
+
+    const store = await watchConfig({
+      name: 'myapp',
+      cwd: projectDirectory,
+      globalDir: globalDirectory,
+      onDebug: callback,
+    });
+
+    await writeConfig(projectDirectory, 'base.config.json', {
+      extends: './myapp.config.json',
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    await writeConfig(projectDirectory, 'base.config.json', {
+      port: 9000,
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    expect(store.config).toEqual({ port: 9000 });
+
+    await store.stop();
+  });
+
   it('max depth: chain > 10 → ECYCLE', async () => {
     for (let index = 11; index > 0; index--) {
       const entry: Record<string, unknown> = {

@@ -1,8 +1,10 @@
-import { mkdir, rm } from 'node:fs/promises';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 
 import {
   clearWatcherRegistry,
+  createDebugCollector,
   createTemporaryEnvironment,
+  setupTest,
   waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
@@ -200,6 +202,34 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
     expect(debugMessages.length).toBeGreaterThan(0);
 
     await store.stop();
+  });
+
+  it('verbose mode logs re-merge error with code and path in context', async () => {
+    const { contexts, callback } = createDebugCollector();
+
+    const { store, projectDirectory } = await setupTest({
+      watch: true,
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
+      verbose: true,
+      onDebug: callback,
+    });
+
+    await writeFile(
+      `${projectDirectory}/myapp.config.json`,
+      '{ broken',
+      'utf8',
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    expect(contexts.length).toBeGreaterThan(0);
+
+    const lastContext = contexts.at(-1)!;
+    expect(lastContext['code']).toBe('EPARSE');
+    expect(lastContext['path']).toContain('myapp.config.json');
+
+    await store!.stop();
   });
 
   it('logToStores: onDebug per store, stderr once for noop stores', async () => {
