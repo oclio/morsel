@@ -1,3 +1,5 @@
+import { mkdir } from 'node:fs/promises';
+
 import {
   clearWatcherRegistry,
   createTemporaryEnvironment,
@@ -76,5 +78,21 @@ describe('boot-merge — merge + prototype protection', () => {
       Object.prototype,
     );
     expect(Object.prototype).not.toHaveProperty('polluted');
+  });
+
+  it('literal dotted key in config file is not split into nested object', async () => {
+    await mkdir(projectDirectory, { recursive: true });
+    await writeConfig(projectDirectory, 'myapp.config.json', {
+      'foo.bar': 123,
+    });
+
+    const { config } = await loadConfig({
+      name: 'myapp',
+      cwd: projectDirectory,
+      globalDir: globalDirectory,
+    });
+
+    expect(config).toEqual({ 'foo.bar': 123 });
+    expect(config).not.toHaveProperty('foo');
   });
 });

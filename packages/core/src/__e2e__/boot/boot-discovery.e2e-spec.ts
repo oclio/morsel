@@ -132,6 +132,18 @@ describe('boot-discovery — path resolution', () => {
     expect(overridesLayer!.exists).toBe(true);
   });
 
+  it('empty {} config file → layer exists, config empty, no error', async () => {
+    const { result } = await setupTest({ projectConfig: {} });
+
+    expect(result!.config).toEqual({});
+    const projectLayer = result!.layers.find(
+      (layer) => layer.source === 'project',
+    );
+    expect(projectLayer).toBeDefined();
+    expect(projectLayer?.exists).toBe(true);
+    expect(projectLayer?.config).toEqual({});
+  });
+
   it('overlapping nested keys: overrides win per-key via deep merge, not full replace', async () => {
     const { result } = await setupTest({
       rootAsCwd: true,

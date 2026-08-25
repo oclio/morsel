@@ -2,7 +2,9 @@ import { mkdir } from 'node:fs/promises';
 
 import {
   clearWatcherRegistry,
+  createDebugCollector,
   createTemporaryEnvironment,
+  setupTest,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
@@ -106,5 +108,43 @@ describe('validation-remerge — watch re-merge', () => {
     expect(validationContext?.['code']).toBe('EVALIDATE');
 
     await store.stop();
+  });
+
+  it('remerge recovery: validation fail then fix → config updates', async () => {
+    const validationPlugin = {
+      name: 'validator',
+      validate: (config: Record<string, unknown>) => {
+        if (typeof config['port'] !== 'number') {
+          throw new TypeError('port must be a number');
+        }
+        return config;
+      },
+    };
+
+    const { callback } = createDebugCollector();
+
+    const { store, projectDirectory } = await setupTest({
+      watch: true,
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
+      validationPlugins: [validationPlugin],
+      onDebug: callback,
+    } as never);
+
+    await writeConfig(projectDirectory, 'myapp.config.json', {
+      port: 'not-a-number',
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    await writeConfig(projectDirectory, 'myapp.config.json', {
+      port: 8080,
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    expect(store!.config).toEqual({ port: 8080 });
+
+    await store!.stop();
   });
 });

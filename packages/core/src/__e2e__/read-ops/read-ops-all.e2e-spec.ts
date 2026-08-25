@@ -96,4 +96,28 @@ describe('read-ops-all — all() API', () => {
 
     await store.stop();
   });
+
+  it('unicode and emoji values preserved without corruption', async () => {
+    await writeConfig(projectDirectory, 'myapp.config.json', {
+      name: 'café',
+      emoji: '🚀',
+      nested: { greeting: 'こんにちは' },
+    });
+
+    const store = await watchConfig({
+      name: 'myapp',
+      cwd: projectDirectory,
+      globalDir: globalDirectory,
+    });
+
+    const snapshot = store.all();
+
+    expect(snapshot).toEqual({
+      name: 'café',
+      emoji: '🚀',
+      nested: { greeting: 'こんにちは' },
+    });
+
+    await store.stop();
+  });
 });
