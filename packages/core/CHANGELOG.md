@@ -1,5 +1,11 @@
 # @oclio/morsel
 
+## 0.5.3
+
+### Patch Changes
+
+- 50d8a3e: Fix `triggerRemerge` JSDoc in `hooks/types.ts` to accurately describe the in-progress and pending flag coalescence mechanism.
+
 ## 0.5.2
 
 ### Patch Changes
