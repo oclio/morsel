@@ -1,5 +1,11 @@
 # @oclio/morsel
 
+## 0.8.0
+
+### Minor Changes
+
+- 5eeb3c3: Add headless mode flags (`watch`, `proxy`, `queue`) to disable subsystems for CI and one-shot tools.
+
 ## 0.7.0
 
 ### Minor Changes
