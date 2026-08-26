@@ -1,7 +1,9 @@
 import { applyMutability } from '@/load/merge-layers';
 import { dotifyObject } from '@/paths/dotify';
+import { parsePath } from '@/paths/parse-path';
 import { getPathValue } from '@/paths/path-access';
 import {
+  assertArray,
   popKey,
   pushKey,
   shiftKey,
@@ -168,15 +170,15 @@ export function createMorselStore<T extends ConfigRecord>(
       pathInput: string | readonly (string | number)[],
       value: unknown,
     ): number {
-      const array = getPathValue(state._config, pathInput);
-      return Array.isArray(array) ? array.indexOf(value) : -1;
+      const array = assertArray(pathInput, state._config, parsePath(pathInput));
+      return array.indexOf(value);
     },
     lastIndexOf(
       pathInput: string | readonly (string | number)[],
       value: unknown,
     ): number {
-      const array = getPathValue(state._config, pathInput);
-      return Array.isArray(array) ? array.lastIndexOf(value) : -1;
+      const array = assertArray(pathInput, state._config, parsePath(pathInput));
+      return array.lastIndexOf(value);
     },
     async stop(): Promise<void> {
       return stopStore(state);

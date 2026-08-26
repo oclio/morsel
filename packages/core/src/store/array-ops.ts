@@ -7,7 +7,7 @@ import type { StoreTarget } from '@/store/types';
 
 type ConfigRecord = Record<string, unknown>;
 
-function assertArray(
+export function assertArray(
   pathInput: string | readonly (string | number)[],
   config: Record<string, unknown>,
   segments: (string | number)[],
