@@ -47,6 +47,7 @@ function createState<T extends Record<string, unknown>>(
     remerge: vi.fn(),
     enoentLogged: new Set(),
     writeQueue: Promise.resolve(),
+    queueEnabled: true,
     ...overrides,
   } as StoreState<T>;
 }

@@ -87,6 +87,7 @@ function createState<T extends Record<string, unknown>>(
     remerge: vi.fn(),
     enoentLogged: new Set(),
     writeQueue: Promise.resolve(),
+    queueEnabled: true,
     ...overrides,
   } as StoreState<T>;
 }
@@ -265,7 +266,13 @@ describe('store-mutator', () => {
 
       const state = createState({
         _config: { server: { port: 3000 } } as never,
-        options: { hooks: [], onDebug: vi.fn() } as never,
+        options: {
+          hooks: [],
+          watch: true,
+          proxy: true,
+          queue: true,
+          onDebug: vi.fn(),
+        } as never,
       });
 
       const writePromise = mutateKey(state, 'a', 1, undefined, 'mutable');
@@ -274,6 +281,73 @@ describe('store-mutator', () => {
       await Promise.all([writePromise, stopPromise]);
 
       expect(state.stopped).toBe(true);
+    });
+  });
+
+  describe('queue: false — bypass write queue', () => {
+    it('executes mutations directly without chainMutation when queueEnabled is false', async () => {
+      vi.mocked(writeConfigFile).mockResolvedValue(undefined);
+
+      const state = createState({
+        _config: { server: { port: 3000 } } as never,
+        queueEnabled: false,
+      });
+
+      const initialQueue = state.writeQueue;
+      await mutateKey(state, 'a', 1, undefined, 'mutable');
+
+      expect(writeConfigFile).toHaveBeenCalledTimes(1);
+      expect(state.writeQueue).toBe(initialQueue);
+    });
+
+    it('does not serialize concurrent mutations when queueEnabled is false', async () => {
+      const order: string[] = [];
+      vi.mocked(writeConfigFile).mockImplementation(async () => {
+        order.push('write');
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      });
+
+      const state = createState({
+        _config: { server: { port: 3000 } } as never,
+        queueEnabled: false,
+      });
+
+      await Promise.all([
+        mutateKey(state, 'a', 1, undefined, 'mutable'),
+        mutateKey(state, 'b', 2, undefined, 'mutable'),
+      ]);
+
+      expect(writeConfigFile).toHaveBeenCalledTimes(2);
+      expect(order).toHaveLength(2);
+      expect(order).toEqual(['write', 'write']);
+    });
+
+    it('deleteKey also bypasses queue when queueEnabled is false', async () => {
+      vi.mocked(writeConfigFile).mockResolvedValue(undefined);
+
+      const state = createState({
+        _config: { server: { port: 3000 } } as never,
+        queueEnabled: false,
+      });
+
+      const initialQueue = state.writeQueue;
+      await deleteKey(state, 'a', undefined, 'mutable');
+
+      expect(state.writeQueue).toBe(initialQueue);
+    });
+
+    it('deleteKey uses queue when queueEnabled is true', async () => {
+      vi.mocked(writeConfigFile).mockResolvedValue(undefined);
+
+      const state = createState({
+        _config: { server: { port: 3000 } } as never,
+        queueEnabled: true,
+      });
+
+      const initialQueue = state.writeQueue;
+      await deleteKey(state, 'a', undefined, 'mutable');
+
+      expect(state.writeQueue).not.toBe(initialQueue);
     });
   });
 });

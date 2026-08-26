@@ -22,6 +22,9 @@ const mockOptions = {
   formatPlugins: [],
   validationPlugins: [],
   hooks: [],
+  watch: true,
+  proxy: true,
+  queue: true,
 } as ResolvedOptions;
 
 function makeLayer(overrides: Partial<MorselLayer> = {}): MorselLayer {

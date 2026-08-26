@@ -1,11 +1,11 @@
-# SPEC-MORSEL-1.3.0: Pluggable Cascading Config Loader with Watch
+# SPEC-MORSEL-1.4.0: Pluggable Cascading Config Loader with Watch
 
 | Metadata            | Value                                                            |
 | :------------------ | :--------------------------------------------------------------- |
 | **Package**         | `@oclio/morsel`                                                  |
 | **Author**          | @oclio                                                           |
 | **Status**          | `STABLE`                                                         |
-| **Spec version**    | `1.3.0`                                                          |
+| **Spec version**    | `1.4.0`                                                          |
 | **Created**         | 2026-08-26                                                       |
 | **Target runtimes** | Node.js >= 18                                                    |
 | **Architecture**    | See [`DESIGN.md`](./DESIGN.md) for design choices and principles |
@@ -18,7 +18,7 @@
 2. **Zero runtime dependencies**: `node:fs`, `node:path`, `node:os` only. No external packages.
 3. **Watch resilience, one-shot throw**: `loadConfig`/`loadConfigSync` throw `MorselError` on fs or parse errors. `watchConfig` throws `MorselError` if the initial load (first pass) fails — there is no "last valid state" at boot. For subsequent re-merges (fs.watch fire), `watchConfig` catches internally, keeps the last valid state, logs the error to `stderr`, and routes to `onDebug` (noop by default). Programming errors (`name` missing, `name` invalid, `on()` after `stop()`) throw in both modes.
 4. **Reserved keyword cleanup**: `extends` and `$env` are **absolute reserved keywords** of the engine — they cannot be used as business keys in the final config. They are stripped from each layer before inter-layer merge. Never present in the final `config`. If an application needs a key named `$env` or `extends` for business purposes, it must be renamed (`$envConfig`, `extendsList`, etc.).
-5. **Sync-first & distinct async**: `loadConfigSync` is synchronous, `loadConfig` and `watchConfig` are async. No `watch: true/false` option — the chosen function determines the behavior. Async `loadConfig` avoids blocking the event loop during reads — useful for apps that load multiple configs in parallel with `Promise.all`. `watchConfig` is async because boot performs reads (`readFile`) before setting up watchers.
+5. **Sync-first & distinct async**: `loadConfigSync` is synchronous, `loadConfig` and `watchConfig` are async. The chosen function determines the behavior. `watchConfig` accepts optional `watch`, `proxy`, and `queue` flags (default `true`) to disable reactive features for one-shot use cases (CI, scripts, CLI) — see §4.4 Headless Mode. Async `loadConfig` avoids blocking the event loop during reads — useful for apps that load multiple configs in parallel with `Promise.all`. `watchConfig` is async because boot performs reads (`readFile`) before setting up watchers.
 6. **Watch ref-counting**: a single `fs.watch` per directory, shared across all stores. Closed when the last store calls `stop()`. Includes directories of `extends` files and `watchPaths` of watchable hooks — a change in an inherited file triggers a re-merge.
 7. **Parsing / semantics separation**: the plugin parses raw content → `Record<string, unknown>`. Semantic concepts (`extends`, `$env`, cleanup) are core. The plugin knows nothing about `extends` or `$env`.
 8. **Lifecycle hooks**: layer hooks (`LayerHook`) insert at 8 pipeline points (before/after for each layer). A layer hook produces a `Record` that becomes a layer in the cascade. The `load` method is stateless — the core calls it on each merge, no state is kept between merges. Optional `init`/`dispose` lifecycle methods allow stateful hooks to manage external connections (pollers, WebSocket, etcd watch) — `init` is called once after the store is created in `watchConfig`, `dispose` is called once when the store is stopped via `stop()`. Neither is called in `loadConfig`/`loadConfigSync` (one-shot, no lifecycle). The `HookContext` provides `triggerRemerge()` so a hook can request a re-merge of the configuration (e.g. when a remote config source changes). In `loadConfig`/`loadConfigSync`, `triggerRemerge` is a noop. Event hooks (`EventHook`) react to lifecycle events (e.g. `after:write`) without producing a layer — they are side-effect only (logging, metrics, audit).
@@ -114,6 +114,9 @@ export interface WatchOptions<
 > extends MorselOptions<T> {
   readonly watchDebounce?: number;
   readonly signal?: AbortSignal;
+  readonly watch?: boolean;
+  readonly proxy?: boolean;
+  readonly queue?: boolean;
 }
 
 export interface MorselStore<
@@ -428,6 +431,8 @@ export interface StoreState<T extends ConfigRecord = ConfigRecord> {
   debounceMs: number;
   remerge: (store: StoreState) => Promise<void>;
   enoentLogged: Set<string>;
+  writeQueue: Promise<void>;
+  queueEnabled: boolean;
 }
 
 /**
@@ -673,6 +678,47 @@ All mutations (`set`, `unset`, `push`, `unshift`, `pop`, `shift`, `splice`, `mut
 7. Read operations (`get`, `has`, `all`, `dotify`, `getProvenance`) do not pass through the queue — they read `state._config` directly (synchronous, in-memory).
 
 **Non-goals**: no read queue, no priority (FIFO strict), no cancellation, no automatic batching (batching is the role of `transaction`).
+
+#### Headless Mode — `watch`, `proxy`, `queue` flags
+
+`watchConfig` accepts three orthogonal flags on `WatchOptions`, all defaulting to `true`. When set to `false`, the corresponding feature is disabled for the lifetime of the store. This enables one-shot use cases (CI, scripts, CLI commands) to avoid the overhead of reactive features they don't use.
+
+**`watch: false`** — Skip watcher setup.
+
+- `collectWatchedFiles` and `setupWatchers` are not called. `state.watchers` remains empty.
+- `stop()` works normally — `releaseAllWatchers` is a no-op on an empty set.
+- `triggerRemerge` is defined but never invoked (no watcher to fire it).
+- Mutations (`set`, `unset`) still work — they write to disk via `writeConfigFile` and update in-memory state via optimistic update. No re-merge is triggered after the write (no watcher).
+- `signal` (AbortSignal) is still handled independently of watchers.
+
+**`proxy: false`** — Skip proxy construction.
+
+- `createStableProxy` is not called. `state._proxy` remains `undefined`.
+- The `config` getter returns `state._config` directly (or the stopped config clone after `stop()`).
+- `store.get()`, `store.has()`, `store.all()`, `store.dotify()`, `store.getProvenance()` are unaffected — they read `state._config` directly, not the proxy.
+- `store.on()` and change events are unaffected — `emitChanges` is called by `applyOptimisticUpdate` independently of the proxy.
+- With `configMutability: 'frozen'`, `state._config` is already frozen by `applyMutability` — `Object.isFrozen(store.config)` is `true`.
+- With `configMutability: 'mutable'`, `store.config.key = value` modifies `_config` in memory but does **not** persist to disk. Use `store.set()` to persist.
+
+**`queue: false`** — Bypass write queue.
+
+- `state.queueEnabled` is set to `false` at boot. `mutateKey` and `deleteKey` execute `doMutateKey` / `doDeleteKey` directly without `chainMutation`.
+- `state.writeQueue` remains `Promise.resolve()` (never used).
+- `stop()` awaits `state.writeQueue` (a no-op) — if a mutation is in flight, `stop()` does not wait for it. The caller must `await` mutations before calling `stop()`.
+- Concurrent mutations (`Promise.all([set('a', 1), set('b', 2)])`) execute in parallel — race conditions are possible. This is the explicit trade-off: the caller assumes responsibility for serialization.
+
+**Flag combinations:**
+
+| `watch` | `proxy` | `queue` | Use case                          |
+| ------- | ------- | ------- | --------------------------------- |
+| `true`  | `true`  | `true`  | Default — long-running, reactive  |
+| `false` | `true`  | `true`  | CI with `store.config` access     |
+| `false` | `false` | `true`  | CI with `store.get()` only        |
+| `false` | `false` | `false` | CI one-shot sequential — max perf |
+
+All combinations are valid. Flags are orthogonal and permanent for the lifetime of the store.
+
+**Non-goals**: no lazy watchers (watch on demand), no lazy proxy, no dynamic queue toggle. Flags are fixed at boot.
 
 ---
 

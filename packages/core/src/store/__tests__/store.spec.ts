@@ -40,7 +40,7 @@ function createState<T extends Record<string, unknown>>(
     watchers: new Set(),
     watchedFiles: new Map(),
     projectPath: '/project/config.json',
-    options: { hooks: [] } as never,
+    options: { hooks: [], proxy: true } as never,
     lastConfig: {},
     remergeInProgress: false,
     remergeDone: undefined,
@@ -50,6 +50,7 @@ function createState<T extends Record<string, unknown>>(
     remerge: vi.fn(),
     enoentLogged: new Set(),
     writeQueue: Promise.resolve(),
+    queueEnabled: true,
     ...overrides,
   } as StoreState<T>;
 }
@@ -109,6 +110,45 @@ describe('createMorselStore', () => {
 
       expect(store.config).toBe(cached);
       expect(applyMutability).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('proxy: false', () => {
+    it('does not call createStableProxy when proxy is false', () => {
+      const state = createState({
+        options: { hooks: [], proxy: false } as never,
+      });
+
+      createMorselStore(state, 'frozen');
+
+      expect(createStableProxy).not.toHaveBeenCalled();
+    });
+
+    it('returns state._config directly when proxy is false', () => {
+      const config = { foo: 'bar' } as never;
+      const state = createState({
+        _config: config,
+        options: { hooks: [], proxy: false } as never,
+      });
+
+      const store = createMorselStore(state, 'frozen');
+
+      expect(store.config).toBe(config);
+    });
+
+    it('returns state._config when proxy is false and stopped', () => {
+      const config = { foo: 'bar' } as never;
+      const state = createState({
+        _config: config,
+        stopped: true,
+        _stoppedConfig: undefined,
+        options: { hooks: [], proxy: false } as never,
+      });
+      vi.mocked(applyMutability).mockReturnValue(config);
+
+      const store = createMorselStore(state, 'frozen');
+
+      expect(store.config).toEqual(config);
     });
   });
 

@@ -20,7 +20,13 @@ function createState<T extends Record<string, unknown>>(
     watchers: new Set(),
     watchedFiles: new Map(),
     projectPath: '/project/config.json',
-    options: { hooks: [], onDebug: vi.fn() } as never,
+    options: {
+      hooks: [],
+      watch: true,
+      proxy: true,
+      queue: true,
+      onDebug: vi.fn(),
+    } as never,
     lastConfig: {},
     remergeInProgress: false,
     remergeDone: undefined,
@@ -30,6 +36,7 @@ function createState<T extends Record<string, unknown>>(
     remerge: vi.fn(),
     enoentLogged: new Set(),
     writeQueue: Promise.resolve(),
+    queueEnabled: true,
     ...overrides,
   } as StoreState<T>;
 }

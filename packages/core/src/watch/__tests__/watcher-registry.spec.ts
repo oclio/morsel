@@ -65,6 +65,7 @@ function createMockStore(
     remerge: vi.fn(),
     enoentLogged: new Set(),
     writeQueue: Promise.resolve(),
+    queueEnabled: true,
   };
 }
 

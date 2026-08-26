@@ -89,6 +89,15 @@ morsel starts from the premise that a configuration loader must be **lean, robus
 - Prerequisite for `transaction` — the commit enters the queue as a single operation, preventing external mutations from interleaving during cross-file writes.
 - ~10 lines of code, ~0.05 KB — negligible bundle impact for a robustness guarantee.
 
+#### Headless mode
+
+- Three orthogonal flags on `WatchOptions` (`watch`, `proxy`, `queue`, all default `true`) allow disabling reactive features for one-shot use cases (CI, scripts, CLI).
+- `watch: false` skips `collectWatchedFiles` + `setupWatchers` — no `fs.watch` overhead. Mutations still work, but no re-merge on external file changes.
+- `proxy: false` skips `createStableProxy` — `store.config` returns `state._config` directly. `store.get()`, `store.on()`, and change events are unaffected.
+- `queue: false` bypasses `chainMutation` — mutations execute immediately without Promise chain serialization. The caller must serialize concurrent writes manually.
+- Enables `morsel-cli` one-shot commands (`morsel set`, `morsel get`) to boot, mutate, and exit without paying for watchers, proxy, or queue overhead.
+- ~20 lines of code, ~0.4 KB — flags are guards around existing code paths, no new abstractions.
+
 ---
 
 ### 1.3 Extensibility via Lifecycle (`LayerHook`, `EventHook`)

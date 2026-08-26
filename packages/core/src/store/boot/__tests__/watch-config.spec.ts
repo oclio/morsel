@@ -98,6 +98,9 @@ function makeState(overrides: Partial<StoreState> = {}): StoreState {
       formatPlugins: [jsonPlugin],
       validationPlugins: [],
       hooks: [],
+      watch: true,
+      proxy: true,
+      queue: true,
     } as never,
     lastConfig: {},
     remergeInProgress: false,
@@ -108,6 +111,7 @@ function makeState(overrides: Partial<StoreState> = {}): StoreState {
     remerge: vi.fn(),
     enoentLogged: new Set(),
     writeQueue: Promise.resolve(),
+    queueEnabled: true,
     ...overrides,
   } as StoreState;
 }
@@ -135,6 +139,9 @@ describe('watchConfig', () => {
       formatPlugins: [jsonPlugin],
       validationPlugins: [],
       hooks: [],
+      watch: true,
+      proxy: true,
+      queue: true,
     } as never);
 
     vi.mocked(resolveGlobalPath).mockResolvedValue('/global/myapp.config.json');
@@ -315,6 +322,9 @@ describe('watchConfig', () => {
         formatPlugins: [jsonPlugin],
         validationPlugins: [],
         hooks: [hook],
+        watch: true,
+        proxy: true,
+        queue: true,
       } as never);
 
       await watchConfig({ name: 'myapp' });
@@ -351,6 +361,9 @@ describe('watchConfig', () => {
         formatPlugins: [jsonPlugin],
         validationPlugins: [],
         hooks: [hook],
+        watch: true,
+        proxy: true,
+        queue: true,
       } as never);
 
       await watchConfig({ name: 'myapp' });
@@ -378,6 +391,9 @@ describe('watchConfig', () => {
         formatPlugins: [jsonPlugin],
         validationPlugins: [],
         hooks: [hook],
+        watch: true,
+        proxy: true,
+        queue: true,
       } as never);
 
       await expect(watchConfig({ name: 'myapp' })).resolves.toBeDefined();
@@ -406,6 +422,9 @@ describe('watchConfig', () => {
         formatPlugins: [jsonPlugin],
         validationPlugins: [],
         hooks: [hook],
+        watch: true,
+        proxy: true,
+        queue: true,
       } as never);
       mockState.watchers = new Set(['/dir1', '/dir2']);
 
@@ -487,6 +506,9 @@ describe('watchConfig', () => {
         formatPlugins: [jsonPlugin],
         validationPlugins: [],
         hooks: [hook],
+        watch: true,
+        proxy: true,
+        queue: true,
       } as never);
 
       await watchConfig({ name: 'myapp' });
@@ -523,6 +545,65 @@ describe('watchConfig', () => {
       await watchConfig({ name: 'myapp' });
 
       expect(mockStore.stop).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('headless mode — watch: false', () => {
+    it('skips collectWatchedFiles when watch is false', async () => {
+      vi.mocked(resolveOptions).mockReturnValue({
+        name: 'myapp',
+        cwd: '/project',
+        defaults: {},
+        overrides: {},
+        globalDir: '/global',
+        arrayMerge: 'replace',
+        envName: 'test',
+        onDebug: noop,
+        configMutability: 'frozen',
+        verbose: false,
+        formatPlugins: [jsonPlugin],
+        validationPlugins: [],
+        hooks: [],
+        watch: false,
+        proxy: true,
+        queue: true,
+      } as never);
+
+      await watchConfig({ name: 'myapp', watch: false });
+
+      expect(collectWatchedFiles).not.toHaveBeenCalled();
+    });
+
+    it('skips setupWatchers when watch is false', async () => {
+      vi.mocked(resolveOptions).mockReturnValue({
+        name: 'myapp',
+        cwd: '/project',
+        defaults: {},
+        overrides: {},
+        globalDir: '/global',
+        arrayMerge: 'replace',
+        envName: 'test',
+        onDebug: noop,
+        configMutability: 'frozen',
+        verbose: false,
+        formatPlugins: [jsonPlugin],
+        validationPlugins: [],
+        hooks: [],
+        watch: false,
+        proxy: true,
+        queue: true,
+      } as never);
+
+      await watchConfig({ name: 'myapp', watch: false });
+
+      expect(setupWatchers).not.toHaveBeenCalled();
+    });
+
+    it('still calls collectWatchedFiles and setupWatchers when watch is true', async () => {
+      await watchConfig({ name: 'myapp' });
+
+      expect(collectWatchedFiles).toHaveBeenCalledTimes(1);
+      expect(setupWatchers).toHaveBeenCalledTimes(1);
     });
   });
 });
