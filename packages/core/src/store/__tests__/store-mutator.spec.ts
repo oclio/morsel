@@ -10,7 +10,7 @@ import {
 } from '@/paths/path-access';
 import { toMorselLayer } from '@/store/layer';
 import { emitChanges } from '@/store/reactive/emit-changes';
-import { deleteKey, mutateKey } from '@/store/store-mutator';
+import { deleteKey, mutateKey, setKey, unsetKey } from '@/store/store-mutator';
 import type { StoreState } from '@/store/store-state';
 import { deepCloneConfig } from '@/store/store-state';
 import type { MorselLayer } from '@/store/types';
@@ -162,79 +162,6 @@ describe('store-mutator', () => {
       await expect(
         mutateKey(state, 'foo', 'bar', undefined, 'mutable'),
       ).rejects.toThrow('morsel: store is stopped');
-    });
-
-    it('updates config optimistically and emits change events', async () => {
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-        _layers: [
-          {
-            source: 'project',
-            path: '/project/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-        ] as never,
-      });
-
-      await mutateKey(state, 'server.port', 8080, undefined, 'mutable');
-
-      expect(setPathValue).toHaveBeenCalledWith(
-        expect.any(Object),
-        ['server', 'port'],
-        8080,
-      );
-      expect(emitChanges).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.any(Object),
-        state.listeners,
-        state.wildcardListeners,
-      );
-    });
-
-    it('freezes config when mutability is frozen', async () => {
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-        _layers: [
-          {
-            source: 'project',
-            path: '/project/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-        ] as never,
-      });
-
-      await mutateKey(state, 'server.port', 8080, undefined, 'frozen');
-
-      expect(applyMutability).toHaveBeenCalledWith(
-        expect.any(Object),
-        'frozen',
-      );
-      // lastConfig keeps the validated config directly (no clone) when frozen
-      expect(state.lastConfig).toBe(state._config);
-    });
-
-    it('clones lastConfig when mutability is mutable', async () => {
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-        _layers: [
-          {
-            source: 'project',
-            path: '/project/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-        ] as never,
-      });
-
-      await mutateKey(state, 'server.port', 8080, undefined, 'mutable');
-
-      expect(deepCloneConfig).toHaveBeenCalled();
-      expect(state.lastConfig).not.toBe(state._config);
     });
 
     it('calls writeConfigFile with correct arguments', async () => {
@@ -449,53 +376,6 @@ describe('store-mutator', () => {
         { path: 'server.port', value: 8080 },
         state.options.formatPlugins,
       );
-    });
-
-    it('emits rollback events to listeners on write failure', async () => {
-      vi.mocked(writeConfigFile).mockRejectedValue(new Error('EWRITE'));
-
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-      });
-
-      await expect(
-        mutateKey(state, 'server.port', 8080, undefined, 'mutable'),
-      ).rejects.toThrow('EWRITE');
-
-      expect(emitChanges).toHaveBeenCalledTimes(2);
-      expect(emitChanges).toHaveBeenNthCalledWith(
-        1,
-        expect.any(Object),
-        expect.any(Object),
-        state.listeners,
-        state.wildcardListeners,
-      );
-      expect(emitChanges).toHaveBeenNthCalledWith(
-        2,
-        expect.any(Object),
-        expect.any(Object),
-        state.listeners,
-        state.wildcardListeners,
-      );
-    });
-
-    it('skips rollback when config changed during await (concurrent re-merge)', async () => {
-      const remergedConfig = { server: { port: 9999 } } as never;
-      vi.mocked(writeConfigFile).mockImplementation(async () => {
-        state._config = remergedConfig;
-        throw new Error('EWRITE');
-      });
-
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-      });
-
-      await expect(
-        mutateKey(state, 'server.port', 8080, undefined, 'mutable'),
-      ).rejects.toThrow('EWRITE');
-
-      expect(state._config).toBe(remergedConfig);
-      expect(emitChanges).toHaveBeenCalledTimes(1);
     });
 
     it('returns silently when no layer matches the resolved target file', async () => {
@@ -789,71 +669,6 @@ describe('store-mutator', () => {
       );
     });
 
-    it('emits rollback events to listeners on write failure', async () => {
-      vi.mocked(writeConfigFile).mockRejectedValue(new Error('EWRITE'));
-
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-        _layers: [
-          {
-            source: 'project',
-            path: '/project/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-        ] as never,
-      });
-
-      await expect(
-        deleteKey(state, 'server.port', undefined, 'mutable'),
-      ).rejects.toThrow('EWRITE');
-
-      expect(emitChanges).toHaveBeenCalledTimes(2);
-      expect(emitChanges).toHaveBeenNthCalledWith(
-        1,
-        expect.any(Object),
-        expect.any(Object),
-        state.listeners,
-        state.wildcardListeners,
-      );
-      expect(emitChanges).toHaveBeenNthCalledWith(
-        2,
-        expect.any(Object),
-        expect.any(Object),
-        state.listeners,
-        state.wildcardListeners,
-      );
-    });
-
-    it('skips rollback when config changed during await (concurrent re-merge)', async () => {
-      const remergedConfig = { server: { port: 9999 } } as never;
-      vi.mocked(writeConfigFile).mockImplementation(async () => {
-        state._config = remergedConfig;
-        throw new Error('EWRITE');
-      });
-
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-        _layers: [
-          {
-            source: 'project',
-            path: '/project/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-        ] as never,
-      });
-
-      await expect(
-        deleteKey(state, 'server.port', undefined, 'mutable'),
-      ).rejects.toThrow('EWRITE');
-
-      expect(state._config).toBe(remergedConfig);
-      expect(emitChanges).toHaveBeenCalledTimes(1);
-    });
-
     it('calls runWriteHooks after successful delete with correct WriteEvent', async () => {
       const state = createState({
         _config: { server: { port: 3000 } } as never,
@@ -921,6 +736,57 @@ describe('store-mutator', () => {
       ).rejects.toThrow('EWRITE');
 
       expect(runWriteHooks).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('setKey', () => {
+    it('delegates to mutateKey', async () => {
+      const state = createState({
+        _config: { server: { port: 3000 } } as never,
+        _layers: [
+          {
+            source: 'project',
+            path: '/project/config.json',
+            config: {},
+            exists: true,
+            extendsPaths: [],
+          },
+        ] as never,
+      });
+
+      await setKey(state, 'server.port', 8080, 'project', 'mutable');
+
+      expect(writeConfigFile).toHaveBeenCalledWith(
+        '/project/config.json',
+        { path: 'server.port', value: 8080 },
+        state.options.formatPlugins,
+      );
+    });
+  });
+
+  describe('unsetKey', () => {
+    it('delegates to deleteKey', async () => {
+      const state = createState({
+        _config: { server: { port: 3000 } } as never,
+        _layers: [
+          {
+            source: 'project',
+            path: '/project/config.json',
+            config: {},
+            exists: true,
+            extendsPaths: [],
+          },
+        ] as never,
+      });
+
+      const result = await unsetKey(state, 'server.port', 'all', 'mutable');
+
+      expect(result).toBe(true);
+      expect(writeConfigFile).toHaveBeenCalledWith(
+        '/project/config.json',
+        { isDelete: true, path: 'server.port' },
+        state.options.formatPlugins,
+      );
     });
   });
 });

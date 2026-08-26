@@ -1,21 +1,15 @@
 import { applyMutability } from '@/load/merge-layers';
 import { dotifyObject } from '@/paths/dotify';
-import { parsePath } from '@/paths/parse-path';
 import { getPathValue } from '@/paths/path-access';
-import {
-  assertArray,
-  popKey,
-  pushKey,
-  shiftKey,
-  spliceKey,
-  unshiftKey,
-} from '@/store/array-ops';
 import { stopStore } from '@/store/boot/stop-store';
 import { isWildcardPattern } from '@/store/reactive/match-wildcard';
 import { createStableProxy } from '@/store/reactive/stable-proxy';
+import { createArrayMethods } from '@/store/store-array-methods';
 import {
   deleteKey as deleteKeyMutator,
   mutateKey as mutateKeyMutator,
+  setKey,
+  unsetKey,
 } from '@/store/store-mutator';
 import type { StoreState } from '@/store/store-state';
 import { deepCloneConfig } from '@/store/store-state';
@@ -41,6 +35,8 @@ export function createMorselStore<T extends ConfigRecord>(
 ): MorselStore<T> {
   const proxy = createStableProxy(state, mutability);
   state._proxy = proxy;
+
+  const arrayMethods = createArrayMethods(state, mutability);
 
   const store: MorselStore<T> = {
     get config(): T {
@@ -97,13 +93,13 @@ export function createMorselStore<T extends ConfigRecord>(
       value: unknown,
       target?: StoreTarget,
     ): Promise<void> {
-      return store.mutateKey(pathInput, value, target);
+      return setKey(state, pathInput, value, target, mutability);
     },
     async unset(
       pathInput: string | readonly (string | number)[],
       target?: DeleteTarget,
     ): Promise<boolean> {
-      return store.deleteKey(pathInput, target);
+      return unsetKey(state, pathInput, target, mutability);
     },
     all(): T {
       return deepCloneConfig(state._config) as T;
@@ -124,62 +120,13 @@ export function createMorselStore<T extends ConfigRecord>(
     ): Promise<boolean> {
       return deleteKeyMutator(state, pathInput, target, mutability);
     },
-    async push(
-      pathInput: string | readonly (string | number)[],
-      value: unknown,
-      target?: StoreTarget,
-    ): Promise<number> {
-      return pushKey(state, pathInput, value, target, mutability);
-    },
-    async unshift(
-      pathInput: string | readonly (string | number)[],
-      value: unknown,
-      target?: StoreTarget,
-    ): Promise<number> {
-      return unshiftKey(state, pathInput, value, target, mutability);
-    },
-    async pop(
-      pathInput: string | readonly (string | number)[],
-      target?: StoreTarget,
-    ): Promise<unknown> {
-      return popKey(state, pathInput, target, mutability);
-    },
-    async shift(
-      pathInput: string | readonly (string | number)[],
-      target?: StoreTarget,
-    ): Promise<unknown> {
-      return shiftKey(state, pathInput, target, mutability);
-    },
-    async splice(
-      pathInput: string | readonly (string | number)[],
-      start: number,
-      deleteCount: number,
-      ...items: unknown[]
-    ): Promise<unknown[]> {
-      return spliceKey(
-        state,
-        pathInput,
-        start,
-        deleteCount,
-        items,
-        undefined,
-        mutability,
-      );
-    },
-    indexOf(
-      pathInput: string | readonly (string | number)[],
-      value: unknown,
-    ): number {
-      const array = assertArray(pathInput, state._config, parsePath(pathInput));
-      return array.indexOf(value);
-    },
-    lastIndexOf(
-      pathInput: string | readonly (string | number)[],
-      value: unknown,
-    ): number {
-      const array = assertArray(pathInput, state._config, parsePath(pathInput));
-      return array.lastIndexOf(value);
-    },
+    push: arrayMethods.push,
+    unshift: arrayMethods.unshift,
+    pop: arrayMethods.pop,
+    shift: arrayMethods.shift,
+    splice: arrayMethods.splice,
+    indexOf: arrayMethods.indexOf,
+    lastIndexOf: arrayMethods.lastIndexOf,
     async stop(): Promise<void> {
       return stopStore(state);
     },
