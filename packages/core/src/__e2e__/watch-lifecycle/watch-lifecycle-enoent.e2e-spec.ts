@@ -4,6 +4,7 @@ import path from 'node:path';
 import {
   clearWatcherRegistry,
   createTemporaryEnvironment,
+  waitForDebugContext,
   waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
@@ -27,17 +28,26 @@ describe('watch-lifecycle-enoent — ENOENT during re-merge', () => {
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
     await mkdir(`${directory}/global`, { recursive: true });
 
+    const debugContexts: Record<string, unknown>[] = [];
+
     const store = await watchConfig({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: `${directory}/global`,
-      onDebug: () => {},
+      onDebug: (_message: string, context?: Record<string, unknown>) => {
+        if (context) {
+          debugContexts.push(context);
+        }
+      },
     });
 
     expect(store.config).toEqual({ port: 3000 });
 
     await rm(path.join(projectDirectory, 'myapp.config.json'));
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await waitForDebugContext(
+      debugContexts,
+      (context) => context['code'] === 'ENOENT',
+    );
 
     expect(store.config).toEqual({ port: 3000 });
 
@@ -65,7 +75,10 @@ describe('watch-lifecycle-enoent — ENOENT during re-merge', () => {
     });
 
     await rm(path.join(projectDirectory, 'myapp.config.json'));
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await waitForDebugContext(
+      debugContexts,
+      (context) => context['code'] === 'ENOENT',
+    );
 
     const enoentContext = debugContexts.find(
       (context) => context['code'] === 'ENOENT',
@@ -98,7 +111,10 @@ describe('watch-lifecycle-enoent — ENOENT during re-merge', () => {
     });
 
     await rm(path.join(projectDirectory, 'myapp.config.json'));
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await waitForDebugContext(
+      debugContexts,
+      (context) => context['code'] === 'ENOENT',
+    );
 
     const enoentCount = debugContexts.filter(
       (context) => context['code'] === 'ENOENT',
@@ -130,7 +146,10 @@ describe('watch-lifecycle-enoent — ENOENT during re-merge', () => {
     });
 
     await rm(path.join(projectDirectory, 'myapp.config.json'));
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await waitForDebugContext(
+      debugContexts,
+      (context) => context['code'] === 'ENOENT',
+    );
 
     const firstEnoentCount = debugContexts.filter(
       (context) => context['code'] === 'ENOENT',
@@ -143,12 +162,17 @@ describe('watch-lifecycle-enoent — ENOENT during re-merge', () => {
       (config) => (config as Record<string, unknown>)['port'] === 8080,
     );
 
-    await rm(path.join(projectDirectory, 'myapp.config.json'));
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    debugContexts.length = 0;
 
-    const totalEnoentCount = debugContexts.filter(
+    await rm(path.join(projectDirectory, 'myapp.config.json'));
+    await waitForDebugContext(
+      debugContexts,
       (context) => context['code'] === 'ENOENT',
-    ).length;
+    );
+
+    const totalEnoentCount =
+      firstEnoentCount +
+      debugContexts.filter((context) => context['code'] === 'ENOENT').length;
     expect(totalEnoentCount).toBe(2);
 
     await store.stop();

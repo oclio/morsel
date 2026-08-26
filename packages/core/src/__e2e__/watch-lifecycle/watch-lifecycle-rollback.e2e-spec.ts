@@ -5,6 +5,7 @@ import {
   clearWatcherRegistry,
   createDebugCollector,
   setupTest,
+  waitForDebugContext,
   waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
@@ -29,7 +30,10 @@ describe('watch-lifecycle-rollback — rollback & recovery', () => {
     const configPath = path.resolve(projectDirectory, 'myapp.config.json');
     await writeFile(configPath, '{ invalid json !!!', 'utf8');
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await waitForDebugContext(
+      contexts,
+      (context) => context['code'] === 'EPARSE',
+    );
 
     expect(store!.config).toEqual({ port: 3000 });
     expect(contexts.some((context) => context['code'] === 'EPARSE')).toBe(true);
@@ -65,7 +69,10 @@ describe('watch-lifecycle-rollback — rollback & recovery', () => {
       port: 'not-a-number',
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await waitForDebugContext(
+      debugContexts,
+      (context) => context['code'] === 'EVALIDATE',
+    );
 
     expect(store!.config).toEqual({ port: 3000 });
     expect(

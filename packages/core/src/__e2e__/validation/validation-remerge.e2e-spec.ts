@@ -5,6 +5,8 @@ import {
   createDebugCollector,
   createTemporaryEnvironment,
   setupTest,
+  waitForDebugContext,
+  waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
@@ -60,7 +62,10 @@ describe('validation-remerge — watch re-merge', () => {
       port: 'not-a-number',
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await waitForDebugContext(
+      debugContexts,
+      (context) => context['code'] === 'EVALIDATE',
+    );
 
     expect(store.config).toEqual({ port: 3000 });
     expect(
@@ -98,7 +103,10 @@ describe('validation-remerge — watch re-merge', () => {
       port: 'invalid',
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await waitForDebugContext(
+      debugContexts,
+      (context) => context['code'] === 'EVALIDATE',
+    );
 
     const validationContext = debugContexts.find(
       (context) => context['code'] === 'EVALIDATE',
@@ -121,7 +129,7 @@ describe('validation-remerge — watch re-merge', () => {
       },
     };
 
-    const { callback } = createDebugCollector();
+    const { contexts, callback } = createDebugCollector();
 
     const { store, projectDirectory } = await setupTest({
       watch: true,
@@ -135,13 +143,19 @@ describe('validation-remerge — watch re-merge', () => {
       port: 'not-a-number',
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await waitForDebugContext(
+      contexts,
+      (context) => context['code'] === 'EVALIDATE',
+    );
 
     await writeConfig(projectDirectory, 'myapp.config.json', {
       port: 8080,
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await waitForRemerge(
+      store!,
+      (config) => (config as Record<string, unknown>)['port'] === 8080,
+    );
 
     expect(store!.config).toEqual({ port: 8080 });
 
