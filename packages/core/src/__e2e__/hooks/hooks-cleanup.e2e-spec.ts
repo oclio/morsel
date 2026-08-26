@@ -1,0 +1,97 @@
+import { mkdir } from 'node:fs/promises';
+
+import {
+  clearWatcherRegistry,
+  createTemporaryEnvironment,
+  writeConfig,
+} from '@oclio/morsel-e2e-helpers';
+
+import { loadConfig } from '@/index';
+
+describe('hooks-cleanup — reserved key cleanup on hook output', () => {
+  let directory: string;
+  let projectDirectory: string;
+  let globalDirectory: string;
+
+  beforeEach(async () => {
+    clearWatcherRegistry();
+    const env = await createTemporaryEnvironment();
+    directory = env.directory;
+    projectDirectory = `${directory}/project`;
+    globalDirectory = `${directory}/global`;
+    await mkdir(projectDirectory, { recursive: true });
+    await mkdir(globalDirectory, { recursive: true });
+  });
+
+  it('$env and extends stripped from hook result', async () => {
+    await writeConfig(projectDirectory, 'base.json', { baseKey: true });
+    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
+
+    const previousNodeEnvironment = process.env['NODE_ENV'];
+    process.env['NODE_ENV'] = 'ci';
+
+    try {
+      const hooks = [
+        {
+          name: 'cleanup-hook',
+          lifecycle: 'before:defaults' as const,
+          load: () => ({
+            $env: { ci: { envKey: 'ci-value' } },
+            extends: './base.json',
+            hookKey: 'val',
+          }),
+        },
+      ];
+
+      const { config, layers } = await loadConfig({
+        name: 'myapp',
+        cwd: projectDirectory,
+        globalDir: globalDirectory,
+        hooks,
+      });
+
+      expect(config).toEqual({
+        envKey: 'ci-value',
+        hookKey: 'val',
+        port: 3000,
+      });
+      expect(config).not.toHaveProperty('extends');
+      expect(config).not.toHaveProperty('$env');
+      expect(config).not.toHaveProperty('baseKey');
+
+      for (const layer of layers) {
+        expect(layer.config).not.toHaveProperty('extends');
+        expect(layer.config).not.toHaveProperty('$env');
+      }
+    } finally {
+      if (previousNodeEnvironment === undefined) {
+        delete process.env['NODE_ENV'];
+      } else {
+        process.env['NODE_ENV'] = previousNodeEnvironment;
+      }
+    }
+  });
+
+  it('hook output non-plain-object passed through as-is', async () => {
+    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
+
+    const hooks = [
+      {
+        name: 'array-hook',
+        lifecycle: 'before:defaults' as const,
+        load: () => [1, 2, 3],
+      },
+    ];
+
+    const { layers } = await loadConfig({
+      name: 'myapp',
+      cwd: projectDirectory,
+      globalDir: globalDirectory,
+      hooks,
+    } as never);
+
+    const hookLayer = layers.find((layer) => layer.source === 'hook');
+    expect(hookLayer).toBeDefined();
+    expect(hookLayer!.config).toEqual({ 0: 1, 1: 2, 2: 3 });
+  });
+});

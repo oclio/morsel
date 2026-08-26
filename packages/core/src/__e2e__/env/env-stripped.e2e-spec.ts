@@ -6,13 +6,20 @@ import {
 
 import { loadConfig } from '@/index';
 
-describe('env-stripped — $env absent from final config and layer.config', () => {
-  clearWatcherRegistry();
+describe('env-stripped — $env stripped from result', () => {
+  let directory: string;
+  let projectDirectory: string;
+  let globalDirectory: string;
+
+  beforeEach(async () => {
+    clearWatcherRegistry();
+    const env = await createTemporaryEnvironment();
+    directory = env.directory;
+    projectDirectory = `${directory}/project`;
+    globalDirectory = `${directory}/global`;
+  });
 
   it('$env key not in config nor in any layer.config', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
-
     await writeConfig(projectDirectory, 'myapp.config.json', {
       port: 3000,
       $env: {
@@ -24,7 +31,7 @@ describe('env-stripped — $env absent from final config and layer.config', () =
     const { config, layers } = await loadConfig({
       name: 'myapp',
       cwd: projectDirectory,
-      globalDir: `${directory}/global`,
+      globalDir: globalDirectory,
       envName: 'ci',
     });
 
@@ -34,6 +41,32 @@ describe('env-stripped — $env absent from final config and layer.config', () =
     for (const layer of layers) {
       expect(layer.config).not.toHaveProperty('$env');
       expect(layer.config).not.toHaveProperty('extends');
+    }
+  });
+
+  it('$env stripped from all 4 layers simultaneously', async () => {
+    await writeConfig(globalDirectory, 'myapp.config.json', {
+      port: 8080,
+      $env: { ci: { port: 9090 } },
+    });
+    await writeConfig(projectDirectory, 'myapp.config.json', {
+      port: 3000,
+      $env: { ci: { port: 9000 } },
+    });
+
+    const { config, layers } = await loadConfig({
+      name: 'myapp',
+      cwd: projectDirectory,
+      globalDir: globalDirectory,
+      envName: 'ci',
+      defaults: { port: 4000, $env: { ci: { port: 7000 } } },
+      overrides: { port: 6000, $env: { ci: { port: 9999 } } },
+    });
+
+    expect(config).not.toHaveProperty('$env');
+
+    for (const layer of layers) {
+      expect(layer.config).not.toHaveProperty('$env');
     }
   });
 });

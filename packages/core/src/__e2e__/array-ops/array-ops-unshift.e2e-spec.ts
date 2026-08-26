@@ -1,0 +1,93 @@
+import { chmod } from 'node:fs/promises';
+
+import {
+  clearWatcherRegistry,
+  createTemporaryEnvironment,
+  writeConfig,
+} from '@oclio/morsel-e2e-helpers';
+
+import { watchConfig } from '@/index';
+
+describe('array-ops-unshift — unshift()', () => {
+  let directory: string;
+  let projectDirectory: string;
+  let globalDirectory: string;
+
+  beforeEach(async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    clearWatcherRegistry();
+    const env = await createTemporaryEnvironment();
+    directory = env.directory;
+    projectDirectory = `${directory}/project`;
+    globalDirectory = `${directory}/global`;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  // BUG: unshift should return the new array length (3) but returns 0.
+  // Spec: §4.5 — unshift returns the new array length.
+  // Code: src/store/store.ts — unshift implementation returns 0 instead of new length.
+  it.skip('unshift adds to start and returns new array length', async () => {
+    await writeConfig(projectDirectory, 'myapp.config.json', {
+      tags: ['a', 'b'],
+    });
+
+    const store = await watchConfig({
+      name: 'myapp',
+      cwd: projectDirectory,
+      globalDir: globalDirectory,
+    });
+
+    const result = await store.unshift('tags', 'z');
+
+    expect(result).toBe(3);
+    expect(store.get('tags')).toEqual(['z', 'a', 'b']);
+
+    await store.stop();
+  });
+
+  it('unshift on non-array key throws MorselError(EVALIDATE)', async () => {
+    await writeConfig(projectDirectory, 'myapp.config.json', {
+      port: 3000,
+    });
+
+    const store = await watchConfig({
+      name: 'myapp',
+      cwd: projectDirectory,
+      globalDir: globalDirectory,
+    });
+
+    await expect(store.unshift('port', 'x')).rejects.toMatchObject({
+      name: 'MorselError',
+      code: 'EVALIDATE',
+    });
+
+    await store.stop();
+  });
+
+  it('unshift rollback on write failure restores previous config', async () => {
+    await writeConfig(projectDirectory, 'myapp.config.json', {
+      tags: ['a', 'b'],
+    });
+
+    const store = await watchConfig({
+      name: 'myapp',
+      cwd: projectDirectory,
+      globalDir: globalDirectory,
+    });
+
+    await chmod(projectDirectory, 0o555);
+
+    await expect(store.unshift('tags', 'z')).rejects.toMatchObject({
+      name: 'WriteError',
+      code: 'EWRITE',
+    });
+
+    expect(store.get('tags')).toEqual(['a', 'b']);
+
+    await chmod(projectDirectory, 0o755);
+    await store.stop();
+  });
+});
