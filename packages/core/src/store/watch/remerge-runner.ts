@@ -79,6 +79,9 @@ export function createRemerge<T extends ConfigRecord>(): (
     if (store.stopped) {
       return;
     }
+    if (store.inTransaction) {
+      return;
+    }
     if (store.remergeInProgress) {
       store.pendingRemerge = true;
       return;

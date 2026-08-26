@@ -42,6 +42,9 @@ vi.mock('@/store/reactive/emit-changes', () => ({
 vi.mock('@/store/store-state', () => ({
   deepCloneConfig: vi.fn(),
 }));
+vi.mock('@/store/store-transaction', () => ({
+  trackDirtyKey: vi.fn(),
+}));
 vi.mock('@/writer/resolve-origin', () => ({
   resolveKeyOrigin: vi.fn(),
 }));
@@ -83,6 +86,8 @@ function createState<T extends Record<string, unknown>>(
     enoentLogged: new Set(),
     writeQueue: Promise.resolve(),
     queueEnabled: true,
+    inTransaction: false,
+    transactionDirtyKeys: new Map(),
     ...overrides,
   } as StoreState<T>;
 }
@@ -231,5 +236,31 @@ describe('store-mutation-set', () => {
     expect(writeConfigFile).not.toHaveBeenCalled();
     expect(emitChanges).not.toHaveBeenCalled();
     expect(runWriteHooks).not.toHaveBeenCalled();
+  });
+
+  it('skips write and events during transaction, tracks dirty key', async () => {
+    const { trackDirtyKey } = await import('@/store/store-transaction');
+    const state = createState({
+      _config: { server: { port: 3000 } } as never,
+      inTransaction: true,
+      transactionDirtyKeys: new Map(),
+    });
+
+    await doMutateKey(state, 'server.port', 8080, undefined, 'mutable');
+
+    expect(setPathValue).toHaveBeenCalledWith(
+      expect.any(Object),
+      ['server', 'port'],
+      8080,
+    );
+    expect(state._config).toEqual({ server: { port: 8080 } });
+    expect(writeConfigFile).not.toHaveBeenCalled();
+    expect(emitChanges).not.toHaveBeenCalled();
+    expect(runWriteHooks).not.toHaveBeenCalled();
+    expect(trackDirtyKey).toHaveBeenCalledWith(
+      state,
+      '/project/config.json',
+      'server.port',
+    );
   });
 });

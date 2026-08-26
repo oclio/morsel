@@ -6,6 +6,7 @@ import { createMorselStore } from '@/store/store';
 import { deleteKey, mutateKey, setKey, unsetKey } from '@/store/store-mutator';
 import { resolveProvenance } from '@/store/store-provenance';
 import type { StoreState } from '@/store/store-state';
+import { runTransaction } from '@/store/store-transaction';
 
 vi.mock('@/load/merge-layers', () => ({
   applyMutability: vi.fn(),
@@ -24,6 +25,9 @@ vi.mock('@/store/store-mutator', () => ({
 }));
 vi.mock('@/store/store-provenance', () => ({
   resolveProvenance: vi.fn(),
+}));
+vi.mock('@/store/store-transaction', () => ({
+  runTransaction: vi.fn(),
 }));
 
 function createState<T extends Record<string, unknown>>(
@@ -51,6 +55,8 @@ function createState<T extends Record<string, unknown>>(
     enoentLogged: new Set(),
     writeQueue: Promise.resolve(),
     queueEnabled: true,
+    inTransaction: false,
+    transactionDirtyKeys: new Map(),
     ...overrides,
   } as StoreState<T>;
 }
@@ -500,6 +506,18 @@ describe('createMorselStore', () => {
         file: undefined,
         overridden: [],
       });
+    });
+  });
+
+  describe('transaction', () => {
+    it('delegates to runTransaction with state, mutability, and callback', async () => {
+      const state = createState();
+      const store = createMorselStore(state, 'frozen');
+      const callback = vi.fn(async () => {});
+
+      await store.transaction(callback);
+
+      expect(runTransaction).toHaveBeenCalledWith(state, 'frozen', callback);
     });
   });
 

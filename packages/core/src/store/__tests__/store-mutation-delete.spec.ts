@@ -42,6 +42,9 @@ vi.mock('@/store/reactive/emit-changes', () => ({
 vi.mock('@/store/store-state', () => ({
   deepCloneConfig: vi.fn(),
 }));
+vi.mock('@/store/store-transaction', () => ({
+  trackDirtyKey: vi.fn(),
+}));
 vi.mock('@/writer/resolve-origin', () => ({
   resolveKeyOrigin: vi.fn(),
 }));
@@ -83,6 +86,8 @@ function createState<T extends Record<string, unknown>>(
     enoentLogged: new Set(),
     writeQueue: Promise.resolve(),
     queueEnabled: true,
+    inTransaction: false,
+    transactionDirtyKeys: new Map(),
     ...overrides,
   } as StoreState<T>;
 }
@@ -414,5 +419,43 @@ describe('store-mutation-delete', () => {
       },
       state.options.onDebug,
     );
+  });
+
+  it('skips write and events during transaction, tracks dirty key', async () => {
+    const { trackDirtyKey } = await import('@/store/store-transaction');
+    vi.mocked(hasRemovedPathValue).mockReturnValue(true);
+    const state = createState({
+      _config: { server: { port: 3000 } } as never,
+      inTransaction: true,
+      transactionDirtyKeys: new Map(),
+    });
+
+    const result = await doDeleteKey(state, 'server.port', 'all', 'mutable');
+
+    expect(result).toBe(true);
+    expect(writeConfigFile).not.toHaveBeenCalled();
+    expect(emitChanges).not.toHaveBeenCalled();
+    expect(runWriteHooks).not.toHaveBeenCalled();
+    expect(trackDirtyKey).toHaveBeenCalledWith(
+      state,
+      '/project/config.json',
+      'server.port',
+    );
+  });
+
+  it('returns false during transaction when key does not exist', async () => {
+    const { trackDirtyKey } = await import('@/store/store-transaction');
+    vi.mocked(hasRemovedPathValue).mockReturnValue(false);
+    const state = createState({
+      _config: { server: { port: 3000 } } as never,
+      inTransaction: true,
+      transactionDirtyKeys: new Map(),
+    });
+
+    const result = await doDeleteKey(state, 'server.port', 'all', 'mutable');
+
+    expect(result).toBe(false);
+    expect(writeConfigFile).not.toHaveBeenCalled();
+    expect(trackDirtyKey).not.toHaveBeenCalled();
   });
 });

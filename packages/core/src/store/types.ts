@@ -323,4 +323,11 @@ export interface MorselStore<
   getProvenance(
     path: string | readonly (string | number)[],
   ): Provenance | undefined;
+  /**
+  Run a transaction: mutations inside the callback are applied in-memory
+  only and committed atomically to disk when the callback completes.
+  If the callback throws, all mutations are rolled back. Events are
+  emitted after a successful commit.
+  */
+  transaction(callback: () => Promise<void>): Promise<void>;
 }

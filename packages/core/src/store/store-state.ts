@@ -71,6 +71,18 @@ export interface StoreState<T extends ConfigRecord = ConfigRecord> {
   immediately without serialization. Set at boot from options.queue.
   */
   queueEnabled: boolean;
+  /**
+  True during a transaction. mutateKey / deleteKey skip writeConfigFile
+  and event emission, applying mutations in-memory only. The re-merge
+  watch is blocked while this is true.
+  */
+  inTransaction: boolean;
+  /**
+  Dirty keys per layer path during a transaction. Keyed by layer file path,
+  value is a Set of canonical dotted paths that have been mutated.
+  Reset at the start of each transaction.
+  */
+  transactionDirtyKeys: Map<string, Set<string>>;
 }
 
 function addWatchedFile(map: Map<string, Set<string>>, filePath: string): void {
@@ -137,6 +149,8 @@ export function createStoreState<T extends ConfigRecord>(
     enoentLogged: new Set(),
     writeQueue: Promise.resolve(),
     queueEnabled: options.queue,
+    inTransaction: false,
+    transactionDirtyKeys: new Map(),
   };
 }
 

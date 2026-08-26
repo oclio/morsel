@@ -66,6 +66,8 @@ function createMockStore(
     enoentLogged: new Set(),
     writeQueue: Promise.resolve(),
     queueEnabled: true,
+    inTransaction: false,
+    transactionDirtyKeys: new Map(),
   };
 }
 

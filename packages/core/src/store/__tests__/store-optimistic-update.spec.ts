@@ -4,6 +4,7 @@ import { interpolate } from '@/merge/interpolate';
 import { emitChanges } from '@/store/reactive/emit-changes';
 import {
   applyOptimisticUpdate,
+  applyOptimisticUpdateSilent,
   rollbackOptimisticUpdate,
 } from '@/store/store-optimistic-update';
 import type { StoreState } from '@/store/store-state';
@@ -60,6 +61,8 @@ function createState<T extends Record<string, unknown>>(
     enoentLogged: new Set(),
     writeQueue: Promise.resolve(),
     queueEnabled: true,
+    inTransaction: false,
+    transactionDirtyKeys: new Map(),
     ...overrides,
   } as StoreState<T>;
 }
@@ -163,6 +166,96 @@ describe('store-optimistic-update', () => {
       });
 
       applyOptimisticUpdate(
+        state,
+        'mutable',
+        ['/project/config.json'],
+        (config) => {
+          (config as Record<string, unknown>)['server'] = { port: 8080 };
+          return true;
+        },
+      );
+
+      expect(deepCloneConfig).toHaveBeenCalled();
+      expect(state.lastConfig).not.toBe(state._config);
+    });
+  });
+
+  describe('applyOptimisticUpdateSilent', () => {
+    it('returns false when no layer matches target files', () => {
+      const state = createState();
+
+      const result = applyOptimisticUpdateSilent(
+        state,
+        'mutable',
+        ['/other.json'],
+        () => true,
+      );
+
+      expect(result).toBe(false);
+      expect(emitChanges).not.toHaveBeenCalled();
+    });
+
+    it('returns false when mutation returns false', () => {
+      const state = createState();
+
+      const result = applyOptimisticUpdateSilent(
+        state,
+        'mutable',
+        ['/project/config.json'],
+        () => false,
+      );
+
+      expect(result).toBe(false);
+      expect(emitChanges).not.toHaveBeenCalled();
+    });
+
+    it('updates config silently without emitting change events', () => {
+      const state = createState({
+        _config: { server: { port: 3000 } } as never,
+      });
+
+      const result = applyOptimisticUpdateSilent(
+        state,
+        'mutable',
+        ['/project/config.json'],
+        (config) => {
+          (config as Record<string, unknown>)['server'] = { port: 8080 };
+          return true;
+        },
+      );
+
+      expect(result).toBe(true);
+      expect(emitChanges).not.toHaveBeenCalled();
+    });
+
+    it('freezes config when mutability is frozen', () => {
+      const state = createState({
+        _config: { server: { port: 3000 } } as never,
+      });
+
+      applyOptimisticUpdateSilent(
+        state,
+        'frozen',
+        ['/project/config.json'],
+        (config) => {
+          (config as Record<string, unknown>)['server'] = { port: 8080 };
+          return true;
+        },
+      );
+
+      expect(applyMutability).toHaveBeenCalledWith(
+        expect.any(Object),
+        'frozen',
+      );
+      expect(state.lastConfig).toBe(state._config);
+    });
+
+    it('clones lastConfig when mutability is mutable', () => {
+      const state = createState({
+        _config: { server: { port: 3000 } } as never,
+      });
+
+      applyOptimisticUpdateSilent(
         state,
         'mutable',
         ['/project/config.json'],

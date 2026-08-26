@@ -88,6 +88,8 @@ function createState<T extends Record<string, unknown>>(
     enoentLogged: new Set(),
     writeQueue: Promise.resolve(),
     queueEnabled: true,
+    inTransaction: false,
+    transactionDirtyKeys: new Map(),
     ...overrides,
   } as StoreState<T>;
 }
@@ -291,6 +293,8 @@ describe('store-mutator', () => {
       const state = createState({
         _config: { server: { port: 3000 } } as never,
         queueEnabled: false,
+        inTransaction: false,
+        transactionDirtyKeys: new Map(),
       });
 
       const initialQueue = state.writeQueue;
@@ -310,6 +314,8 @@ describe('store-mutator', () => {
       const state = createState({
         _config: { server: { port: 3000 } } as never,
         queueEnabled: false,
+        inTransaction: false,
+        transactionDirtyKeys: new Map(),
       });
 
       await Promise.all([
@@ -328,6 +334,8 @@ describe('store-mutator', () => {
       const state = createState({
         _config: { server: { port: 3000 } } as never,
         queueEnabled: false,
+        inTransaction: false,
+        transactionDirtyKeys: new Map(),
       });
 
       const initialQueue = state.writeQueue;
@@ -342,12 +350,48 @@ describe('store-mutator', () => {
       const state = createState({
         _config: { server: { port: 3000 } } as never,
         queueEnabled: true,
+        inTransaction: false,
+        transactionDirtyKeys: new Map(),
       });
 
       const initialQueue = state.writeQueue;
       await deleteKey(state, 'a', undefined, 'mutable');
 
       expect(state.writeQueue).not.toBe(initialQueue);
+    });
+  });
+
+  describe('inTransaction — bypass write queue', () => {
+    it('mutateKey bypasses queue when inTransaction is true', async () => {
+      vi.mocked(writeConfigFile).mockResolvedValue(undefined);
+
+      const state = createState({
+        _config: { server: { port: 3000 } } as never,
+        queueEnabled: true,
+        inTransaction: true,
+        transactionDirtyKeys: new Map(),
+      });
+
+      const initialQueue = state.writeQueue;
+      await mutateKey(state, 'a', 1, undefined, 'mutable');
+
+      expect(state.writeQueue).toBe(initialQueue);
+    });
+
+    it('deleteKey bypasses queue when inTransaction is true', async () => {
+      vi.mocked(writeConfigFile).mockResolvedValue(undefined);
+
+      const state = createState({
+        _config: { server: { port: 3000 } } as never,
+        queueEnabled: true,
+        inTransaction: true,
+        transactionDirtyKeys: new Map(),
+      });
+
+      const initialQueue = state.writeQueue;
+      await deleteKey(state, 'a', undefined, 'mutable');
+
+      expect(state.writeQueue).toBe(initialQueue);
     });
   });
 });
