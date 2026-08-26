@@ -1,5 +1,11 @@
 # @oclio/morsel
 
+## 0.9.0
+
+### Minor Changes
+
+- 854728e: Add `store.transaction()` for atomic multi-key mutations with rollback and deferred event emission.
+
 ## 0.8.0
 
 ### Minor Changes
