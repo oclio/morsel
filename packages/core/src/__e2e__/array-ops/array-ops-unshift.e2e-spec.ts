@@ -26,10 +26,7 @@ describe('array-ops-unshift — unshift()', () => {
     vi.restoreAllMocks();
   });
 
-  // BUG: unshift should return the new array length (3) but returns 0.
-  // Spec: §4.5 — unshift returns the new array length.
-  // Code: src/store/store.ts — unshift implementation returns 0 instead of new length.
-  it.skip('unshift adds to start and returns new array length', async () => {
+  it('unshift adds to start and returns new array length', async () => {
     await writeConfig(projectDirectory, 'myapp.config.json', {
       tags: ['a', 'b'],
     });

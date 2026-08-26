@@ -173,14 +173,14 @@ describe('array-ops', () => {
   });
 
   describe('unshiftKey', () => {
-    it('unshifts a value and returns 0', async () => {
+    it('unshifts a value and returns the new array length', async () => {
       const state = createState({
         _config: { tags: ['b', 'c'] } as never,
       });
 
       const index = await unshiftKey(state, 'tags', 'a', undefined, 'mutable');
 
-      expect(index).toBe(0);
+      expect(index).toBe(3);
       expect(getPathValue(state._config, 'tags')).toEqual(['a', 'b', 'c']);
     });
   });
