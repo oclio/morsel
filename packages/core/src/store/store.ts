@@ -14,6 +14,7 @@ import {
 import { resolveProvenance } from '@/store/store-provenance';
 import type { StoreState } from '@/store/store-state';
 import { deepCloneConfig } from '@/store/store-state';
+import { runTransaction } from '@/store/store-transaction';
 import type {
   ChangeEvent,
   DeleteTarget,
@@ -141,6 +142,9 @@ export function createMorselStore<T extends ConfigRecord>(
       pathInput: string | readonly (string | number)[],
     ): Provenance | undefined {
       return resolveProvenance(state._layers, pathInput);
+    },
+    async transaction(callback: () => Promise<void>): Promise<void> {
+      return runTransaction(state, mutability, callback);
     },
   };
 

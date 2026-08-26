@@ -5,9 +5,11 @@ import { setPathValue } from '@/paths/path-access';
 import { getWritableTargetFile } from '@/store/store-mutation-helpers';
 import {
   applyOptimisticUpdate,
+  applyOptimisticUpdateSilent,
   rollbackOptimisticUpdate,
 } from '@/store/store-optimistic-update';
 import type { StoreState } from '@/store/store-state';
+import { trackDirtyKey } from '@/store/store-transaction';
 import type { StoreTarget } from '@/store/types';
 import { writeConfigFile } from '@/writer/write-config';
 
@@ -16,6 +18,10 @@ type ConfigRecord = Record<string, unknown>;
 /**
  * Set a key by path: optimistic update, persist to source file, rollback
  * on write failure, trigger after:write hooks.
+ *
+ * During a transaction (`state.inTransaction === true`), the optimistic
+ * update is applied silently (no events), the write is skipped, and the
+ * dirty key is tracked for commit.
  */
 export async function doMutateKey<T extends ConfigRecord>(
   state: StoreState<T>,
@@ -27,6 +33,20 @@ export async function doMutateKey<T extends ConfigRecord>(
   const segments = parsePath(pathInput);
   const dottedPath = segments.join('.');
   const targetFilePath = getWritableTargetFile(dottedPath, state, target);
+
+  if (state.inTransaction) {
+    applyOptimisticUpdateSilent(
+      state,
+      mutability,
+      [targetFilePath],
+      (layerConfig) => {
+        setPathValue(layerConfig, segments, value);
+        return true;
+      },
+    );
+    trackDirtyKey(state, targetFilePath, dottedPath);
+    return;
+  }
 
   const previousLayers = state._layers;
   const previousConfig = state._config;

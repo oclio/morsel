@@ -83,6 +83,8 @@ function makeState(overrides: Partial<StoreState> = {}): StoreState {
     enoentLogged: new Set(),
     writeQueue: Promise.resolve(),
     queueEnabled: true,
+    inTransaction: false,
+    transactionDirtyKeys: new Map(),
     options: {
       name: 'myapp',
       cwd: '/project',

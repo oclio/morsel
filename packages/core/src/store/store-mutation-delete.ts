@@ -5,17 +5,40 @@ import { hasRemovedPathValue } from '@/paths/path-access';
 import { getWritableTargetFile } from '@/store/store-mutation-helpers';
 import {
   applyOptimisticUpdate,
+  applyOptimisticUpdateSilent,
   rollbackOptimisticUpdate,
 } from '@/store/store-optimistic-update';
 import type { StoreState } from '@/store/store-state';
+import { trackDirtyKey } from '@/store/store-transaction';
 import type { DeleteTarget } from '@/store/types';
 import { writeConfigFile } from '@/writer/write-config';
 
 type ConfigRecord = Record<string, unknown>;
 
+function collectDeleteTargetFiles<T extends ConfigRecord>(
+  state: StoreState<T>,
+  dottedPath: string,
+  target: DeleteTarget | undefined,
+): string[] {
+  if (target === 'global' || target === 'project') {
+    return [getWritableTargetFile(dottedPath, state, target)];
+  }
+  return state._layers
+    .filter(
+      (layer) =>
+        (layer.source === 'project' || layer.source === 'global') &&
+        layer.path !== undefined,
+    )
+    .map((layer) => layer.path as string);
+}
+
 /**
  * Delete a key: optimistic removal, persist deletion to disk, rollback
  * on write failure, trigger after:write hooks per file.
+ *
+ * During a transaction (`state.inTransaction === true`), the optimistic
+ * update is applied silently (no events), the write is skipped, and the
+ * dirty key is tracked for commit.
  */
 export async function doDeleteKey<T extends ConfigRecord>(
   state: StoreState<T>,
@@ -25,19 +48,21 @@ export async function doDeleteKey<T extends ConfigRecord>(
 ): Promise<boolean> {
   const segments = parsePath(pathInput);
   const dottedPath = segments.join('.');
+  const targetFiles = collectDeleteTargetFiles(state, dottedPath, target);
 
-  const targetFiles: string[] = [];
-  if (target === 'global' || target === 'project') {
-    targetFiles.push(getWritableTargetFile(dottedPath, state, target));
-  } else {
-    for (const layer of state._layers) {
-      if (
-        (layer.source === 'project' || layer.source === 'global') &&
-        layer.path !== undefined
-      ) {
-        targetFiles.push(layer.path);
+  if (state.inTransaction) {
+    const didChange = applyOptimisticUpdateSilent(
+      state,
+      mutability,
+      targetFiles,
+      (layerConfig) => hasRemovedPathValue(layerConfig, segments),
+    );
+    if (didChange) {
+      for (const file of targetFiles) {
+        trackDirtyKey(state, file, dottedPath);
       }
     }
+    return didChange;
   }
 
   const previousLayers = state._layers;
@@ -48,9 +73,7 @@ export async function doDeleteKey<T extends ConfigRecord>(
     state,
     mutability,
     targetFiles,
-    (layerConfig) => {
-      return hasRemovedPathValue(layerConfig, segments);
-    },
+    (layerConfig) => hasRemovedPathValue(layerConfig, segments),
   );
 
   if (!didChange) {

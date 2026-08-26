@@ -93,6 +93,8 @@ function makeState(overrides: Partial<StoreState> = {}): StoreState {
     enoentLogged: new Set(),
     writeQueue: Promise.resolve(),
     queueEnabled: true,
+    inTransaction: false,
+    transactionDirtyKeys: new Map(),
     ...overrides,
   } as StoreState;
 }
@@ -149,6 +151,14 @@ describe('createRemerge', () => {
 
   it('returns early if store is stopped', async () => {
     const state = makeState({ stopped: true });
+
+    await remerge(state);
+
+    expect(buildLayers).not.toHaveBeenCalled();
+  });
+
+  it('returns early if store is in transaction', async () => {
+    const state = makeState({ inTransaction: true });
 
     await remerge(state);
 
