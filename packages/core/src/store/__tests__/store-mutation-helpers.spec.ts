@@ -28,6 +28,7 @@ function createState(overrides: Partial<StoreState> = {}): StoreState {
     remerge: vi.fn(),
     enoentLogged: new Set(),
     writeQueue: Promise.resolve(),
+    queueEnabled: true,
     ...overrides,
   } as StoreState;
 }

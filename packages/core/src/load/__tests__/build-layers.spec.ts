@@ -48,6 +48,9 @@ function makeResolvedOptions(
     formatPlugins: [jsonPlugin],
     validationPlugins: [],
     hooks: [],
+    watch: true,
+    proxy: true,
+    queue: true,
     ...overrides,
   } as never;
 }

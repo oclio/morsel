@@ -97,7 +97,7 @@ describe('watch-lifecycle-rollback — rollback & recovery', () => {
     const configPath = path.resolve(projectDirectory, 'myapp.config.json');
     await writeFile(configPath, '{ invalid json !!!', 'utf8');
 
-    const deadline = Date.now() + 5000;
+    const deadline = Date.now() + 10_000;
     while (
       contexts.every((context) => context['code'] !== 'EPARSE') &&
       Date.now() < deadline

@@ -35,7 +35,9 @@ export function createMorselStore<T extends ConfigRecord>(
   state: StoreState<T>,
   mutability: 'frozen' | 'mutable',
 ): MorselStore<T> {
-  const proxy = createStableProxy(state, mutability);
+  const proxy = state.options.proxy
+    ? createStableProxy(state, mutability)
+    : undefined;
   state._proxy = proxy;
 
   const arrayMethods = createArrayMethods(state, mutability);
@@ -45,6 +47,9 @@ export function createMorselStore<T extends ConfigRecord>(
       if (state.stopped) {
         state._stoppedConfig ??= applyMutability(state._config, mutability);
         return state._stoppedConfig;
+      }
+      if (proxy === undefined) {
+        return state._config;
       }
       return mutability === 'mutable' ? state._config : proxy;
     },

@@ -22,6 +22,10 @@ export async function mutateKey<T extends ConfigRecord>(
     throw new Error('morsel: store is stopped');
   }
 
+  if (!state.queueEnabled) {
+    return doMutateKey(state, pathInput, value, target, mutability);
+  }
+
   return chainMutation(state, () =>
     doMutateKey(state, pathInput, value, target, mutability),
   );
@@ -40,6 +44,10 @@ export async function deleteKey<T extends ConfigRecord>(
 ): Promise<boolean> {
   if (state.stopped) {
     throw new Error('morsel: store is stopped');
+  }
+
+  if (!state.queueEnabled) {
+    return doDeleteKey(state, pathInput, target, mutability);
   }
 
   return chainMutation(state, () =>

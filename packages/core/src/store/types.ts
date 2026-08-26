@@ -120,6 +120,21 @@ export interface WatchOptions<
   AbortSignal to stop watching. When aborted, `store.stop()` is called automatically.
   */
   readonly signal?: AbortSignal;
+  /**
+  Default: true. If false, no fs.watch watchers are set up.
+  Use in CI, scripts, and one-shot tools.
+  */
+  readonly watch?: boolean;
+  /**
+  Default: true. If false, store.config returns state._config directly
+  instead of a stable proxy. Use when accessing config via store.get() only.
+  */
+  readonly proxy?: boolean;
+  /**
+  Default: true. If false, mutations bypass the write queue and execute
+  immediately. Only safe in sequential code (await between mutations).
+  */
+  readonly queue?: boolean;
 }
 
 /**

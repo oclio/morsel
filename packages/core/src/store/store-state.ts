@@ -66,6 +66,11 @@ export interface StoreState<T extends ConfigRecord = ConfigRecord> {
   mutations.
   */
   writeQueue: Promise<void>;
+  /**
+  Whether the write queue is enabled. When false, mutations execute
+  immediately without serialization. Set at boot from options.queue.
+  */
+  queueEnabled: boolean;
 }
 
 function addWatchedFile(map: Map<string, Set<string>>, filePath: string): void {
@@ -131,6 +136,7 @@ export function createStoreState<T extends ConfigRecord>(
     remerge,
     enoentLogged: new Set(),
     writeQueue: Promise.resolve(),
+    queueEnabled: options.queue,
   };
 }
 

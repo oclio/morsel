@@ -5,7 +5,7 @@ import type { ArrayMergeStrategy } from '@/merge/deep-merge';
 import { resolveGlobalDirectory } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
 import type { FormatPlugin, ValidationPlugin } from '@/plugins/types';
-import type { MorselOptions } from '@/store/types';
+import type { MorselOptions, WatchOptions } from '@/store/types';
 
 type ConfigRecord = Record<string, unknown>;
 
@@ -26,9 +26,10 @@ export interface ResolvedOptions {
   readonly formatPlugins: readonly FormatPlugin[];
   readonly validationPlugins: readonly ValidationPlugin[];
   readonly hooks: readonly Hook[];
+  readonly watch: boolean;
+  readonly proxy: boolean;
+  readonly queue: boolean;
 }
-
-const VALID_NAME = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
 
 /**
  * Validate the `name` option.
@@ -41,6 +42,7 @@ function assertName(name: unknown): asserts name is string {
   if (typeof name !== 'string' || name === '') {
     throw new TypeError('morsel: name is required');
   }
+  const VALID_NAME = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
   if (!VALID_NAME.test(name)) {
     throw new TypeError(
       'morsel: name must start with a letter and contain only letters, digits, dashes, or underscores',
@@ -79,5 +81,8 @@ export function resolveOptions<
     formatPlugins: options.formatPlugins ?? [jsonPlugin],
     validationPlugins: options.validationPlugins ?? [],
     hooks: options.hooks ?? [],
+    watch: (options as WatchOptions<T>).watch ?? true,
+    proxy: (options as WatchOptions<T>).proxy ?? true,
+    queue: (options as WatchOptions<T>).queue ?? true,
   };
 }

@@ -79,6 +79,9 @@ function makeState(overrides: Partial<StoreState> = {}): StoreState {
       formatPlugins: [jsonPlugin],
       validationPlugins: [],
       hooks: [],
+      watch: true,
+      proxy: true,
+      queue: true,
     } as never,
     lastConfig: {},
     remergeInProgress: false,
@@ -89,6 +92,7 @@ function makeState(overrides: Partial<StoreState> = {}): StoreState {
     remerge: vi.fn(),
     enoentLogged: new Set(),
     writeQueue: Promise.resolve(),
+    queueEnabled: true,
     ...overrides,
   } as StoreState;
 }

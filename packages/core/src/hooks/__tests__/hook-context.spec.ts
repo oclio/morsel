@@ -18,6 +18,9 @@ function makeOptions(
     formatPlugins: [],
     validationPlugins: [],
     hooks: [],
+    watch: true,
+    proxy: true,
+    queue: true,
     ...overrides,
   } as ResolvedOptions;
 }
