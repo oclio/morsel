@@ -1,12 +1,14 @@
-import { mkdir, readFile, rm } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
   clearWatcherRegistry,
   createTemporaryEnvironment,
+  waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
+import type { WriteEvent } from '@/hooks/types';
 import { watchConfig } from '@/index';
 
 describe('mutations-transaction — store.transaction()', () => {
@@ -385,6 +387,277 @@ describe('mutations-transaction — store.transaction()', () => {
     ) as Record<string, unknown>;
     const diskItems = content['items'] as string[];
     expect(diskItems).toHaveLength(50);
+
+    await store.stop();
+  });
+
+  it('multi-file transaction with set: writes to both project and global', async () => {
+    await writeConfig(projectDirectory, 'myapp.config.json', {
+      port: 3000,
+    });
+    await writeConfig(globalDirectory, 'myapp.config.json', {
+      host: 'localhost',
+    });
+
+    const store = await watchConfig({
+      name: 'myapp',
+      cwd: projectDirectory,
+      globalDir: globalDirectory,
+    });
+
+    await store.transaction(async () => {
+      await store.set('port', 8080);
+      await store.set('host', '0.0.0.0', 'global');
+    });
+
+    expect(store.config).toEqual({ port: 8080, host: '0.0.0.0' });
+
+    const projectContent = JSON.parse(
+      await readFile(
+        path.resolve(projectDirectory, 'myapp.config.json'),
+        'utf8',
+      ),
+    ) as Record<string, unknown>;
+    expect(projectContent).toEqual({ port: 8080 });
+
+    const globalContent = JSON.parse(
+      await readFile(
+        path.resolve(globalDirectory, 'myapp.config.json'),
+        'utf8',
+      ),
+    ) as Record<string, unknown>;
+    expect(globalContent).toEqual({ host: '0.0.0.0' });
+
+    await store.stop();
+  });
+
+  it('50 mutations on same file: exactly 1 write to disk', async () => {
+    await writeConfig(projectDirectory, 'myapp.config.json', {
+      items: [],
+    });
+
+    const writeEvents: WriteEvent[] = [];
+    const hooks = [
+      {
+        name: 'counter',
+        lifecycle: 'after:write' as const,
+        onWrite: (event: WriteEvent) => {
+          writeEvents.push(event);
+        },
+      },
+    ];
+
+    const store = await watchConfig({
+      name: 'myapp',
+      cwd: projectDirectory,
+      globalDir: globalDirectory,
+      hooks,
+    });
+
+    await store.transaction(async () => {
+      for (let index = 0; index < 50; index++) {
+        await store.push('items', `item-${index}`);
+      }
+    });
+
+    expect(writeEvents).toHaveLength(1);
+    expect(writeEvents[0]!.filePath).toBe(
+      path.resolve(projectDirectory, 'myapp.config.json'),
+    );
+
+    await store.stop();
+  });
+
+  it('debounce blocked during transaction: no partial re-merge', async () => {
+    await writeConfig(projectDirectory, 'myapp.config.json', {
+      port: 3000,
+    });
+
+    const store = await watchConfig({
+      name: 'myapp',
+      cwd: projectDirectory,
+      globalDir: globalDirectory,
+    });
+
+    const events: { type: string; keyPath: string }[] = [];
+    store.on('port', (event) => {
+      events.push({ type: event.type, keyPath: event.keyPath });
+    });
+
+    await store.transaction(async () => {
+      await store.set('port', 8080);
+      await writeConfig(projectDirectory, 'myapp.config.json', {
+        port: 9999,
+      });
+    });
+
+    await waitForRemerge(store, (config) => config['port'] === 8080);
+
+    expect(events.length).toBeLessThanOrEqual(1);
+
+    await store.stop();
+  });
+
+  it('transaction with splice, pop, shift, unshift: atomic write', async () => {
+    await writeConfig(projectDirectory, 'myapp.config.json', {
+      tags: ['a', 'b', 'c', 'd', 'e'],
+    });
+
+    const store = await watchConfig({
+      name: 'myapp',
+      cwd: projectDirectory,
+      globalDir: globalDirectory,
+    });
+
+    await store.transaction(async () => {
+      await store.splice('tags', 1, 2, 'x'); // ['a', 'x', 'd', 'e']
+      await store.pop('tags'); // ['a', 'x', 'd']
+      await store.shift('tags'); // ['x', 'd']
+      await store.unshift('tags', 'z'); // ['z', 'x', 'd']
+    });
+
+    expect(store.get('tags')).toEqual(['z', 'x', 'd']);
+
+    const content = JSON.parse(
+      await readFile(
+        path.resolve(projectDirectory, 'myapp.config.json'),
+        'utf8',
+      ),
+    ) as Record<string, unknown>;
+    expect(content['tags']).toEqual(['z', 'x', 'd']);
+
+    await store.stop();
+  });
+
+  it('after:write hooks fire per written file after commit', async () => {
+    await writeConfig(projectDirectory, 'myapp.config.json', {
+      port: 3000,
+    });
+    await writeConfig(globalDirectory, 'myapp.config.json', {
+      host: 'localhost',
+    });
+
+    const writeEvents: WriteEvent[] = [];
+    const hooks = [
+      {
+        name: 'audit',
+        lifecycle: 'after:write' as const,
+        onWrite: (event: WriteEvent) => {
+          writeEvents.push(event);
+        },
+      },
+    ];
+
+    const store = await watchConfig({
+      name: 'myapp',
+      cwd: projectDirectory,
+      globalDir: globalDirectory,
+      hooks,
+    });
+
+    await store.transaction(async () => {
+      await store.set('port', 8080);
+      await store.set('host', '0.0.0.0', 'global');
+    });
+
+    expect(writeEvents).toHaveLength(2);
+    const filePaths = writeEvents.map((event) => event.filePath);
+    expect(filePaths).toContain(
+      path.resolve(projectDirectory, 'myapp.config.json'),
+    );
+    expect(filePaths).toContain(
+      path.resolve(globalDirectory, 'myapp.config.json'),
+    );
+
+    await store.stop();
+  });
+
+  it('cleans up .bak files after successful commit', async () => {
+    await writeConfig(projectDirectory, 'myapp.config.json', {
+      port: 3000,
+    });
+
+    const store = await watchConfig({
+      name: 'myapp',
+      cwd: projectDirectory,
+      globalDir: globalDirectory,
+    });
+
+    await store.transaction(async () => {
+      await store.set('port', 8080);
+    });
+
+    const files = await readdir(projectDirectory);
+    const bakFiles = files.filter((f) => f.endsWith('.bak'));
+    expect(bakFiles).toEqual([]);
+
+    await store.stop();
+  });
+
+  it('re-merge after commit does not re-emit events', async () => {
+    await writeConfig(projectDirectory, 'myapp.config.json', {
+      port: 3000,
+    });
+
+    const store = await watchConfig({
+      name: 'myapp',
+      cwd: projectDirectory,
+      globalDir: globalDirectory,
+    });
+
+    const events: { type: string; keyPath: string }[] = [];
+    store.on('port', (event) => {
+      events.push({ type: event.type, keyPath: event.keyPath });
+    });
+
+    await store.transaction(async () => {
+      await store.set('port', 8080);
+    });
+
+    expect(events).toHaveLength(1);
+
+    await waitForRemerge(store, (config) => config['port'] === 8080);
+    expect(events).toHaveLength(1);
+
+    await store.stop();
+  });
+
+  it('transaction with explicit target:project and target:global', async () => {
+    await writeConfig(projectDirectory, 'myapp.config.json', {
+      port: 3000,
+    });
+    await writeConfig(globalDirectory, 'myapp.config.json', {
+      host: 'localhost',
+    });
+
+    const store = await watchConfig({
+      name: 'myapp',
+      cwd: projectDirectory,
+      globalDir: globalDirectory,
+    });
+
+    await store.transaction(async () => {
+      await store.set('port', 8080, 'project');
+      await store.set('host', '0.0.0.0', 'global');
+    });
+
+    expect(store.config).toEqual({ port: 8080, host: '0.0.0.0' });
+
+    const projectContent = JSON.parse(
+      await readFile(
+        path.resolve(projectDirectory, 'myapp.config.json'),
+        'utf8',
+      ),
+    ) as Record<string, unknown>;
+    expect(projectContent).toEqual({ port: 8080 });
+
+    const globalContent = JSON.parse(
+      await readFile(
+        path.resolve(globalDirectory, 'myapp.config.json'),
+        'utf8',
+      ),
+    ) as Record<string, unknown>;
+    expect(globalContent).toEqual({ host: '0.0.0.0' });
 
     await store.stop();
   });
