@@ -31,6 +31,7 @@ export default {
     'toctou',
     'unflatten',
     'unflattened',
+    'unsets',
     'unshifts',
     'unstub',
     'unsub',

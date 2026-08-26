@@ -59,6 +59,13 @@ export interface StoreState<T extends ConfigRecord = ConfigRecord> {
   Reset when all previously-missing files reappear.
   */
   enoentLogged: Set<string>;
+  /**
+  Promise chain that serializes all mutations (set, unset, push, etc.).
+  Each mutation chains onto this and updates it. Errors are swallowed
+  on the queue (propagated to the caller) to avoid blocking subsequent
+  mutations.
+  */
+  writeQueue: Promise<void>;
 }
 
 function addWatchedFile(map: Map<string, Set<string>>, filePath: string): void {
@@ -123,6 +130,7 @@ export function createStoreState<T extends ConfigRecord>(
     debounceMs,
     remerge,
     enoentLogged: new Set(),
+    writeQueue: Promise.resolve(),
   };
 }
 

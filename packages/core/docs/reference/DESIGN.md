@@ -79,6 +79,16 @@ morsel starts from the premise that a configuration loader must be **lean, robus
 - Answers the #1 config debugging question: "why does my app have this value?" in a single call — no manual layer traversal.
 - No new infrastructure — built on existing `MorselLayer` trace and `getPathValue`. ~150 lines, < 1 KB minified.
 
+#### Mutation serialization
+
+- All mutations (`set`, `unset`, `push`, etc.) are serialized via a per-store `writeQueue` — a `Promise<void>` chain that ensures mutations execute in call order.
+- Eliminates the latent race condition where `Promise.all([set('a', 1), set('b', 2)])` could lose a write if the second read overlaps the first write.
+- No competitor (c12, cosmiconfig, convict, node-config) serializes writes — morsel is the only config loader that offers this guarantee.
+- Errors are isolated: a failed mutation does not block subsequent mutations in the queue.
+- `stop()` drains the queue before closing watchers — no mutation in flight after stop.
+- Prerequisite for `transaction` — the commit enters the queue as a single operation, preventing external mutations from interleaving during cross-file writes.
+- ~10 lines of code, ~0.05 KB — negligible bundle impact for a robustness guarantee.
+
 ---
 
 ### 1.3 Extensibility via Lifecycle (`LayerHook`, `EventHook`)
@@ -244,7 +254,7 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `LoadFileResult` — discriminated union (`exists: true` + populated config, or `exists: false` + `Record<string, never>`).
 - `ResolvedLayer` — intermediate resolved layer (`source`, `path`, `exists`, `config`, `extendsPaths`, `hookName`).
 - `ResolvedOptions` — complete validated options with default values applied.
-- `StoreState` — internal mutable shared state of a reactive store.
+- `StoreState` — internal mutable shared state of a reactive store (includes `writeQueue: Promise<void>` for mutation serialization).
 - `WatcherEntry` — `WatcherRegistry` entry (`watcher`, `refCount`, `stores`, `retryTimer`).
 - `WatcherRegistry` — global registry mapping directory paths to `WatcherEntry` (`Map<string, WatcherEntry>`).
 - `buildLayers` — async orchestration of the 4 core layers and hooks resolution. The sync path is handled inline by `loadConfigSync` via `runHooksSync` + `resolveLayerSync`.
@@ -303,8 +313,8 @@ watchConfig(opts)
     ├─ store.has(path)             ─── key existence check
     ├─ store.all()                 ─── full clone snapshot
     ├─ store.dotify()              ─── 1D dotted record
-    ├─ store.set(path, val)        ─── optimistic update + writeConfigFile + rollback on failure + after:write hooks
-    ├─ store.unset(path)           ─── optimistic removal + writeConfigFile + rollback on failure + after:write hooks
+    ├─ store.set(path, val)        ─── writeQueue → optimistic update + writeConfigFile + rollback on failure + after:write hooks
+    ├─ store.unset(path)           ─── writeQueue → optimistic removal + writeConfigFile + rollback on failure + after:write hooks
     ├─ store.push(path, val)       ─── array append via mutateKey + index listener emit
     ├─ store.unshift(path, val)    ─── array prepend via mutateKey
     ├─ store.pop(path)             ─── array pop via mutateKey

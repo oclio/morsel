@@ -27,6 +27,7 @@ export default defineConfig([
   {
     files: [
       'src/store/store-mutator.ts',
+      'src/store/store-mutation-delete.ts',
       'src/store/store-optimistic-update.ts',
     ],
     rules: {

@@ -29,6 +29,7 @@ function createState<T extends Record<string, unknown>>(
     debounceMs: 300,
     remerge: vi.fn(),
     enoentLogged: new Set(),
+    writeQueue: Promise.resolve(),
     ...overrides,
   } as StoreState<T>;
 }

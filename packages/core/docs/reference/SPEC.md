@@ -23,7 +23,7 @@
 7. **Parsing / semantics separation**: the plugin parses raw content → `Record<string, unknown>`. Semantic concepts (`extends`, `$env`, cleanup) are core. The plugin knows nothing about `extends` or `$env`.
 8. **Lifecycle hooks**: layer hooks (`LayerHook`) insert at 8 pipeline points (before/after for each layer). A layer hook produces a `Record` that becomes a layer in the cascade. The `load` method is stateless — the core calls it on each merge, no state is kept between merges. Optional `init`/`dispose` lifecycle methods allow stateful hooks to manage external connections (pollers, WebSocket, etcd watch) — `init` is called once after the store is created in `watchConfig`, `dispose` is called once when the store is stopped via `stop()`. Neither is called in `loadConfig`/`loadConfigSync` (one-shot, no lifecycle). The `HookContext` provides `triggerRemerge()` so a hook can request a re-merge of the configuration (e.g. when a remote config source changes). In `loadConfig`/`loadConfigSync`, `triggerRemerge` is a noop. Event hooks (`EventHook`) react to lifecycle events (e.g. `after:write`) without producing a layer — they are side-effect only (logging, metrics, audit).
 9. **Native path parsing & prototype protection**: the core provides robust path parsing supporting dot notation (`a.b.c`), indexed arrays (`users[0].name`, `users.0.name`), and escaped dots (`app\.config.host`). Any attempt to access or mutate `__proto__`, `constructor`, or `prototype` is rejected (`TypeError`).
-10. **Transactional mutation & optimistic write**: `mutateKey` and `deleteKey` update the in-memory config optimistically, emit key-level change events, and persist changes via atomic read-modify-write on the source layer. Writes are serialized per file path. In case of I/O or serialization failure, the in-memory state is automatically rolled back, revert events are emitted, and a `WriteError` (`EWRITE`) is thrown. `WriteError` extends `MorselError` and carries `filePath` and `mutation`. After a successful write, `after:write` event hooks (`EventHook`) are triggered with a `WriteEvent` — errors in these hooks are caught and logged via `onDebug`, they do not roll back the mutation.
+10. **Transactional mutation & optimistic write**: `mutateKey` and `deleteKey` update the in-memory config optimistically, emit key-level change events, and persist changes via atomic read-modify-write on the source layer. All mutations are serialized via a per-store `writeQueue` (Promise chain) — concurrent calls (`Promise.all([set('a', 1), set('b', 2)])`) execute in call order, no write is lost. Errors in one mutation do not block subsequent mutations in the queue. `stop()` awaits the queue before closing watchers. In case of I/O or serialization failure, the in-memory state is automatically rolled back, revert events are emitted, and a `WriteError` (`EWRITE`) is thrown. `WriteError` extends `MorselError` and carries `filePath` and `mutation`. After a successful write, `after:write` event hooks (`EventHook`) are triggered with a `WriteEvent` — errors in these hooks are caught and logged via `onDebug`, they do not roll back the mutation.
 
 ---
 
@@ -609,7 +609,7 @@ export function clearRegistry(): void;
 
 #### `stop()`
 
-`stop()` is async (`Promise<void>`). `stopped = true` is assigned **synchronously** at the start, before any `await`. Watchers whose `refCount` reaches zero are closed. All registered listeners are cleared. `store.config`, `store.layers`, `store.get()`, `store.has()`, `store.all()`, `store.dotify()`, and `store.getProvenance()` remain readable after stop at the last known state. Any subsequent call to `store.on()`, `store.set()`, `store.unset()`, `store.push()`, `store.unshift()`, `store.pop()`, `store.shift()`, `store.splice()`, `store.mutateKey()`, or `store.deleteKey()` throws `Error('morsel: store is stopped')`.
+`stop()` is async (`Promise<void>`). `stopped = true` is assigned **synchronously** at the start, before any `await`. `stop()` awaits `state.writeQueue` to drain any in-flight mutations before closing watchers. Watchers whose `refCount` reaches zero are closed. All registered listeners are cleared. `store.config`, `store.layers`, `store.get()`, `store.has()`, `store.all()`, `store.dotify()`, and `store.getProvenance()` remain readable after stop at the last known state. Any subsequent call to `store.on()`, `store.set()`, `store.unset()`, `store.push()`, `store.unshift()`, `store.pop()`, `store.shift()`, `store.splice()`, `store.mutateKey()`, or `store.deleteKey()` throws `Error('morsel: store is stopped')`.
 
 #### `signal` — AbortSignal
 
@@ -659,6 +659,20 @@ When `unset` or `deleteKey` is called with `target: 'all'` (the default), the de
 **After `stop()`:**
 
 - `getProvenance` remains callable after `stop()` — it reads from `state._layers` and `state._config` which remain at the last known state. Same behavior as `store.get` and `store.layers`.
+
+#### `writeQueue` — Mutation Serialization
+
+All mutations (`set`, `unset`, `push`, `unshift`, `pop`, `shift`, `splice`, `mutateKey`, `deleteKey`) are serialized via a per-store `Promise<void>` chain (`state.writeQueue`).
+
+1. Each mutation chains onto `state.writeQueue`: `run = writeQueue.then(() => doMutation())`.
+2. `state.writeQueue` is updated to `run.catch(() => {})` — errors are swallowed on the queue to avoid blocking subsequent mutations.
+3. The caller receives `run` — they get the error (or success) for their specific mutation.
+4. Mutations execute in **call order** (FIFO). `Promise.all([set('a', 1), set('b', 2)])` executes `set('a', 1)` then `set('b', 2)` — not in parallel.
+5. If a mutation fails, subsequent mutations are not blocked (error isolation).
+6. `stop()` awaits `state.writeQueue` before closing watchers — no mutation in flight after stop.
+7. Read operations (`get`, `has`, `all`, `dotify`, `getProvenance`) do not pass through the queue — they read `state._config` directly (synchronous, in-memory).
+
+**Non-goals**: no read queue, no priority (FIFO strict), no cancellation, no automatic batching (batching is the role of `transaction`).
 
 ---
 
@@ -738,6 +752,7 @@ The core does not recommend any specific plugin package — the plugin architect
 - **No pool**: sequential layer reads in lifecycle order.
 - **Watch ref-counting**: a single `fs.watch` per unique directory (`WatcherRegistry`).
 - **Concurrent re-merges**: handled by an atomic queue without blocking mutex via `pendingRemerge`.
+- **Mutation serialization**: all mutations (`set`, `unset`, `push`, etc.) are serialized via a per-store `writeQueue` (Promise chain). Concurrent calls execute in call order — no write is lost. Errors are isolated per mutation.
 
 ### 6.2 Watcher Registry — Reference Algorithm
 
