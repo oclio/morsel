@@ -88,6 +88,7 @@ function makeState(overrides: Partial<StoreState> = {}): StoreState {
     debounceMs: 300,
     remerge: vi.fn(),
     enoentLogged: new Set(),
+    writeQueue: Promise.resolve(),
     ...overrides,
   } as StoreState;
 }

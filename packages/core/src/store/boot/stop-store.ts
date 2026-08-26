@@ -13,6 +13,7 @@ export async function stopStore<T extends Record<string, unknown>>(
   }
   state.stopped = true;
 
+  await state.writeQueue;
   await state.remergeDone;
 
   for (const timer of state.debounceTimers.values()) {

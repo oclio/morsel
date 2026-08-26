@@ -4,6 +4,7 @@ import { emitChanges } from '@/store/reactive/emit-changes';
 import { createStableProxy } from '@/store/reactive/stable-proxy';
 import { createMorselStore } from '@/store/store';
 import { deleteKey, mutateKey, setKey, unsetKey } from '@/store/store-mutator';
+import { resolveProvenance } from '@/store/store-provenance';
 import type { StoreState } from '@/store/store-state';
 
 vi.mock('@/load/merge-layers', () => ({
@@ -20,6 +21,9 @@ vi.mock('@/store/store-mutator', () => ({
   mutateKey: vi.fn(),
   setKey: vi.fn(),
   unsetKey: vi.fn(),
+}));
+vi.mock('@/store/store-provenance', () => ({
+  resolveProvenance: vi.fn(),
 }));
 
 function createState<T extends Record<string, unknown>>(
@@ -45,6 +49,7 @@ function createState<T extends Record<string, unknown>>(
     debounceMs: 300,
     remerge: vi.fn(),
     enoentLogged: new Set(),
+    writeQueue: Promise.resolve(),
     ...overrides,
   } as StoreState<T>;
 }
@@ -429,6 +434,32 @@ describe('createMorselStore', () => {
         'global',
         'frozen',
       );
+    });
+  });
+
+  describe('getProvenance', () => {
+    it('delegates to resolveProvenance with layers and path', () => {
+      const layers = [
+        { source: 'defaults', path: undefined, config: {}, exists: true },
+      ];
+      const state = createState({ _layers: layers as never });
+      vi.mocked(resolveProvenance).mockReturnValue({
+        value: 3000,
+        source: 'defaults',
+        file: undefined,
+        overridden: [],
+      } as never);
+      const store = createMorselStore(state, 'frozen');
+
+      const result = store.getProvenance('server.port');
+
+      expect(resolveProvenance).toHaveBeenCalledWith(layers, 'server.port');
+      expect(result).toEqual({
+        value: 3000,
+        source: 'defaults',
+        file: undefined,
+        overridden: [],
+      });
     });
   });
 

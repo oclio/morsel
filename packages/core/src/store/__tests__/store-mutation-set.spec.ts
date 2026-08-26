@@ -4,15 +4,9 @@ import { applyMutability, mergeLayers } from '@/load/merge-layers';
 import { interpolate } from '@/merge/interpolate';
 import { parsePath } from '@/paths/parse-path';
 import { getPathValue, setPathValue } from '@/paths/path-access';
-import {
-  popKey,
-  pushKey,
-  shiftKey,
-  spliceKey,
-  unshiftKey,
-} from '@/store/array-ops';
 import { toMorselLayer } from '@/store/layer';
 import { emitChanges } from '@/store/reactive/emit-changes';
+import { doMutateKey } from '@/store/store-mutation-set';
 import type { StoreState } from '@/store/store-state';
 import { deepCloneConfig } from '@/store/store-state';
 import type { MorselLayer } from '@/store/types';
@@ -92,7 +86,7 @@ function createState<T extends Record<string, unknown>>(
   } as StoreState<T>;
 }
 
-describe('array-ops', () => {
+describe('store-mutation-set', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(applyValidation).mockImplementation((config) => config);
@@ -135,7 +129,13 @@ describe('array-ops', () => {
     vi.mocked(emitChanges).mockImplementation(() => {});
     vi.mocked(resolveKeyOrigin).mockReturnValue({
       filePath: '/project/config.json',
-      layer: undefined,
+      layer: {
+        source: 'project',
+        path: '/project/config.json',
+        config: {},
+        exists: true,
+        extendsPaths: [],
+      } as never,
       isWritable: true,
       exists: true,
     });
@@ -143,148 +143,92 @@ describe('array-ops', () => {
     vi.mocked(runWriteHooks).mockResolvedValue(undefined);
   });
 
-  describe('pushKey', () => {
-    it('pushes a value and returns the new index', async () => {
-      const state = createState({
-        _config: { tags: ['a', 'b'] } as never,
-      });
-
-      const index = await pushKey(state, 'tags', 'c', undefined, 'mutable');
-
-      expect(index).toBe(2);
-      expect(getPathValue(state._config, 'tags')).toEqual(['a', 'b', 'c']);
+  it('calls writeConfigFile with correct arguments', async () => {
+    const state = createState({
+      _config: { server: { port: 3000 } } as never,
     });
 
-    it('emits index listener for the new element', async () => {
-      const listener = vi.fn();
-      const state = createState({
-        _config: { tags: ['a'] } as never,
-      });
-      state.listeners.set('tags.1', new Set([listener as never]));
+    await doMutateKey(state, 'server.port', 8080, undefined, 'mutable');
 
-      await pushKey(state, 'tags', 'b', undefined, 'mutable');
-
-      expect(listener).toHaveBeenCalledWith({
-        keyPath: 'tags.1',
-        type: 'added',
-        next: 'b',
-        prev: undefined,
-      });
-    });
-  });
-
-  describe('unshiftKey', () => {
-    it('unshifts a value and returns the new array length', async () => {
-      const state = createState({
-        _config: { tags: ['b', 'c'] } as never,
-      });
-
-      const index = await unshiftKey(state, 'tags', 'a', undefined, 'mutable');
-
-      expect(index).toBe(3);
-      expect(getPathValue(state._config, 'tags')).toEqual(['a', 'b', 'c']);
-    });
-  });
-
-  describe('popKey', () => {
-    it('pops the last element and returns it', async () => {
-      const state = createState({
-        _config: { tags: ['a', 'b', 'c'] } as never,
-      });
-
-      const removed = await popKey(state, 'tags', undefined, 'mutable');
-
-      expect(removed).toBe('c');
-      expect(getPathValue(state._config, 'tags')).toEqual(['a', 'b']);
-    });
-  });
-
-  describe('shiftKey', () => {
-    it('shifts the first element and returns it', async () => {
-      const state = createState({
-        _config: { tags: ['a', 'b', 'c'] } as never,
-      });
-
-      const removed = await shiftKey(state, 'tags', undefined, 'mutable');
-
-      expect(removed).toBe('a');
-      expect(getPathValue(state._config, 'tags')).toEqual(['b', 'c']);
-    });
-  });
-
-  describe('spliceKey', () => {
-    it('removes and inserts elements', async () => {
-      const state = createState({
-        _config: { tags: ['a', 'b', 'c', 'd'] } as never,
-      });
-
-      const removed = await spliceKey(
-        state,
-        'tags',
-        1,
-        2,
-        ['x', 'y'],
-        undefined,
-        'mutable',
-      );
-
-      expect(removed).toEqual(['b', 'c']);
-      expect(getPathValue(state._config, 'tags')).toEqual(['a', 'x', 'y', 'd']);
-    });
-
-    it('removes only when no items provided', async () => {
-      const state = createState({
-        _config: { tags: ['a', 'b', 'c'] } as never,
-      });
-
-      const removed = await spliceKey(
-        state,
-        'tags',
-        0,
-        2,
-        [],
-        undefined,
-        'mutable',
-      );
-
-      expect(removed).toEqual(['a', 'b']);
-      expect(getPathValue(state._config, 'tags')).toEqual(['c']);
-    });
-  });
-
-  describe('array mutators — type validation', () => {
-    it.each([
-      {
-        name: 'pushKey',
-        fn: (s: StoreState) => pushKey(s, 'name', 'x', undefined, 'mutable'),
-      },
-      {
-        name: 'unshiftKey',
-        fn: (s: StoreState) => unshiftKey(s, 'name', 'x', undefined, 'mutable'),
-      },
-      {
-        name: 'popKey',
-        fn: (s: StoreState) => popKey(s, 'name', undefined, 'mutable'),
-      },
-      {
-        name: 'shiftKey',
-        fn: (s: StoreState) => shiftKey(s, 'name', undefined, 'mutable'),
-      },
-      {
-        name: 'spliceKey',
-        fn: (s: StoreState) =>
-          spliceKey(s, 'name', 0, 1, [], undefined, 'mutable'),
-      },
-    ])(
-      'throws EVALIDATE when target is not an array ($name)',
-      async ({ fn }) => {
-        const state = createState({
-          _config: { name: 'morsel' } as never,
-        });
-
-        await expect(fn(state)).rejects.toThrow('EVALIDATE');
-        await expect(fn(state)).rejects.toThrow('"name" is not an array');
-      },
+    expect(writeConfigFile).toHaveBeenCalledWith(
+      '/project/config.json',
+      { path: 'server.port', value: 8080 },
+      state.options.formatPlugins,
     );
+  });
+
+  it('calls runWriteHooks after successful write', async () => {
+    const state = createState({
+      _config: { server: { port: 3000 } } as never,
+    });
+
+    await doMutateKey(state, 'server.port', 8080, undefined, 'mutable');
+
+    expect(runWriteHooks).toHaveBeenCalledWith(
+      state.options.hooks,
+      {
+        filePath: '/project/config.json',
+        keyPath: 'server.port',
+        mutation: { path: 'server.port', value: 8080 },
+      },
+      state.options.onDebug,
+    );
+  });
+
+  it('rolls back config on write failure', async () => {
+    vi.mocked(writeConfigFile).mockRejectedValue(new Error('EWRITE'));
+
+    const state = createState({
+      _config: { server: { port: 3000 } } as never,
+    });
+
+    await expect(
+      doMutateKey(state, 'server.port', 8080, undefined, 'mutable'),
+    ).rejects.toThrow('EWRITE');
+
+    expect(getPathValue(state._config, 'server.port')).toBe(3000);
+  });
+
+  it('does not call runWriteHooks on write failure', async () => {
+    vi.mocked(writeConfigFile).mockRejectedValue(new Error('EWRITE'));
+
+    const state = createState({
+      _config: { server: { port: 3000 } } as never,
+    });
+
+    await expect(
+      doMutateKey(state, 'server.port', 8080, undefined, 'mutable'),
+    ).rejects.toThrow('EWRITE');
+
+    expect(runWriteHooks).not.toHaveBeenCalled();
+  });
+
+  it('returns silently when no layer matches the resolved target file', async () => {
+    vi.mocked(resolveKeyOrigin).mockReturnValue({
+      filePath: '/fallback/config.json',
+      layer: undefined,
+      isWritable: false,
+      exists: false,
+    });
+
+    const state = createState({
+      _config: { server: { port: 3000 } } as never,
+      projectPath: '/fallback/config.json',
+      _layers: [
+        {
+          source: 'project',
+          path: '/origin/config.json',
+          config: {},
+          exists: true,
+          extendsPaths: [],
+        },
+      ] as never,
+    });
+
+    await doMutateKey(state, 'server.port', 8080, undefined, 'mutable');
+
+    expect(writeConfigFile).not.toHaveBeenCalled();
+    expect(emitChanges).not.toHaveBeenCalled();
+    expect(runWriteHooks).not.toHaveBeenCalled();
   });
 });

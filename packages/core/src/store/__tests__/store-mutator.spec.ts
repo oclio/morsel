@@ -70,13 +70,6 @@ function createState<T extends Record<string, unknown>>(
         exists: true,
         extendsPaths: [],
       },
-      {
-        source: 'project',
-        path: '/origin/config.json',
-        config: {},
-        exists: true,
-        extendsPaths: [],
-      },
     ] as never,
     listeners: new Map(),
     wildcardListeners: new Map(),
@@ -93,6 +86,7 @@ function createState<T extends Record<string, unknown>>(
     debounceMs: 300,
     remerge: vi.fn(),
     enoentLogged: new Set(),
+    writeQueue: Promise.resolve(),
     ...overrides,
   } as StoreState<T>;
 }
@@ -143,7 +137,7 @@ describe('store-mutator', () => {
       filePath: '/project/config.json',
       layer: {
         source: 'project',
-        path: '/fallback/config.json',
+        path: '/project/config.json',
         config: {},
         exists: true,
         extendsPaths: [],
@@ -163,249 +157,6 @@ describe('store-mutator', () => {
         mutateKey(state, 'foo', 'bar', undefined, 'mutable'),
       ).rejects.toThrow('morsel: store is stopped');
     });
-
-    it('calls writeConfigFile with correct arguments', async () => {
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-        _layers: [
-          {
-            source: 'project',
-            path: '/project/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-        ] as never,
-      });
-
-      await mutateKey(state, 'server.port', 8080, undefined, 'mutable');
-
-      expect(writeConfigFile).toHaveBeenCalledWith(
-        '/project/config.json',
-        { path: 'server.port', value: 8080 },
-        state.options.formatPlugins,
-      );
-    });
-
-    it('calls runWriteHooks after successful write', async () => {
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-        _layers: [
-          {
-            source: 'project',
-            path: '/project/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-        ] as never,
-      });
-
-      await mutateKey(state, 'server.port', 8080, undefined, 'mutable');
-
-      expect(runWriteHooks).toHaveBeenCalledTimes(1);
-      expect(runWriteHooks).toHaveBeenCalledWith(
-        state.options.hooks,
-        expect.objectContaining({
-          filePath: '/project/config.json',
-          keyPath: 'server.port',
-          mutation: { path: 'server.port', value: 8080 },
-        }),
-        state.options.onDebug,
-      );
-    });
-
-    it('does not call runWriteHooks on write failure', async () => {
-      vi.mocked(writeConfigFile).mockRejectedValue(new Error('EWRITE'));
-      vi.mocked(resolveKeyOrigin).mockReturnValue({
-        filePath: '/project/config.json',
-        layer: {
-          path: '/project/config.json',
-          source: 'project',
-          exists: true,
-          extendsPaths: [],
-          config: {},
-        },
-        isWritable: true,
-        exists: true,
-      });
-
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-      });
-
-      await expect(
-        mutateKey(state, 'server.port', 8080, undefined, 'mutable'),
-      ).rejects.toThrow('EWRITE');
-
-      expect(runWriteHooks).not.toHaveBeenCalled();
-    });
-
-    it('rolls back config on write failure', async () => {
-      vi.mocked(writeConfigFile).mockRejectedValue(new Error('EWRITE'));
-
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-        _layers: [
-          {
-            source: 'project',
-            path: '/project/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-        ] as never,
-      });
-
-      await expect(
-        mutateKey(state, 'server.port', 8080, undefined, 'mutable'),
-      ).rejects.toThrow('EWRITE');
-
-      expect(getPathValue(state._config, 'server.port')).toBe(3000);
-    });
-
-    it('falls back to projectPath when origin has no filePath', async () => {
-      vi.mocked(resolveKeyOrigin).mockReturnValue({
-        filePath: undefined,
-        layer: {
-          source: 'project',
-          path: '/origin/config.json',
-          config: {},
-          exists: true,
-          extendsPaths: [],
-        } as never,
-        isWritable: false,
-        exists: false,
-      });
-
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-        projectPath: '/fallback/config.json',
-      });
-
-      await mutateKey(state, 'server.port', 8080, undefined, 'mutable');
-
-      expect(writeConfigFile).toHaveBeenCalledWith(
-        '/fallback/config.json',
-        { path: 'server.port', value: 8080 },
-        state.options.formatPlugins,
-      );
-    });
-
-    it('throws when no writable file is found', async () => {
-      vi.mocked(resolveKeyOrigin).mockReturnValue({
-        filePath: undefined,
-        layer: undefined,
-        isWritable: false,
-        exists: false,
-      });
-
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-        projectPath: undefined,
-      });
-
-      await expect(
-        mutateKey(state, 'server.port', 8080, undefined, 'mutable'),
-      ).rejects.toThrow(
-        'morsel: cannot write "server.port" — no writable file found',
-      );
-    });
-
-    it('uses origin filePath when defined instead of projectPath', async () => {
-      vi.mocked(resolveKeyOrigin).mockReturnValue({
-        filePath: '/origin/config.json',
-        layer: undefined,
-        isWritable: true,
-        exists: true,
-      });
-
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-        projectPath: '/fallback/config.json',
-      });
-
-      await mutateKey(state, 'server.port', 8080, undefined, 'mutable');
-
-      expect(writeConfigFile).toHaveBeenCalledWith(
-        '/origin/config.json',
-        { path: 'server.port', value: 8080 },
-        state.options.formatPlugins,
-      );
-    });
-
-    it('falls back to projectPath when origin is writable but has no filePath', async () => {
-      vi.mocked(resolveKeyOrigin).mockReturnValue({
-        filePath: undefined,
-        layer: undefined,
-        isWritable: true,
-        exists: false,
-      });
-
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-        projectPath: '/fallback/config.json',
-      });
-
-      await mutateKey(state, 'server.port', 8080, undefined, 'mutable');
-
-      expect(writeConfigFile).toHaveBeenCalledWith(
-        '/fallback/config.json',
-        { path: 'server.port', value: 8080 },
-        state.options.formatPlugins,
-      );
-    });
-
-    it('falls back to projectPath when origin is not writable but has filePath', async () => {
-      vi.mocked(resolveKeyOrigin).mockReturnValue({
-        filePath: '/origin/config.json',
-        layer: undefined,
-        isWritable: false,
-        exists: true,
-      });
-
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-        projectPath: '/fallback/config.json',
-      });
-
-      await mutateKey(state, 'server.port', 8080, undefined, 'mutable');
-
-      expect(writeConfigFile).toHaveBeenCalledWith(
-        '/fallback/config.json',
-        { path: 'server.port', value: 8080 },
-        state.options.formatPlugins,
-      );
-    });
-
-    it('returns silently when no layer matches the resolved target file', async () => {
-      vi.mocked(resolveKeyOrigin).mockReturnValue({
-        filePath: '/fallback/config.json',
-        layer: undefined,
-        isWritable: false,
-        exists: false,
-      });
-
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-        projectPath: '/fallback/config.json',
-        _layers: [
-          {
-            source: 'project',
-            path: '/origin/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-        ] as never,
-      });
-
-      await mutateKey(state, 'server.port', 8080, undefined, 'mutable');
-
-      expect(writeConfigFile).not.toHaveBeenCalled();
-      expect(emitChanges).not.toHaveBeenCalled();
-      expect(runWriteHooks).not.toHaveBeenCalled();
-    });
   });
 
   describe('deleteKey', () => {
@@ -416,342 +167,12 @@ describe('store-mutator', () => {
         deleteKey(state, 'foo', undefined, 'mutable'),
       ).rejects.toThrow('morsel: store is stopped');
     });
-
-    it('returns false when key does not exist', async () => {
-      vi.mocked(hasRemovedPathValue).mockReturnValue(false);
-
-      const state = createState({
-        _config: { server: {} } as never,
-        _layers: [
-          {
-            source: 'project',
-            path: '/project/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-        ] as never,
-      });
-
-      const deleted = await deleteKey(
-        state,
-        'server.nonexistent',
-        undefined,
-        'mutable',
-      );
-
-      expect(deleted).toBe(false);
-    });
-
-    it('removes key, emits events, and persists deletion', async () => {
-      const state = createState({
-        _config: { server: { port: 3000, host: 'localhost' } } as never,
-        _layers: [
-          {
-            source: 'project',
-            path: '/project/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-        ] as never,
-      });
-
-      const deleted = await deleteKey(
-        state,
-        'server.port',
-        undefined,
-        'mutable',
-      );
-
-      expect(deleted).toBe(true);
-      expect(hasRemovedPathValue).toHaveBeenCalledWith(expect.any(Object), [
-        'server',
-        'port',
-      ]);
-      expect(emitChanges).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.any(Object),
-        state.listeners,
-        state.wildcardListeners,
-      );
-    });
-
-    it('writes to all project and global layers when target is all', async () => {
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-        _layers: [
-          {
-            source: 'global',
-            path: '/global/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-          {
-            source: 'project',
-            path: '/project/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-        ] as never,
-      });
-
-      await deleteKey(state, 'server.port', 'all', 'mutable');
-
-      expect(writeConfigFile).toHaveBeenCalledTimes(2);
-      expect(writeConfigFile).toHaveBeenNthCalledWith(
-        1,
-        '/global/config.json',
-        { isDelete: true, path: 'server.port' },
-        state.options.formatPlugins,
-      );
-      expect(writeConfigFile).toHaveBeenNthCalledWith(
-        2,
-        '/project/config.json',
-        { isDelete: true, path: 'server.port' },
-        state.options.formatPlugins,
-      );
-    });
-
-    it('rolls back config on write failure', async () => {
-      vi.mocked(writeConfigFile).mockRejectedValue(new Error('EWRITE'));
-
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-        _layers: [
-          {
-            source: 'project',
-            path: '/project/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-        ] as never,
-      });
-
-      await expect(
-        deleteKey(state, 'server.port', undefined, 'mutable'),
-      ).rejects.toThrow('EWRITE');
-
-      expect(getPathValue(state._config, 'server.port')).toBe(3000);
-    });
-
-    it('writes to a single layer when target is project', async () => {
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-        _layers: [
-          {
-            source: 'global',
-            path: '/global/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-          {
-            source: 'project',
-            path: '/project/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-        ] as never,
-      });
-
-      await deleteKey(state, 'server.port', 'project', 'mutable');
-
-      expect(writeConfigFile).toHaveBeenCalledTimes(1);
-      expect(writeConfigFile).toHaveBeenCalledWith(
-        '/project/config.json',
-        { isDelete: true, path: 'server.port' },
-        state.options.formatPlugins,
-      );
-    });
-
-    it('skips layers with undefined path when target is all', async () => {
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-        _layers: [
-          {
-            source: 'global',
-            path: undefined,
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-          {
-            source: 'project',
-            path: '/project/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-        ] as never,
-      });
-
-      await deleteKey(state, 'server.port', 'all', 'mutable');
-
-      expect(writeConfigFile).toHaveBeenCalledTimes(1);
-      expect(writeConfigFile).toHaveBeenCalledWith(
-        '/project/config.json',
-        { isDelete: true, path: 'server.port' },
-        state.options.formatPlugins,
-      );
-    });
-
-    it('writes to a single layer when target is global', async () => {
-      vi.mocked(resolveKeyOrigin).mockReturnValue({
-        filePath: '/global/config.json',
-        layer: undefined,
-        isWritable: true,
-        exists: true,
-      });
-
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-        _layers: [
-          {
-            source: 'global',
-            path: '/global/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-          {
-            source: 'project',
-            path: '/project/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-        ] as never,
-      });
-
-      await deleteKey(state, 'server.port', 'global', 'mutable');
-
-      expect(writeConfigFile).toHaveBeenCalledTimes(1);
-      expect(writeConfigFile).toHaveBeenCalledWith(
-        '/global/config.json',
-        { isDelete: true, path: 'server.port' },
-        state.options.formatPlugins,
-      );
-    });
-
-    it('skips layers with non-project/non-global source when target is all', async () => {
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-        _layers: [
-          {
-            source: 'defaults',
-            path: '/defaults/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-          {
-            source: 'project',
-            path: '/project/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-        ] as never,
-      });
-
-      await deleteKey(state, 'server.port', 'all', 'mutable');
-
-      expect(writeConfigFile).toHaveBeenCalledTimes(1);
-      expect(writeConfigFile).toHaveBeenCalledWith(
-        '/project/config.json',
-        { isDelete: true, path: 'server.port' },
-        state.options.formatPlugins,
-      );
-    });
-
-    it('calls runWriteHooks after successful delete with correct WriteEvent', async () => {
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-        _layers: [
-          {
-            source: 'global',
-            path: '/global/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-          {
-            source: 'project',
-            path: '/project/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-        ] as never,
-      });
-
-      await deleteKey(state, 'server.port', 'all', 'mutable');
-
-      expect(runWriteHooks).toHaveBeenCalledTimes(2);
-      expect(runWriteHooks).toHaveBeenNthCalledWith(
-        1,
-        state.options.hooks,
-        {
-          filePath: '/global/config.json',
-          keyPath: 'server.port',
-          mutation: { isDelete: true, path: 'server.port' },
-        },
-        state.options.onDebug,
-      );
-      expect(runWriteHooks).toHaveBeenNthCalledWith(
-        2,
-        state.options.hooks,
-        {
-          filePath: '/project/config.json',
-          keyPath: 'server.port',
-          mutation: { isDelete: true, path: 'server.port' },
-        },
-        state.options.onDebug,
-      );
-    });
-
-    it('does not call runWriteHooks on delete write failure', async () => {
-      vi.mocked(writeConfigFile).mockRejectedValue(new Error('EWRITE'));
-
-      const state = createState({
-        _config: { server: { port: 3000 } } as never,
-        _layers: [
-          {
-            source: 'project',
-            path: '/project/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-        ] as never,
-      });
-
-      await expect(
-        deleteKey(state, 'server.port', undefined, 'mutable'),
-      ).rejects.toThrow('EWRITE');
-
-      expect(runWriteHooks).not.toHaveBeenCalled();
-    });
   });
 
   describe('setKey', () => {
     it('delegates to mutateKey', async () => {
       const state = createState({
         _config: { server: { port: 3000 } } as never,
-        _layers: [
-          {
-            source: 'project',
-            path: '/project/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-        ] as never,
       });
 
       await setKey(state, 'server.port', 8080, 'project', 'mutable');
@@ -768,15 +189,6 @@ describe('store-mutator', () => {
     it('delegates to deleteKey', async () => {
       const state = createState({
         _config: { server: { port: 3000 } } as never,
-        _layers: [
-          {
-            source: 'project',
-            path: '/project/config.json',
-            config: {},
-            exists: true,
-            extendsPaths: [],
-          },
-        ] as never,
       });
 
       const result = await unsetKey(state, 'server.port', 'all', 'mutable');
@@ -787,6 +199,81 @@ describe('store-mutator', () => {
         { isDelete: true, path: 'server.port' },
         state.options.formatPlugins,
       );
+    });
+  });
+
+  describe('writeQueue serialization', () => {
+    it('serializes concurrent mutations via writeQueue', async () => {
+      let writeCount = 0;
+      vi.mocked(writeConfigFile).mockImplementation(async () => {
+        writeCount++;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      });
+
+      const state = createState({
+        _config: { server: { port: 3000 } } as never,
+      });
+
+      await Promise.all([
+        mutateKey(state, 'a', 1, undefined, 'mutable'),
+        mutateKey(state, 'b', 2, undefined, 'mutable'),
+      ]);
+
+      expect(writeCount).toBe(2);
+    });
+
+    it('isolates errors: failed mutation does not block subsequent mutations', async () => {
+      let callCount = 0;
+      vi.mocked(writeConfigFile).mockImplementation(async () => {
+        callCount++;
+        if (callCount === 1) {
+          throw new Error('EWRITE');
+        }
+      });
+
+      const state = createState({
+        _config: { server: { port: 3000 } } as never,
+      });
+
+      const results = await Promise.allSettled([
+        mutateKey(state, 'a', 1, undefined, 'mutable'),
+        mutateKey(state, 'b', 2, undefined, 'mutable'),
+      ]);
+
+      expect(results[0].status).toBe('rejected');
+      expect(results[1].status).toBe('fulfilled');
+      expect(writeConfigFile).toHaveBeenCalledTimes(2);
+    });
+
+    it('updates writeQueue after each mutation', async () => {
+      const state = createState({
+        _config: { server: { port: 3000 } } as never,
+      });
+
+      const initialQueue = state.writeQueue;
+      await mutateKey(state, 'a', 1, undefined, 'mutable');
+      expect(state.writeQueue).not.toBe(initialQueue);
+    });
+
+    it('stop() awaits writeQueue before closing watchers', async () => {
+      const { stopStore } = await import('@/store/boot/stop-store');
+      const writeDelay = 50;
+      vi.mocked(writeConfigFile).mockImplementation(
+        async () =>
+          await new Promise((resolve) => setTimeout(resolve, writeDelay)),
+      );
+
+      const state = createState({
+        _config: { server: { port: 3000 } } as never,
+        options: { hooks: [], onDebug: vi.fn() } as never,
+      });
+
+      const writePromise = mutateKey(state, 'a', 1, undefined, 'mutable');
+      const stopPromise = stopStore(state);
+
+      await Promise.all([writePromise, stopPromise]);
+
+      expect(state.stopped).toBe(true);
     });
   });
 });
