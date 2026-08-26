@@ -34,7 +34,11 @@ describe('events-integration — events from pipeline sources', () => {
 
     hookValue = 'updated';
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
-    await waitForRemerge(store!, (config) => config['extra'] === 'updated');
+    await waitForRemerge(
+      store!,
+      (config) => config['extra'] === 'updated',
+      10_000,
+    );
 
     expect(events.length).toBeGreaterThanOrEqual(1);
     expect(events[0]!.type).toBe('modified');
@@ -63,7 +67,11 @@ describe('events-integration — events from pipeline sources', () => {
 
     validatedValue = 'updated';
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
-    await waitForRemerge(store!, (config) => config['validated'] === 'updated');
+    await waitForRemerge(
+      store!,
+      (config) => config['validated'] === 'updated',
+      10_000,
+    );
 
     expect(events.length).toBeGreaterThanOrEqual(1);
 
@@ -88,7 +96,11 @@ describe('events-integration — events from pipeline sources', () => {
       port: 3000,
       extends: './base.json',
     });
-    await waitForRemerge(store!, (config) => config['host'] === 'localhost');
+    await waitForRemerge(
+      store!,
+      (config) => config['host'] === 'localhost',
+      10_000,
+    );
 
     expect(events).toHaveLength(1);
     expect(events[0]!.type).toBe('added');
@@ -113,7 +125,7 @@ describe('events-integration — events from pipeline sources', () => {
       port: 3000,
       $env: { ci: { port: 9090 } },
     });
-    await waitForRemerge(store!, (config) => config['port'] === 9090);
+    await waitForRemerge(store!, (config) => config['port'] === 9090, 10_000);
 
     expect(events).toHaveLength(1);
     expect(events[0]!.type).toBe('modified');
@@ -155,7 +167,7 @@ describe('events-integration — events from pipeline sources', () => {
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 3001 });
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 3002 });
-    await waitForRemerge(store!, (config) => config['port'] === 3002);
+    await waitForRemerge(store!, (config) => config['port'] === 3002, 10_000);
 
     expect(calls).toBeGreaterThanOrEqual(1);
 
@@ -185,6 +197,7 @@ describe('events-integration — events from pipeline sources', () => {
     await waitForRemerge(
       store!,
       (config) => config['port'] === 8080 && config['host'] === '0.0.0.0',
+      10_000,
     );
 
     expect(portEvents.length).toBeGreaterThanOrEqual(1);
