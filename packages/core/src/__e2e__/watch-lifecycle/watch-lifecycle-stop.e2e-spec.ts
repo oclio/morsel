@@ -72,12 +72,6 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
     ).rejects.toThrow();
   });
 
-  it.skip('boot with setupWatchers failure → watchers released, throws', async () => {
-    // setupWatchers catches fs.watch errors internally via startRecovery.
-    // Cannot trigger a throw without module mocking — covered by unit test
-    // in watch-config.spec.ts > "releases all watchers and rethrows".
-  });
-
   it('basic: stop() closes watchers and removes listeners', async () => {
     const { store } = await setupTest({
       watch: true,

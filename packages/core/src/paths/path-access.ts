@@ -1,5 +1,5 @@
 import { isPlainObject } from '@/merge/merge-helpers';
-import { parsePath, type PathSegment } from '@/paths/parse-path';
+import { parsePath, type PathSegment, validatePath } from '@/paths/parse-path';
 import type { ConfigRecord } from '@/store/types';
 
 /**
@@ -14,6 +14,7 @@ export function getPathValue(
   path: string | readonly PathSegment[],
 ): unknown {
   const segments = typeof path === 'string' ? parsePath(path) : path;
+  validatePath(segments);
   let current: unknown = target;
 
   for (const segment of segments) {
@@ -70,6 +71,7 @@ export function setPathValue(
   value: unknown,
 ): void {
   const segments = typeof path === 'string' ? parsePath(path) : path;
+  validatePath(segments);
   if (segments.length === 0) {
     return;
   }
@@ -123,6 +125,7 @@ export function hasRemovedPathValue(
   path: string | readonly PathSegment[],
 ): boolean {
   const segments = typeof path === 'string' ? parsePath(path) : path;
+  validatePath(segments);
 
   const parentSegments = segments.slice(0, -1);
   const parent = getPathValue(target, parentSegments);

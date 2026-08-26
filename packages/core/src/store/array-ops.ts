@@ -7,7 +7,7 @@ import type { StoreTarget } from '@/store/types';
 
 type ConfigRecord = Record<string, unknown>;
 
-function assertArray(
+export function assertArray(
   pathInput: string | readonly (string | number)[],
   config: Record<string, unknown>,
   segments: (string | number)[],
@@ -58,7 +58,8 @@ export async function pushKey<T extends ConfigRecord>(
 }
 
 /**
- * Unshift a value onto the beginning of an array key. Returns 0.
+ * Unshift a value onto the beginning of an array key. Returns the new
+ * array length.
  */
 export async function unshiftKey<T extends ConfigRecord>(
   state: StoreState<T>,
@@ -69,8 +70,9 @@ export async function unshiftKey<T extends ConfigRecord>(
 ): Promise<number> {
   const segments = parsePath(pathInput);
   const array = assertArray(pathInput, state._config, segments);
-  await mutateKey(state, pathInput, [value, ...array], target, mutability);
-  return 0;
+  const newArray = [value, ...array];
+  await mutateKey(state, pathInput, newArray, target, mutability);
+  return newArray.length;
 }
 
 /**

@@ -16,13 +16,20 @@ import type { StoreState } from '@/store/store-state';
 vi.mock('@/load/merge-layers', () => ({
   applyMutability: vi.fn(),
 }));
-vi.mock('@/store/array-ops', () => ({
-  popKey: vi.fn(),
-  pushKey: vi.fn(),
-  shiftKey: vi.fn(),
-  spliceKey: vi.fn(),
-  unshiftKey: vi.fn(),
-}));
+vi.mock('@/store/array-ops', async () => {
+  const actual =
+    await vi.importActual<typeof import('@/store/array-ops')>(
+      '@/store/array-ops',
+    );
+  return {
+    ...actual,
+    popKey: vi.fn(),
+    pushKey: vi.fn(),
+    shiftKey: vi.fn(),
+    spliceKey: vi.fn(),
+    unshiftKey: vi.fn(),
+  };
+});
 vi.mock('@/store/boot/stop-store', () => ({
   stopStore: vi.fn(),
 }));
@@ -547,13 +554,6 @@ describe('createMorselStore', () => {
         expected: -1,
       },
       {
-        method: 'indexOf' as const,
-        config: { name: 'morsel' },
-        path: 'name',
-        value: 'morsel',
-        expected: -1,
-      },
-      {
         method: 'lastIndexOf' as const,
         config: { tags: ['a', 'b', 'a'] },
         path: 'tags',
@@ -565,13 +565,6 @@ describe('createMorselStore', () => {
         config: { tags: ['a', 'b'] },
         path: 'tags',
         value: 'z',
-        expected: -1,
-      },
-      {
-        method: 'lastIndexOf' as const,
-        config: { name: 'morsel' },
-        path: 'name',
-        value: 'morsel',
         expected: -1,
       },
     ])(
@@ -588,6 +581,27 @@ describe('createMorselStore', () => {
             : store.lastIndexOf(path, value);
 
         expect(result).toBe(expected);
+      },
+    );
+
+    it.each([
+      { method: 'indexOf' as const, config: { name: 'morsel' } },
+      { method: 'lastIndexOf' as const, config: { name: 'morsel' } },
+    ])(
+      '$method throws MorselError(EVALIDATE) on non-array key',
+      ({ method, config }) => {
+        const state = createState({
+          _config: config as never,
+        });
+        const store = createMorselStore(state, 'frozen');
+
+        expect(() =>
+          method === 'indexOf'
+            ? store.indexOf('name', 'morsel')
+            : store.lastIndexOf('name', 'morsel'),
+        ).toThrow(
+          expect.objectContaining({ name: 'MorselError', code: 'EVALIDATE' }),
+        );
       },
     );
   });
