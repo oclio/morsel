@@ -113,6 +113,13 @@ export async function watchConfig<T extends ConfigRecord = ConfigRecord>(
 
   collectWatchedFiles(state, layers);
 
+  /**
+   * Defensive try/catch: if setupWatchers throws, release all watchers
+   * already created and rethrow. Not testable in e2e because
+   * setupWatchers catches fs.watch errors internally via startRecovery
+   * and never throws in real conditions. Covered by unit test in
+   * watch-config.spec.ts \> "releases all watchers and rethrows".
+   */
   try {
     setupWatchers(state, layers);
   } catch (error) {

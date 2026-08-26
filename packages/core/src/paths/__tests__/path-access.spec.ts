@@ -3,7 +3,10 @@ vi.mock('@/paths/parse-path', async () => {
     await vi.importActual<typeof import('@/paths/parse-path')>(
       '@/paths/parse-path',
     );
-  return { parsePath: vi.fn(actual.parsePath) };
+  return {
+    parsePath: vi.fn(actual.parsePath),
+    validatePath: vi.fn(actual.validatePath),
+  };
 });
 
 vi.mock('@/merge/merge-helpers', async () => {
@@ -100,6 +103,14 @@ describe('getPathValue', () => {
   it('returns undefined when target is null', () => {
     expect(getPathValue(null, 'a')).toBeUndefined();
   });
+
+  it.each([
+    { key: '__proto__', label: '__proto__' },
+    { key: 'constructor', label: 'constructor' },
+    { key: 'prototype', label: 'prototype' },
+  ])('throws TypeError on array path containing $label', ({ key }) => {
+    expect(() => getPathValue({}, [key])).toThrow(TypeError);
+  });
 });
 
 describe('setPathValue', () => {
@@ -184,6 +195,14 @@ describe('setPathValue', () => {
     const data: Record<string, unknown> = { a: 1 };
     setPathValue(data, [], 42);
     expect(data).toEqual({ a: 1 });
+  });
+
+  it.each([
+    { key: '__proto__', label: '__proto__' },
+    { key: 'constructor', label: 'constructor' },
+    { key: 'prototype', label: 'prototype' },
+  ])('throws TypeError on array path containing $label', ({ key }) => {
+    expect(() => setPathValue({}, [key], 42)).toThrow(TypeError);
   });
 });
 
@@ -287,5 +306,13 @@ describe('hasRemovedPathValue', () => {
   ])('returns false when $label', ({ initial, path }) => {
     const data: Record<string, unknown> = initial;
     expect(hasRemovedPathValue(data, path)).toBe(false);
+  });
+
+  it.each([
+    { key: '__proto__', label: '__proto__' },
+    { key: 'constructor', label: 'constructor' },
+    { key: 'prototype', label: 'prototype' },
+  ])('throws TypeError on array path containing $label', ({ key }) => {
+    expect(() => hasRemovedPathValue({}, [key])).toThrow(TypeError);
   });
 });
