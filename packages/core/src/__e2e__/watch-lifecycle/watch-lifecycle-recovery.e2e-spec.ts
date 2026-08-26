@@ -5,6 +5,7 @@ import {
   createDebugCollector,
   createTemporaryEnvironment,
   setupTest,
+  waitForDebugContext,
   waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
@@ -221,7 +222,10 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
       'utf8',
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await waitForDebugContext(
+      contexts,
+      (context) => context['code'] === 'EPARSE',
+    );
 
     expect(contexts.length).toBeGreaterThan(0);
 
@@ -252,7 +256,12 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
     });
 
     await rm(projectDirectory, { recursive: true, force: true });
-    await new Promise((resolve) => setTimeout(resolve, 1100));
+
+    const crashStart = Date.now();
+    while (Date.now() - crashStart < 5000) {
+      if (debugMessages.some((m) => m.includes('fs.watch crashed'))) break;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
 
     expect(debugMessages.some((m) => m.includes('fs.watch crashed'))).toBe(
       true,

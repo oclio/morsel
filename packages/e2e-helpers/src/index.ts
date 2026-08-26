@@ -10,6 +10,7 @@ export type { SetupTestOptions, SetupTestResult } from './setup-test';
 export { setupTest } from './setup-test';
 export type { TemporaryEnvironment } from './temporary-env';
 export { createTemporaryEnvironment } from './temporary-env';
+export { waitForDebugContext } from './wait-debug-context';
 export type { EventObservable } from './wait-event';
 export { waitForEvent } from './wait-event';
 export type { ReadableStore } from './wait-remerge';
