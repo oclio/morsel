@@ -1,5 +1,11 @@
 # @oclio/morsel
 
+## 0.7.0
+
+### Minor Changes
+
+- 0da6144: Add write queue for mutation serialization — concurrent calls to `set`, `unset`, `push`, and other mutation APIs are now serialized via a per-store Promise chain, eliminating race conditions where overlapping writes could silently lose data. Errors in one mutation do not block subsequent mutations. `stop()` now drains the queue before closing watchers, ensuring in-flight mutations complete on shutdown.
+
 ## 0.6.0
 
 ### Minor Changes
