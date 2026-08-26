@@ -54,10 +54,7 @@ describe('read-ops-security — prototype protection', () => {
     },
   );
 
-  it.skip('get with array path containing __proto__ throws TypeError (spec: any access rejected)', async () => {
-    // Skipped because getPathValue (path-access.ts L16) bypasses parsePath for array paths,
-    // so validatePath is never called. Spec L25 requires rejecting any access to
-    // __proto__/constructor/prototype. This is a code bug to fix, not a test issue.
+  it('get with array path containing __proto__ throws TypeError (spec: any access rejected)', async () => {
     const store = await watchConfig({
       name: 'myapp',
       cwd: projectDirectory,
