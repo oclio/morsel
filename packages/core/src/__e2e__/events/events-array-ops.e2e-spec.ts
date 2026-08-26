@@ -83,6 +83,7 @@ describe('events-array-ops — array-specific events', () => {
     });
 
     await expect(store.push('port', 'x')).rejects.toMatchObject({
+      name: 'MorselError',
       code: 'EVALIDATE',
     });
 
