@@ -25,7 +25,10 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/store/store-mutator.ts'],
+    files: [
+      'src/store/store-mutator.ts',
+      'src/store/store-optimistic-update.ts',
+    ],
     rules: {
       'unicorn/consistent-boolean-name': 'off',
     },
