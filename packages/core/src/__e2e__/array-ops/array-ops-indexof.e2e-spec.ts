@@ -60,10 +60,7 @@ describe('array-ops-indexof — indexOf/lastIndexOf (sync)', () => {
     await store.stop();
   });
 
-  // BUG: indexOf on non-array key should throw MorselError(EVALIDATE) but returns -1 silently.
-  // Spec: §4.5 — type mismatch throws EVALIDATE for all array operations including indexOf/lastIndexOf.
-  // Code: src/store/store.ts L172 — `Array.isArray(array) ? array.indexOf(value) : -1`
-  it.skip('indexOf on non-array key throws MorselError(EVALIDATE)', async () => {
+  it('indexOf on non-array key throws MorselError(EVALIDATE)', async () => {
     await writeConfig(projectDirectory, 'myapp.config.json', {
       port: 3000,
     });
@@ -74,18 +71,14 @@ describe('array-ops-indexof — indexOf/lastIndexOf (sync)', () => {
       globalDir: globalDirectory,
     });
 
-    expect(() => store.indexOf('port', 3000)).toThrow({
-      name: 'MorselError',
-      code: 'EVALIDATE',
-    });
+    expect(() => store.indexOf('port', 3000)).toThrow(
+      expect.objectContaining({ name: 'MorselError', code: 'EVALIDATE' }),
+    );
 
     await store.stop();
   });
 
-  // BUG: lastIndexOf on non-array key should throw MorselError(EVALIDATE) but returns -1 silently.
-  // Spec: §4.5 — type mismatch throws EVALIDATE for all array operations including indexOf/lastIndexOf.
-  // Code: src/store/store.ts L179 — `Array.isArray(array) ? array.lastIndexOf(value) : -1`
-  it.skip('lastIndexOf on non-array key throws MorselError(EVALIDATE)', async () => {
+  it('lastIndexOf on non-array key throws MorselError(EVALIDATE)', async () => {
     await writeConfig(projectDirectory, 'myapp.config.json', {
       port: 3000,
     });
@@ -96,10 +89,9 @@ describe('array-ops-indexof — indexOf/lastIndexOf (sync)', () => {
       globalDir: globalDirectory,
     });
 
-    expect(() => store.lastIndexOf('port', 3000)).toThrow({
-      name: 'MorselError',
-      code: 'EVALIDATE',
-    });
+    expect(() => store.lastIndexOf('port', 3000)).toThrow(
+      expect.objectContaining({ name: 'MorselError', code: 'EVALIDATE' }),
+    );
 
     await store.stop();
   });
