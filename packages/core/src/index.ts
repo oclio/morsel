@@ -42,6 +42,8 @@ export type {
   MorselLayer,
   MorselOptions,
   MorselStore,
+  Provenance,
+  ProvenanceOverride,
   WatchOptions,
 } from '@/store/types';
 export { defineConfig, mergeConfig } from '@/utils/define-config';

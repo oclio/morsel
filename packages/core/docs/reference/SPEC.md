@@ -1,12 +1,12 @@
-# SPEC-MORSEL-1.2.0: Pluggable Cascading Config Loader with Watch
+# SPEC-MORSEL-1.3.0: Pluggable Cascading Config Loader with Watch
 
 | Metadata            | Value                                                            |
 | :------------------ | :--------------------------------------------------------------- |
 | **Package**         | `@oclio/morsel`                                                  |
 | **Author**          | @oclio                                                           |
 | **Status**          | `STABLE`                                                         |
-| **Spec version**    | `1.2.0`                                                          |
-| **Created**         | 2026-08-24                                                       |
+| **Spec version**    | `1.3.0`                                                          |
+| **Created**         | 2026-08-26                                                       |
 | **Target runtimes** | Node.js >= 18                                                    |
 | **Architecture**    | See [`DESIGN.md`](./DESIGN.md) for design choices and principles |
 
@@ -181,7 +181,47 @@ export interface MorselStore<
     path: string | readonly (string | number)[],
     value: unknown,
   ): number;
+  /**
+   * Trace the provenance of a key — final value, source layer, and
+   * overridden chain. See §4.4 for semantics.
+   */
+  getProvenance(
+    path: string | readonly (string | number)[],
+  ): Provenance | undefined;
   stop(): Promise<void>;
+}
+
+/**
+ * Entry in the `overridden` chain — a layer that defined the key
+ * but was overridden by a higher-priority layer.
+ */
+export interface ProvenanceOverride {
+  readonly value: unknown;
+  readonly source: LayerSource;
+  readonly file: string | undefined;
+  readonly hookName?: string;
+}
+
+/**
+ * Provenance of a configuration key — the final value, its origin,
+ * and the chain of layers that defined but were overridden.
+ *
+ * - `value`: the final merged value at the key path.
+ * - `source`: the `LayerSource` of the layer that owns the final value.
+ * - `file`: the file path of the owning layer, or `undefined` for
+ *   `defaults`/`overrides`/hook layers without a file.
+ * - `hookName`: present only when `source` is `'hook'`.
+ * - `overridden`: layers that defined the key but were overridden,
+ *   ordered from highest to lowest priority (closest to the winner
+ *   first). Only layers where the key exists are included — layers
+ *   where the key is absent are skipped.
+ */
+export interface Provenance {
+  readonly value: unknown;
+  readonly source: LayerSource;
+  readonly file: string | undefined;
+  readonly hookName?: string;
+  readonly overridden: readonly ProvenanceOverride[];
 }
 
 export interface MorselLayer {
@@ -569,7 +609,7 @@ export function clearRegistry(): void;
 
 #### `stop()`
 
-`stop()` is async (`Promise<void>`). `stopped = true` is assigned **synchronously** at the start, before any `await`. Watchers whose `refCount` reaches zero are closed. All registered listeners are cleared. `store.config` and `store.layers` remain readable after stop at the last known state. Any subsequent call to `store.on()`, `store.set()`, `store.unset()`, `store.push()`, `store.unshift()`, `store.pop()`, `store.shift()`, `store.splice()`, `store.mutateKey()`, or `store.deleteKey()` throws `Error('morsel: store is stopped')`.
+`stop()` is async (`Promise<void>`). `stopped = true` is assigned **synchronously** at the start, before any `await`. Watchers whose `refCount` reaches zero are closed. All registered listeners are cleared. `store.config`, `store.layers`, `store.get()`, `store.has()`, `store.all()`, `store.dotify()`, and `store.getProvenance()` remain readable after stop at the last known state. Any subsequent call to `store.on()`, `store.set()`, `store.unset()`, `store.push()`, `store.unshift()`, `store.pop()`, `store.shift()`, `store.splice()`, `store.mutateKey()`, or `store.deleteKey()` throws `Error('morsel: store is stopped')`.
 
 #### `signal` — AbortSignal
 
@@ -591,6 +631,34 @@ On I/O or serialization failure, a `WriteError` (`EWRITE`) is thrown. The caller
 #### `DeleteTarget: 'all'`
 
 When `unset` or `deleteKey` is called with `target: 'all'` (the default), the deletion is applied to **every writable layer** that has a file path — both `project` and `global`. The key is removed from each file in sequence via `writeConfigFile`. If the key does not exist in the in-memory config, the operation returns `false` without writing. On write failure, the in-memory state is rolled back and revert events are emitted. Already-written files on disk are not reverted — eventual consistency is restored on the next re-merge (fs.watch fire or manual reload), which re-reads all files and re-merges from disk state.
+
+#### `getProvenance`
+
+1. Parse `path` via `parsePath` (same path semantics as `store.get`).
+2. Compute the final value via `getPathValue(state._config, path)`. If `undefined` → return `undefined` (key does not exist).
+3. Traverse `state._layers` in **reverse order** (highest priority first):
+   a. For each layer, compute `getPathValue(layer.config, path)`.
+   b. If the value is `undefined` → skip the layer (key absent).
+   c. If the value is defined and no winner has been found yet → this is the owning layer. Record `value`, `source`, `file` (`layer.path`), and `hookName` (if `layer.source === 'hook'`).
+   d. If the value is defined and a winner already exists → append `{ value, source, file, hookName }` to `overridden`.
+4. Return the `Provenance` object.
+
+**Semantics for objects and arrays:**
+
+- If the key path resolves to an object or array, `value` is the full object/array as it exists in the owning layer's `config`. No recursive descent into child keys — `getProvenance` traces the key path as a whole, consistent with `store.get` semantics.
+- If a higher-priority layer replaced an entire object with a scalar (type change), the scalar layer is the winner and the object layer appears in `overridden` with the full object as `value`.
+
+**`extends` interaction:**
+
+- `layer.config` is the result of the extends merge (parent → child) resolved per layer before inter-layer merge. `getProvenance` traces against the resolved `layer.config`, not individual extends files. `layer.extendsPaths` is available on `MorselLayer` for users who need to inspect the extends chain separately.
+
+**Hook layers:**
+
+- Hook layers (`source: 'hook'`) are traversed in their cascade position (before/after their anchor layer). `hookName` is populated from `layer.hookName`.
+
+**After `stop()`:**
+
+- `getProvenance` remains callable after `stop()` — it reads from `state._layers` and `state._config` which remain at the last known state. Same behavior as `store.get` and `store.layers`.
 
 ---
 

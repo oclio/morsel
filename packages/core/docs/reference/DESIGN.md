@@ -73,6 +73,12 @@ morsel starts from the premise that a configuration loader must be **lean, robus
 - `initConfig` — idempotent project configuration bootstrap with atomic write.
 - `resolvePaths` — deterministic exposure of theoretical paths without I/O.
 
+#### Provenance tracking
+
+- `store.getProvenance(path)` — returns the final value, its source layer, file path, and the chain of overridden layers that defined but lost the key. Traverses `store.layers` in reverse cascade order using `getPathValue` on each layer's `config`.
+- Answers the #1 config debugging question: "why does my app have this value?" in a single call — no manual layer traversal.
+- No new infrastructure — built on existing `MorselLayer` trace and `getPathValue`. ~150 lines, < 1 KB minified.
+
 ---
 
 ### 1.3 Extensibility via Lifecycle (`LayerHook`, `EventHook`)
@@ -186,7 +192,7 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 
 - `MorselOptions` — common configuration options (`name`, `cwd`, `defaults`, `overrides`, `globalDir`, etc.).
 - `WatchOptions` — extends `MorselOptions` with `watchDebounce` and `signal`.
-- `MorselStore<T>` — reactive store instance (`config`, `layers`, `on`, `get`, `set`, `has`, `unset`, `all`, `dotify`, `push`, `unshift`, `pop`, `shift`, `splice`, `indexOf`, `lastIndexOf`, `stop`).
+- `MorselStore<T>` — reactive store instance (`config`, `layers`, `on`, `get`, `set`, `has`, `unset`, `all`, `dotify`, `getProvenance`, `push`, `unshift`, `pop`, `shift`, `splice`, `indexOf`, `lastIndexOf`, `stop`).
 - `MorselLayer` — trace of a resolved layer (`source`, `path`, `config`, `exists`, `extendsPaths`, `hookName`).
 - `MorselError` — base error class with `path`, `code`, and `cause`.
 - `ErrorCode` — union of error codes (`'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK' | 'EWRITE'`).
@@ -215,6 +221,8 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `Listener` — event callback `(event: ChangeEvent) => void`.
 - `DebugCallback` — custom debug sink.
 - `ConfigRecord` — generic configuration object record (`Record<string, unknown>`).
+- `Provenance` — provenance of a key (`value`, `source`, `file`, `hookName`, `overridden`).
+- `ProvenanceOverride` — entry in the `overridden` chain (`value`, `source`, `file`, `hookName`).
 
 ### Public Functions
 
@@ -304,6 +312,7 @@ watchConfig(opts)
     ├─ store.splice(path, ...)     ─── array splice via mutateKey
     ├─ store.indexOf(path, val)    ─── read-only array search
     ├─ store.lastIndexOf(path, val) ─── read-only reverse array search
+    ├─ store.getProvenance(path)  ─── reverse traverse of layers, first hit = winner, rest = overridden
     │
     └─ fs.watch fire (directory) ─── filtering by filename
         │

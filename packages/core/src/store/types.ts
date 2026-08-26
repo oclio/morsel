@@ -133,6 +133,29 @@ export type StoreTarget = 'global' | 'project';
 export type DeleteTarget = 'all' | 'global' | 'project';
 
 /**
+ * Entry in the `overridden` chain — a layer that defined the key
+ * but was overridden by a higher-priority layer.
+ */
+export interface ProvenanceOverride {
+  readonly value: unknown;
+  readonly source: LayerSource;
+  readonly file: string | undefined;
+  readonly hookName?: string;
+}
+
+/**
+ * Provenance of a configuration key — the final value, its origin,
+ * and the chain of layers that defined but were overridden.
+ */
+export interface Provenance {
+  readonly value: unknown;
+  readonly source: LayerSource;
+  readonly file: string | undefined;
+  readonly hookName?: string;
+  readonly overridden: readonly ProvenanceOverride[];
+}
+
+/**
  * Immutable snapshot of a single resolved config layer.
  */
 export interface MorselLayer {
@@ -278,4 +301,11 @@ export interface MorselStore<
   Stop watching, clean up listeners. Async.
   */
   stop(): Promise<void>;
+  /**
+  Trace the provenance of a key — final value, source layer, and
+  overridden chain. See SPEC §4.4 for semantics.
+  */
+  getProvenance(
+    path: string | readonly (string | number)[],
+  ): Provenance | undefined;
 }
