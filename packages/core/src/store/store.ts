@@ -11,6 +11,7 @@ import {
   setKey,
   unsetKey,
 } from '@/store/store-mutator';
+import { resolveProvenance } from '@/store/store-provenance';
 import type { StoreState } from '@/store/store-state';
 import { deepCloneConfig } from '@/store/store-state';
 import type {
@@ -20,6 +21,7 @@ import type {
   ListenerOptions,
   MorselLayer,
   MorselStore,
+  Provenance,
   StoreTarget,
 } from '@/store/types';
 
@@ -129,6 +131,11 @@ export function createMorselStore<T extends ConfigRecord>(
     lastIndexOf: arrayMethods.lastIndexOf,
     async stop(): Promise<void> {
       return stopStore(state);
+    },
+    getProvenance(
+      pathInput: string | readonly (string | number)[],
+    ): Provenance | undefined {
+      return resolveProvenance(state._layers, pathInput);
     },
   };
 
