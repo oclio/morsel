@@ -9,11 +9,11 @@ import { noop } from '@/store/boot/assert-name';
 import { toMorselLayer } from '@/store/layer';
 import { emitChanges } from '@/store/reactive/emit-changes';
 import type { StoreState } from '@/store/store-state';
-import { deepCloneConfig } from '@/store/store-state';
 import {
   updateWatchedFiles,
   updateWatchers,
 } from '@/store/watch/watcher-setup';
+import { deepClone } from '@/utils/deep-clone';
 
 type ConfigRecord = Record<string, unknown>;
 
@@ -125,7 +125,7 @@ export function createRemerge<T extends ConfigRecord>(): (
 
       const newLastConfig =
         options_.configMutability === 'mutable'
-          ? deepCloneConfig(validated)
+          ? deepClone(validated)
           : validated;
       const newStoreConfig = applyMutability(
         validated,

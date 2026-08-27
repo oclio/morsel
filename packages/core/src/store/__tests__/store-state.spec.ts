@@ -1,6 +1,7 @@
 import { isPlainObject } from '@/merge/merge-helpers';
 import type { ResolvedOptions } from '@/store/boot/assert-name';
-import { createStoreState, deepCloneConfig } from '@/store/store-state';
+import { createStoreState } from '@/store/store-state';
+import { deepClone } from '@/utils/deep-clone';
 
 vi.mock('@/merge/merge-helpers', () => ({
   isPlainObject: vi.fn(),
@@ -339,7 +340,7 @@ describe('createStoreState', () => {
   });
 });
 
-describe('deepCloneConfig', () => {
+describe('deepClone', () => {
   beforeEach(() => {
     vi.mocked(isPlainObject).mockImplementation(
       (value) =>
@@ -351,7 +352,7 @@ describe('deepCloneConfig', () => {
 
   it('clones plain objects recursively', () => {
     const input = { a: { b: { c: 1 } } };
-    const clone = deepCloneConfig(input);
+    const clone = deepClone(input);
 
     expect(clone).toEqual(input);
     expect(clone).not.toBe(input);
@@ -363,7 +364,7 @@ describe('deepCloneConfig', () => {
 
   it('clones arrays element by element', () => {
     const input = { items: [{ x: 1 }, { y: 2 }] };
-    const clone = deepCloneConfig(input);
+    const clone = deepClone(input);
 
     expect(clone).toEqual(input);
     const cloneItems = clone['items'] as unknown[];
@@ -374,22 +375,22 @@ describe('deepCloneConfig', () => {
   });
 
   it('returns primitives as-is', () => {
-    expect(deepCloneConfig(42)).toBe(42);
-    expect(deepCloneConfig('hello')).toBe('hello');
-    expect(deepCloneConfig(true)).toBe(true);
-    expect(deepCloneConfig(undefined)).toBe(undefined);
-    expect(deepCloneConfig(null)).toBe(null);
+    expect(deepClone(42)).toBe(42);
+    expect(deepClone('hello')).toBe('hello');
+    expect(deepClone(true)).toBe(true);
+    expect(deepClone(undefined)).toBe(undefined);
+    expect(deepClone(null)).toBe(null);
   });
 
   it('clones empty objects', () => {
-    const clone = deepCloneConfig({});
+    const clone = deepClone({});
 
     expect(clone).toEqual({});
     expect(clone).not.toBe({});
   });
 
   it('clones empty arrays', () => {
-    const clone = deepCloneConfig([]);
+    const clone = deepClone([]);
 
     expect(clone).toEqual([]);
   });
@@ -401,7 +402,7 @@ describe('deepCloneConfig', () => {
         [3, 4],
       ],
     };
-    const clone = deepCloneConfig(input);
+    const clone = deepClone(input);
 
     expect(clone).toEqual(input);
     const cloneA = clone['a'] as unknown[][];
@@ -412,7 +413,7 @@ describe('deepCloneConfig', () => {
 
   it('clones objects inside arrays', () => {
     const input = [{ a: 1 }, { b: 2 }];
-    const clone = deepCloneConfig(input);
+    const clone = deepClone(input);
 
     expect(clone).toEqual(input);
     expect(clone).not.toBe(input);
@@ -427,7 +428,7 @@ describe('deepCloneConfig', () => {
     }
     const custom = new Custom();
 
-    const clone = deepCloneConfig(custom);
+    const clone = deepClone(custom);
 
     expect(clone).toBe(custom);
   });
@@ -440,7 +441,7 @@ describe('deepCloneConfig', () => {
       obj: { deep: { value: 'x' } },
       nil: null,
     };
-    const clone = deepCloneConfig(input);
+    const clone = deepClone(input);
 
     expect(clone).toEqual(input);
     expect(clone).not.toBe(input);

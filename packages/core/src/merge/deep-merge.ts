@@ -1,5 +1,6 @@
 import { isPlainObject } from '@/merge/merge-helpers';
 import type { ConfigRecord } from '@/store/types';
+import { deepClone } from '@/utils/deep-clone';
 import { isUnsafeKey } from '@/utils/unsafe-keys';
 
 /**
@@ -15,30 +16,11 @@ function mergeArray(
   override: unknown[],
   strategy: ArrayMergeStrategy,
 ): unknown[] {
-  const clonedBase = base.map((item) => deepCloneValue(item));
-  const clonedOverride = override.map((item) => deepCloneValue(item));
+  const clonedBase = base.map((item) => deepClone(item));
+  const clonedOverride = override.map((item) => deepClone(item));
   return strategy === 'concat'
     ? [...clonedBase, ...clonedOverride]
     : clonedOverride;
-}
-
-/**
- * Recursively clone a value — objects and arrays are deep-cloned so that
- * freezing the result never mutates the caller's inputs.
- */
-function deepCloneValue(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map((item) => deepCloneValue(item));
-  }
-  if (isPlainObject(value)) {
-    const clone: ConfigRecord = {};
-    for (const [key, childValue] of Object.entries(value)) {
-      if (isUnsafeKey(key)) continue;
-      clone[key] = deepCloneValue(childValue);
-    }
-    return clone;
-  }
-  return value;
 }
 
 /**
@@ -59,7 +41,7 @@ function cloneBaseEntries(base: ConfigRecord): ConfigRecord {
   const result: ConfigRecord = {};
   for (const [key, baseValue] of Object.entries(base)) {
     if (isUnsafeKey(key)) continue;
-    result[key] = deepCloneValue(baseValue);
+    result[key] = deepClone(baseValue);
   }
   return result;
 }
@@ -79,7 +61,7 @@ function mergeOverrideEntry(
     return deepMerge({}, overrideValue, strategy);
   }
   if (Array.isArray(overrideValue)) {
-    return overrideValue.map((item) => deepCloneValue(item));
+    return overrideValue.map((item) => deepClone(item));
   }
   return overrideValue;
 }

@@ -13,7 +13,6 @@ import {
 } from '@/store/store-mutator';
 import { resolveProvenance } from '@/store/store-provenance';
 import type { StoreState } from '@/store/store-state';
-import { deepCloneConfig } from '@/store/store-state';
 import { runTransaction } from '@/store/store-transaction';
 import type {
   ChangeEvent,
@@ -25,6 +24,7 @@ import type {
   Provenance,
   StoreTarget,
 } from '@/store/types';
+import { deepClone } from '@/utils/deep-clone';
 
 type ConfigRecord = Record<string, unknown>;
 
@@ -110,7 +110,7 @@ export function createMorselStore<T extends ConfigRecord>(
       return unsetKey(state, pathInput, target, mutability);
     },
     all(): T {
-      return deepCloneConfig(state._config) as T;
+      return deepClone(state._config) as T;
     },
     dotify(): Record<string, unknown> {
       return dotifyObject(state._config);
