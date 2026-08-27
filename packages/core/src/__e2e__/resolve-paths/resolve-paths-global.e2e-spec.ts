@@ -1,32 +1,23 @@
-import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import {
-  clearWatcherRegistry,
-  createTemporaryEnvironment,
-} from '@oclio/morsel-e2e-helpers';
+import { clearWatcherRegistry, setupTest } from '@oclio/morsel-e2e-helpers';
 
 import { resolveGlobalPath } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
 import type { FormatPlugin } from '@/plugins/types';
 
 describe('resolve-paths-global — resolveGlobalPath() discovery', () => {
-  let directory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
   });
 
   it('resolveGlobalPath candidates: <globalDir>/<name>.config<ext>', async () => {
-    const globalDirectory = path.resolve(directory, 'global');
-    await mkdir(globalDirectory, { recursive: true });
-    await writeFile(
-      path.resolve(globalDirectory, 'myapp.config.json'),
-      '{}\n',
-      'utf8',
-    );
+    const { globalDirectory } = await setupTest({
+      rawFiles: [
+        { filename: 'myapp.config.json', content: '{}\n', layer: 'global' },
+      ],
+      createGlobalDir: true,
+    });
 
     const result = await resolveGlobalPath(
       { name: 'myapp', globalDir: globalDirectory },
@@ -37,7 +28,10 @@ describe('resolve-paths-global — resolveGlobalPath() discovery', () => {
   });
 
   it('resolveGlobalPath returns undefined if none found', async () => {
-    const globalDirectory = path.resolve(directory, 'empty-global');
+    const { globalDirectory } = await setupTest({
+      createGlobalDir: true,
+      rootAsCwd: true,
+    });
 
     const result = await resolveGlobalPath(
       { name: 'myapp', globalDir: globalDirectory },
@@ -55,13 +49,13 @@ describe('resolve-paths-global — resolveGlobalPath() discovery', () => {
       serialize: () => '',
     };
 
-    const globalDirectory = path.resolve(directory, 'global');
-    await mkdir(globalDirectory, { recursive: true });
-    await writeFile(
-      path.resolve(globalDirectory, 'myapp.config.yaml'),
-      '{}\n',
-      'utf8',
-    );
+    const { globalDirectory } = await setupTest({
+      rawFiles: [
+        { filename: 'myapp.config.yaml', content: '{}\n', layer: 'global' },
+      ],
+      createGlobalDir: true,
+      formatPlugins: [yamlPlugin],
+    });
 
     const result = await resolveGlobalPath(
       { name: 'myapp', globalDir: globalDirectory },

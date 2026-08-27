@@ -1,14 +1,9 @@
-import { mkdir } from 'node:fs/promises';
-
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
   setupTest,
   waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
-
-import { watchConfig } from '@/index';
 
 describe('watch-lifecycle-watcher-update — watcher update on re-merge', () => {
   beforeEach(() => {
@@ -94,38 +89,30 @@ describe('watch-lifecycle-watcher-update — watcher update on re-merge', () => 
   });
 
   it('updateWatchers removes stale directories when extends removed', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
-
-    await writeConfig(projectDirectory, 'base.json', { port: 4000 });
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      extends: './base.json',
-    });
-    await mkdir(`${directory}/global`, { recursive: true });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: `${directory}/global`,
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { extends: './base.json' },
+      extraConfigs: [{ filename: 'base.json', content: { port: 4000 } }],
+      watch: true,
+      createGlobalDir: true,
     });
 
-    expect(store.config).toEqual({ port: 4000 });
+    expect(store!.config).toEqual({ port: 4000 });
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
     await waitForRemerge(
-      store,
+      store!,
       (config) => (config as Record<string, unknown>)['port'] === 3000,
     );
 
-    expect(store.config).toEqual({ port: 3000 });
+    expect(store!.config).toEqual({ port: 3000 });
 
     await writeConfig(projectDirectory, 'base.json', { port: 9999 });
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    expect(store.config).toEqual({ port: 3000 });
+    expect(store!.config).toEqual({ port: 3000 });
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('re-merge emits changes after watcher update success', async () => {
@@ -153,32 +140,23 @@ describe('watch-lifecycle-watcher-update — watcher update on re-merge', () => 
   });
 
   it('collectWatchedFiles called before setupWatchers (boot ordering)', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
-
-    await writeConfig(projectDirectory, 'base.json', { port: 4000 });
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      extends: './base.json',
-      host: 'localhost',
-    });
-    await mkdir(`${directory}/global`, { recursive: true });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: `${directory}/global`,
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { extends: './base.json', host: 'localhost' },
+      extraConfigs: [{ filename: 'base.json', content: { port: 4000 } }],
+      watch: true,
+      createGlobalDir: true,
     });
 
-    expect(store.config).toEqual({ port: 4000, host: 'localhost' });
+    expect(store!.config).toEqual({ port: 4000, host: 'localhost' });
 
     await writeConfig(projectDirectory, 'base.json', { port: 8080 });
     await waitForRemerge(
-      store,
+      store!,
       (config) => (config as Record<string, unknown>)['port'] === 8080,
     );
 
-    expect(store.config).toEqual({ port: 8080, host: 'localhost' });
+    expect(store!.config).toEqual({ port: 8080, host: 'localhost' });
 
-    await store.stop();
+    await store!.stop();
   });
 });

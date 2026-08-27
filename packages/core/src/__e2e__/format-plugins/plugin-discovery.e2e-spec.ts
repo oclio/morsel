@@ -1,49 +1,30 @@
-import { mkdir, unlink, writeFile } from 'node:fs/promises';
+import { unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
   morselPlugin,
+  setupTest,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
 import { jsonPlugin, loadConfig } from '@/index';
 
 describe('plugin-discovery — plugin selection and discovery', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   it('no formatPlugins → jsonPlugin by default reads .json files', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
     });
 
-    expect(config).toEqual({ port: 3000 });
+    expect(result!.config).toEqual({ port: 3000 });
   });
 
   it('custom plugin parses .ini-like format correctly', async () => {
-    await writeFile(
-      path.resolve(projectDirectory, 'myapp.config.ini'),
-      'port=3000\ndebug=true',
-      'utf8',
-    );
-
     const iniPlugin = {
       name: 'ini',
       extensions: ['.ini'],
@@ -70,31 +51,25 @@ describe('plugin-discovery — plugin selection and discovery', () => {
       serialize: () => '',
     };
 
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
+      rawFiles: [
+        { filename: 'myapp.config.ini', content: 'port=3000\ndebug=true' },
+      ],
+      createGlobalDir: true,
       formatPlugins: [iniPlugin],
     });
 
-    expect(config).toEqual({ port: 3000, debug: true });
+    expect(result!.config).toEqual({ port: 3000, debug: true });
   });
 
   it('multi extension discovery: 2 plugins, extension-based discovery', async () => {
-    await writeFile(
-      path.resolve(projectDirectory, 'myapp.config.morsel'),
-      'port=3000',
-      'utf8',
-    );
-
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { projectDirectory, globalDirectory, result } = await setupTest({
+      rawFiles: [{ filename: 'myapp.config.morsel', content: 'port=3000' }],
+      createGlobalDir: true,
       formatPlugins: [morselPlugin, jsonPlugin],
     });
 
-    expect(config).toEqual({ port: 3000 });
+    expect(result!.config).toEqual({ port: 3000 });
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
 
@@ -109,12 +84,6 @@ describe('plugin-discovery — plugin selection and discovery', () => {
   });
 
   it('order priority: first plugin in array wins for same extension', async () => {
-    await writeFile(
-      path.resolve(projectDirectory, 'myapp.config.json'),
-      '{"port": 3000}',
-      'utf8',
-    );
-
     const pluginA = {
       name: 'plugin-a',
       extensions: ['.json'],
@@ -129,14 +98,13 @@ describe('plugin-discovery — plugin selection and discovery', () => {
       serialize: () => '',
     };
 
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
+      rawFiles: [{ filename: 'myapp.config.json', content: '{"port": 3000}' }],
+      createGlobalDir: true,
       formatPlugins: [pluginA, pluginB],
     });
 
-    expect(config).toEqual({ source: 'A' });
+    expect(result!.config).toEqual({ source: 'A' });
   });
 
   it('plugin with multiple extensions (.yaml, .yml) matches both', async () => {
@@ -156,20 +124,13 @@ describe('plugin-discovery — plugin selection and discovery', () => {
       serialize: () => '',
     };
 
-    await writeFile(
-      path.resolve(projectDirectory, 'myapp.config.yaml'),
-      'port: 3000',
-      'utf8',
-    );
-
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { projectDirectory, globalDirectory, result } = await setupTest({
+      rawFiles: [{ filename: 'myapp.config.yaml', content: 'port: 3000' }],
+      createGlobalDir: true,
       formatPlugins: [yamlPlugin],
     });
 
-    expect(config).toEqual({ port: 3000 });
+    expect(result!.config).toEqual({ port: 3000 });
 
     await writeFile(
       path.resolve(projectDirectory, 'myapp.config.yml'),
@@ -189,20 +150,11 @@ describe('plugin-discovery — plugin selection and discovery', () => {
   });
 
   it('case-sensitive extension match: .JSON does not match .json', async () => {
-    await writeFile(
-      path.resolve(projectDirectory, 'base.JSON'),
-      '{"port": 3000}',
-      'utf8',
-    );
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      extends: './base.JSON',
-    });
-
     await expect(
-      loadConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: globalDirectory,
+      setupTest({
+        rawFiles: [{ filename: 'base.JSON', content: '{"port": 3000}' }],
+        projectConfig: { extends: './base.JSON' },
+        createGlobalDir: true,
         formatPlugins: [jsonPlugin],
       }),
     ).rejects.toMatchObject({
@@ -212,38 +164,28 @@ describe('plugin-discovery — plugin selection and discovery', () => {
   });
 
   it('plugin discovery for global file with custom plugin', async () => {
-    await writeFile(
-      path.resolve(globalDirectory, 'myapp.config.morsel'),
-      'port=8080',
-      'utf8',
-    );
-
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
+      rawFiles: [
+        {
+          filename: 'myapp.config.morsel',
+          content: 'port=8080',
+          layer: 'global',
+        },
+      ],
+      createGlobalDir: true,
       formatPlugins: [morselPlugin, jsonPlugin],
     });
 
-    expect(config).toEqual({ port: 8080 });
+    expect(result!.config).toEqual({ port: 8080 });
   });
 
   it('plugin discovery for .config/ directory with custom plugin', async () => {
-    const configDirectory = path.resolve(projectDirectory, '.config');
-    await mkdir(configDirectory, { recursive: true });
-    await writeFile(
-      path.resolve(configDirectory, 'myapp.morsel'),
-      'port=3000',
-      'utf8',
-    );
-
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
+      rawFiles: [{ filename: '.config/myapp.morsel', content: 'port=3000' }],
+      createGlobalDir: true,
       formatPlugins: [morselPlugin, jsonPlugin],
     });
 
-    expect(config).toEqual({ port: 3000 });
+    expect(result!.config).toEqual({ port: 3000 });
   });
 });

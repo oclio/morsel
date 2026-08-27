@@ -1,29 +1,17 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
+  setupTest,
   suppressConsoleError,
 } from '@oclio/morsel-e2e-helpers';
 
-import { watchConfig } from '@/index';
-
 describe('plugin-write — serialize during mutations', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
   suppressConsoleError();
 
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   it('serialize called during set mutation', async () => {
@@ -39,24 +27,18 @@ describe('plugin-write — serialize during mutations', () => {
       },
     };
 
-    await writeFile(
-      path.resolve(projectDirectory, 'myapp.config.json'),
-      '{"port": 3000}',
-      'utf8',
-    );
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
+      rawFiles: [{ filename: 'myapp.config.json', content: '{"port": 3000}' }],
+      createGlobalDir: true,
+      watch: true,
       formatPlugins: [customPlugin],
     });
 
-    await store.set('host', 'localhost');
+    await store!.set('host', 'localhost');
 
     expect(serializeCalls).toBeGreaterThanOrEqual(1);
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('serialize called during unset mutation', async () => {
@@ -72,24 +54,23 @@ describe('plugin-write — serialize during mutations', () => {
       },
     };
 
-    await writeFile(
-      path.resolve(projectDirectory, 'myapp.config.json'),
-      '{"port": 3000, "host": "localhost"}',
-      'utf8',
-    );
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
+      rawFiles: [
+        {
+          filename: 'myapp.config.json',
+          content: '{"port": 3000, "host": "localhost"}',
+        },
+      ],
+      createGlobalDir: true,
+      watch: true,
       formatPlugins: [customPlugin],
     });
 
-    await store.unset('host');
+    await store!.unset('host');
 
     expect(serializeCalls).toBeGreaterThanOrEqual(1);
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('serialize failure → WriteError(EWRITE)', async () => {
@@ -103,38 +84,26 @@ describe('plugin-write — serialize during mutations', () => {
       },
     };
 
-    await writeFile(
-      path.resolve(projectDirectory, 'myapp.config.json'),
-      '{"port": 3000}',
-      'utf8',
-    );
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
+      rawFiles: [{ filename: 'myapp.config.json', content: '{"port": 3000}' }],
+      createGlobalDir: true,
+      watch: true,
       formatPlugins: [throwingPlugin],
     });
 
-    await expect(store.set('host', 'localhost')).rejects.toMatchObject({
+    await expect(store!.set('host', 'localhost')).rejects.toMatchObject({
       name: 'WriteError',
       code: 'EWRITE',
     });
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('serialize with custom plugin produces correct format', async () => {
-    await writeFile(
-      path.resolve(projectDirectory, 'myapp.config.morsel'),
-      'port=3000',
-      'utf8',
-    );
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store, projectDirectory } = await setupTest({
+      rawFiles: [{ filename: 'myapp.config.morsel', content: 'port=3000' }],
+      createGlobalDir: true,
+      watch: true,
       formatPlugins: [
         {
           name: 'morsel',
@@ -155,9 +124,9 @@ describe('plugin-write — serialize during mutations', () => {
               .join('\n') + '\n',
         },
       ],
-    });
+    } as never);
 
-    await store.set('host', 'localhost');
+    await store!.set('host', 'localhost');
 
     const content = await readFile(
       path.resolve(projectDirectory, 'myapp.config.morsel'),
@@ -167,6 +136,6 @@ describe('plugin-write — serialize during mutations', () => {
     expect(content).toContain('port=3000');
     expect(content).toContain('host=localhost');
 
-    await store.stop();
+    await store!.stop();
   });
 });

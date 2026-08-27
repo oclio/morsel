@@ -3,7 +3,6 @@ import path from 'node:path';
 
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
   setupTest,
   waitForRemerge,
   writeConfig,
@@ -92,38 +91,38 @@ describe('watch-lifecycle-registry — watcher registry & multi-store', () => {
   });
 
   it('multi-store different files: same dir, different names, no cross-fire', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
-
-    await writeConfig(projectDirectory, 'app1.config.json', { port: 3000 });
-    await writeConfig(projectDirectory, 'app2.config.json', { port: 8080 });
-    await mkdir(`${directory}/global`, { recursive: true });
-
-    const store1 = await watchConfig({
+    const {
+      store: store1,
+      projectDirectory,
+      globalDirectory,
+    } = await setupTest({
       name: 'app1',
-      cwd: projectDirectory,
-      globalDir: `${directory}/global`,
+      projectFilename: 'app1.config.json',
+      projectConfig: { port: 3000 },
+      extraConfigs: [{ filename: 'app2.config.json', content: { port: 8080 } }],
+      watch: true,
+      createGlobalDir: true,
     });
     const store2 = await watchConfig({
       name: 'app2',
       cwd: projectDirectory,
-      globalDir: `${directory}/global`,
+      globalDir: globalDirectory,
     });
 
-    expect(store1.config).toEqual({ port: 3000 });
+    expect(store1!.config).toEqual({ port: 3000 });
     expect(store2.config).toEqual({ port: 8080 });
 
     await writeConfig(projectDirectory, 'app1.config.json', { port: 4000 });
 
     await waitForRemerge(
-      store1,
+      store1!,
       (config) => (config as Record<string, unknown>)['port'] === 4000,
     );
 
-    expect(store1.config).toEqual({ port: 4000 });
+    expect(store1!.config).toEqual({ port: 4000 });
     expect(store2.config).toEqual({ port: 8080 });
 
-    await store1.stop();
+    await store1!.stop();
     await store2.stop();
   });
 

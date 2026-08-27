@@ -3,15 +3,12 @@ import { mkdir, rm, writeFile } from 'node:fs/promises';
 import {
   clearWatcherRegistry,
   createDebugCollector,
-  createTemporaryEnvironment,
   setupTest,
   suppressConsoleError,
   waitForDebugContext,
   waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
-
-import { watchConfig } from '@/index';
 
 describe('watch-lifecycle-recovery — directory deletion & reconnection', () => {
   suppressConsoleError();
@@ -63,21 +60,14 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
   });
 
   it('createWatcher when directory does not exist → startRecovery immediate', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
-    const nonexistentGlobal = `${directory}/nonexistent-global`;
-
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: nonexistentGlobal,
+    const { store, globalDirectory: nonexistentGlobal } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
       defaults: { port: 3000, host: 'localhost' },
       onDebug: () => {},
     });
 
-    expect(store.config).toEqual({ port: 3000, host: 'localhost' });
+    expect(store!.config).toEqual({ port: 3000, host: 'localhost' });
 
     await mkdir(nonexistentGlobal, { recursive: true });
     await writeConfig(nonexistentGlobal, 'myapp.config.json', {
@@ -85,13 +75,13 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
     });
 
     await waitForRemerge(
-      store,
+      store!,
       (config) => (config as Record<string, unknown>)['host'] === '0.0.0.0',
     );
 
-    expect(store.config).toEqual({ port: 3000, host: '0.0.0.0' });
+    expect(store!.config).toEqual({ port: 3000, host: '0.0.0.0' });
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('retry timer polling every 1 second → reconnection within ~2s', async () => {

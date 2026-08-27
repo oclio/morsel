@@ -1,4 +1,5 @@
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 
 import {
   getMorselRuntime,
@@ -20,6 +21,17 @@ export interface SetupTestOptions {
   globalConfig?: ConfigRecord;
   globalFilename?: string;
   createGlobalDir?: boolean;
+  extraConfigs?: readonly {
+    readonly filename: string;
+    readonly content: ConfigRecord;
+    readonly layer?: 'project' | 'global';
+  }[];
+  rawFiles?: readonly {
+    readonly filename: string;
+    readonly content: string;
+    readonly layer?: 'project' | 'global';
+  }[];
+  globalDir?: string;
   watch?: boolean;
   watchDebounce?: number;
   rootAsCwd?: boolean;
@@ -167,6 +179,9 @@ export async function setupTest(
     globalConfig,
     globalFilename = 'myapp.config.json',
     createGlobalDir,
+    extraConfigs,
+    rawFiles,
+    globalDir: customGlobalDirectory,
     watch = false,
     watchDebounce,
     rootAsCwd = false,
@@ -176,25 +191,20 @@ export async function setupTest(
 
   const { directory } = await createTemporaryEnvironment();
   const projectDirectory = rootAsCwd ? directory : `${directory}/project`;
-  const globalDirectory = `${directory}/global`;
+  const globalDirectory = customGlobalDirectory ?? `${directory}/global`;
 
-  const shouldCreateGlobalDirectory =
-    createGlobalDir ?? globalConfig !== undefined;
-  if (shouldCreateGlobalDirectory) {
-    await mkdir(globalDirectory, { recursive: true });
-  }
-
-  if (globalConfig) {
-    await writeConfig(globalDirectory, globalFilename, globalConfig);
-  }
-
-  if (projectConfig || watch) {
-    await mkdir(projectDirectory, { recursive: true });
-  }
-
-  if (projectConfig) {
-    await writeConfig(projectDirectory, projectFilename, projectConfig);
-  }
+  await prepareDirectories({
+    projectDirectory,
+    globalDirectory,
+    createGlobalDir,
+    globalConfig,
+    globalFilename,
+    projectConfig,
+    projectFilename,
+    watch,
+    extraConfigs,
+    rawFiles,
+  });
 
   const configOptions: RuntimeOptions = {
     name,
@@ -216,4 +226,100 @@ export async function setupTest(
 
   const result = await runtime.loadConfig(configOptions);
   return { directory, projectDirectory, globalDirectory, result };
+}
+
+interface PrepareDirectoriesArguments {
+  projectDirectory: string;
+  globalDirectory: string;
+  createGlobalDir: boolean | undefined;
+  globalConfig: ConfigRecord | undefined;
+  globalFilename: string;
+  projectConfig: ConfigRecord | undefined;
+  projectFilename: string;
+  watch: boolean;
+  extraConfigs: SetupTestOptions['extraConfigs'] | undefined;
+  rawFiles: SetupTestOptions['rawFiles'] | undefined;
+}
+
+async function prepareDirectories(
+  arguments_: PrepareDirectoriesArguments,
+): Promise<void> {
+  const {
+    projectDirectory,
+    globalDirectory,
+    createGlobalDir,
+    globalConfig,
+    globalFilename,
+    projectConfig,
+    projectFilename,
+    watch,
+    extraConfigs,
+    rawFiles,
+  } = arguments_;
+
+  const shouldCreateGlobalDirectory =
+    createGlobalDir ?? globalConfig !== undefined;
+  if (shouldCreateGlobalDirectory) {
+    await mkdir(globalDirectory, { recursive: true });
+  }
+
+  if (globalConfig) {
+    await writeConfig(globalDirectory, globalFilename, globalConfig);
+  }
+
+  if (projectConfig || watch || extraConfigs || rawFiles) {
+    await mkdir(projectDirectory, { recursive: true });
+  }
+
+  if (projectConfig) {
+    await writeConfig(projectDirectory, projectFilename, projectConfig);
+  }
+
+  if (extraConfigs) {
+    await writeExtraConfigs(extraConfigs, projectDirectory, globalDirectory);
+  }
+
+  if (rawFiles) {
+    await writeRawFiles(rawFiles, projectDirectory, globalDirectory);
+  }
+}
+
+function resolveLayerDirectory(
+  layer: 'project' | 'global' | undefined,
+  projectDirectory: string,
+  globalDirectory: string,
+): string {
+  return layer === 'global' ? globalDirectory : projectDirectory;
+}
+
+async function writeExtraConfigs(
+  extraConfigs: NonNullable<SetupTestOptions['extraConfigs']>,
+  projectDirectory: string,
+  globalDirectory: string,
+): Promise<void> {
+  for (const { filename, content, layer = 'project' } of extraConfigs) {
+    const directory = resolveLayerDirectory(
+      layer,
+      projectDirectory,
+      globalDirectory,
+    );
+    await writeConfig(directory, filename, content);
+  }
+}
+
+async function writeRawFiles(
+  rawFiles: NonNullable<SetupTestOptions['rawFiles']>,
+  projectDirectory: string,
+  globalDirectory: string,
+): Promise<void> {
+  for (const { filename, content, layer = 'project' } of rawFiles) {
+    const directory = resolveLayerDirectory(
+      layer,
+      projectDirectory,
+      globalDirectory,
+    );
+    const targetPath = path.resolve(directory, filename);
+    await mkdir(path.dirname(targetPath), { recursive: true });
+    await writeFile(targetPath, content, 'utf8');
+  }
 }

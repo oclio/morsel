@@ -1,15 +1,10 @@
-import { mkdir } from 'node:fs/promises';
-
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
   setupTest,
   suppressConsoleError,
   waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
-
-import { watchConfig } from '@/index';
 
 describe('watch-lifecycle-stop — boot & stop() behavior', () => {
   suppressConsoleError();
@@ -19,13 +14,6 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
   });
 
   it('boot failure → watchConfig throws MorselError (no last valid state)', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
-    await mkdir(projectDirectory, { recursive: true });
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 'not-a-number',
-    });
-
     const validate = (config: Record<string, unknown>) => {
       if (typeof config['port'] !== 'number') {
         throw new TypeError('port must be a number');
@@ -34,21 +22,15 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
     };
 
     await expect(
-      watchConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: `${directory}/global`,
+      setupTest({
+        watch: true,
+        projectConfig: { port: 'not-a-number' },
         validationPlugins: [{ name: 'port-type', validate }],
       }),
     ).rejects.toThrow();
   });
 
   it('boot with hook init failure → EHOOK, watchers released', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
-    await mkdir(projectDirectory, { recursive: true });
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
     const hooks = [
       {
         name: 'failing-init',
@@ -61,10 +43,9 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
     ];
 
     await expect(
-      watchConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: `${directory}/global`,
+      setupTest({
+        watch: true,
+        projectConfig: { port: 3000 },
         hooks,
       }),
     ).rejects.toThrow();

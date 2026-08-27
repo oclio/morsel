@@ -4,13 +4,10 @@ import path from 'node:path';
 
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
   setupTest,
   waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
-
-import { watchConfig } from '@/index';
 
 describe('watch-lifecycle-file-ops — file create/delete/recreate', () => {
   beforeEach(() => {
@@ -165,31 +162,26 @@ describe('watch-lifecycle-file-ops — file create/delete/recreate', () => {
   });
 
   it('no global dir: boots, detects changes, recovers when created', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
-    const globalDirectory = path.resolve(homedir(), '.config', 'otherapp');
-
-    await mkdir(projectDirectory, { recursive: true });
-    await writeConfig(projectDirectory, 'otherapp.config.json', {
-      port: 3000,
-    });
-
-    const store = await watchConfig({
+    const { store, projectDirectory, globalDirectory } = await setupTest({
       name: 'otherapp',
-      cwd: projectDirectory,
+      projectFilename: 'otherapp.config.json',
+      projectConfig: { port: 3000 },
+      globalDir: path.resolve(homedir(), '.config', 'otherapp'),
+      skipGlobalDirectory: true,
       defaults: { port: 3000, host: 'localhost' },
       onDebug: () => {},
+      watch: true,
     });
 
-    expect(store.config).toEqual({ port: 3000, host: 'localhost' });
+    expect(store!.config).toEqual({ port: 3000, host: 'localhost' });
 
     await writeConfig(projectDirectory, 'otherapp.config.json', { port: 8080 });
     await waitForRemerge(
-      store,
+      store!,
       (config) => (config as Record<string, unknown>)['port'] === 8080,
     );
 
-    expect(store.config).toEqual({ port: 8080, host: 'localhost' });
+    expect(store!.config).toEqual({ port: 8080, host: 'localhost' });
 
     await mkdir(globalDirectory, { recursive: true });
     await writeConfig(globalDirectory, 'otherapp.config.json', {
@@ -197,13 +189,13 @@ describe('watch-lifecycle-file-ops — file create/delete/recreate', () => {
     });
 
     await waitForRemerge(
-      store,
+      store!,
       (config) => (config as Record<string, unknown>)['host'] === '0.0.0.0',
     );
 
-    expect(store.config).toEqual({ port: 8080, host: '0.0.0.0' });
+    expect(store!.config).toEqual({ port: 8080, host: '0.0.0.0' });
 
-    await store.stop();
+    await store!.stop();
     await rm(globalDirectory, { recursive: true, force: true });
   });
 });
