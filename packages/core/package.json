@@ -68,6 +68,7 @@
     "@stryker-mutator/vitest-runner": "^10.0.0",
     "@types/node": "^26.2.0",
     "@vitest/coverage-v8": "^4.1.11",
+    "fast-check": "^4.9.0",
     "publint": "^0.3.24",
     "size-limit": "^13.0.3",
     "tsup": "^8.5.1",

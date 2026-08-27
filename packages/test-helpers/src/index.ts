@@ -27,3 +27,13 @@ export { suppressConsoleError } from './shared/suppress-console';
 export type { ThrowingPluginOptions } from './shared/throwing-plugin';
 export { createThrowingPlugin } from './shared/throwing-plugin';
 export { withEnvironmentVariable } from './shared/with-env-variable';
+export {
+  jsonArb,
+  safeDotPathArb,
+  safeKeyArb,
+  safeObjectArb,
+  safePathArb,
+  safeStringArb,
+  templateStringArb,
+} from './unit/fuzz-arbitraries';
+export { isUnsafeKey, UNSAFE_KEYS } from './unit/unsafe-keys';
