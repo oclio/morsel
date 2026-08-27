@@ -33,11 +33,28 @@ export interface SetupTestOptions {
     readonly name: string;
     validate(config: ConfigRecord): ConfigRecord;
   }[];
-  hooks?: readonly {
-    readonly name: string;
-    readonly lifecycle: string;
-    load(context: unknown): ConfigRecord | Promise<ConfigRecord>;
-  }[];
+  hooks?: readonly (
+    | {
+        readonly name: string;
+        readonly lifecycle: string;
+        load(context: unknown): ConfigRecord | Promise<ConfigRecord>;
+        init?(context: unknown): void | Promise<void>;
+        dispose?(): void | Promise<void>;
+      }
+    | {
+        readonly name: string;
+        readonly lifecycle: string;
+        load(context: unknown): ConfigRecord | Promise<ConfigRecord>;
+        readonly watchPaths: readonly string[];
+        init?(context: unknown): void | Promise<void>;
+        dispose?(): void | Promise<void>;
+      }
+    | {
+        readonly name: string;
+        readonly lifecycle: 'after:write';
+        onWrite(event: unknown): void | Promise<void>;
+      }
+  )[];
   arrayMerge?: 'replace' | 'concat';
   configMutability?: 'frozen' | 'mutable';
   envName?: string;
@@ -193,7 +210,7 @@ export async function setupTest(
       watchDebounce === undefined
         ? configOptions
         : { ...configOptions, watchDebounce };
-    const store = await runtime.watchConfig(watchOptions);
+    const store = (await runtime.watchConfig(watchOptions)) as MinimalStore;
     return { directory, projectDirectory, globalDirectory, store };
   }
 
