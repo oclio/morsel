@@ -1,8 +1,8 @@
 import path from 'node:path';
 
-import { isPlainObject } from '@/merge/merge-helpers';
 import type { ResolvedOptions } from '@/store/boot/assert-name';
 import type { ConfigRecord, Listener, MorselLayer } from '@/store/types';
+import { deepClone } from '@/utils/deep-clone';
 
 /**
  * Internal mutable state shared by the store, proxy, re-merge, and watcher modules.
@@ -138,7 +138,7 @@ export function createStoreState<T extends ConfigRecord>(
     projectPath,
     lastConfig:
       options.configMutability === 'mutable'
-        ? deepCloneConfig(config)
+        ? deepClone(config)
         : (config as ConfigRecord),
     remergeInProgress: false,
     remergeDone: undefined,
@@ -152,24 +152,4 @@ export function createStoreState<T extends ConfigRecord>(
     inTransaction: false,
     transactionDirtyKeys: new Map(),
   };
-}
-
-/**
- * Deep-clone a config value: plain objects and arrays are copied recursively,
- * all other values (primitives, null, undefined, class instances) are returned as-is.
- */
-export function deepCloneConfig(value: unknown): ConfigRecord {
-  if (isPlainObject(value)) {
-    const result: ConfigRecord = {};
-    for (const [key, value_] of Object.entries(value)) {
-      result[key] = deepCloneConfig(value_);
-    }
-    return result;
-  }
-  if (Array.isArray(value)) {
-    return value.map((item) =>
-      deepCloneConfig(item),
-    ) as unknown as ConfigRecord;
-  }
-  return value as ConfigRecord;
 }

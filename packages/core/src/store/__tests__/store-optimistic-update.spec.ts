@@ -8,8 +8,8 @@ import {
   rollbackOptimisticUpdate,
 } from '@/store/store-optimistic-update';
 import type { StoreState } from '@/store/store-state';
-import { deepCloneConfig } from '@/store/store-state';
 import type { MorselLayer } from '@/store/types';
+import { deepClone } from '@/utils/deep-clone';
 
 vi.mock('@/load/apply-validation', () => ({
   applyValidation: vi.fn(),
@@ -24,8 +24,8 @@ vi.mock('@/merge/interpolate', () => ({
 vi.mock('@/store/reactive/emit-changes', () => ({
   emitChanges: vi.fn(),
 }));
-vi.mock('@/store/store-state', () => ({
-  deepCloneConfig: vi.fn(),
+vi.mock('@/utils/deep-clone', () => ({
+  deepClone: vi.fn(),
 }));
 
 function createState<T extends Record<string, unknown>>(
@@ -80,7 +80,7 @@ describe('store-optimistic-update', () => {
       return merged;
     });
     vi.mocked(interpolate).mockImplementation((config) => config);
-    vi.mocked(deepCloneConfig).mockImplementation(
+    vi.mocked(deepClone).mockImplementation(
       (config) => structuredClone(config) as Record<string, unknown>,
     );
     vi.mocked(emitChanges).mockImplementation(() => {});
@@ -175,7 +175,7 @@ describe('store-optimistic-update', () => {
         },
       );
 
-      expect(deepCloneConfig).toHaveBeenCalled();
+      expect(deepClone).toHaveBeenCalled();
       expect(state.lastConfig).not.toBe(state._config);
     });
   });
@@ -265,7 +265,7 @@ describe('store-optimistic-update', () => {
         },
       );
 
-      expect(deepCloneConfig).toHaveBeenCalled();
+      expect(deepClone).toHaveBeenCalled();
       expect(state.lastConfig).not.toBe(state._config);
     });
   });

@@ -3,8 +3,8 @@ import { applyMutability, mergeLayers } from '@/load/merge-layers';
 import { interpolate } from '@/merge/interpolate';
 import { emitChanges } from '@/store/reactive/emit-changes';
 import type { StoreState } from '@/store/store-state';
-import { deepCloneConfig } from '@/store/store-state';
 import type { MorselLayer } from '@/store/types';
+import { deepClone } from '@/utils/deep-clone';
 
 type ConfigRecord = Record<string, unknown>;
 
@@ -23,7 +23,7 @@ export function applyOptimisticUpdateSilent<T extends ConfigRecord>(
   let isAnyLayerChanged = false;
   const newLayers = state._layers.map((layer) => {
     if (targetFiles.includes(layer.path as string)) {
-      const clonedConfig = deepCloneConfig(layer.config);
+      const clonedConfig = deepClone(layer.config);
       const isChanged = mutation(clonedConfig);
       if (isChanged) {
         isAnyLayerChanged = true;
@@ -51,7 +51,7 @@ export function applyOptimisticUpdateSilent<T extends ConfigRecord>(
   );
   const newConfig = applyMutability(validated, mutability) as T;
   const newLastConfig =
-    mutability === 'mutable' ? deepCloneConfig(validated) : validated;
+    mutability === 'mutable' ? deepClone(validated) : validated;
 
   state._layers = newLayers;
   state._config = newConfig;
@@ -74,7 +74,7 @@ export function applyOptimisticUpdate<T extends ConfigRecord>(
   let isAnyLayerChanged = false;
   const newLayers = state._layers.map((layer) => {
     if (targetFiles.includes(layer.path as string)) {
-      const clonedConfig = deepCloneConfig(layer.config);
+      const clonedConfig = deepClone(layer.config);
       const isChanged = mutation(clonedConfig);
       if (isChanged) {
         isAnyLayerChanged = true;
@@ -102,7 +102,7 @@ export function applyOptimisticUpdate<T extends ConfigRecord>(
   );
   const newConfig = applyMutability(validated, mutability) as T;
   const newLastConfig =
-    mutability === 'mutable' ? deepCloneConfig(validated) : validated;
+    mutability === 'mutable' ? deepClone(validated) : validated;
 
   const previousSnapshot = state._config;
 

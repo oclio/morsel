@@ -12,8 +12,8 @@ import { toMorselLayer } from '@/store/layer';
 import { emitChanges } from '@/store/reactive/emit-changes';
 import { deleteKey, mutateKey, setKey, unsetKey } from '@/store/store-mutator';
 import type { StoreState } from '@/store/store-state';
-import { deepCloneConfig } from '@/store/store-state';
 import type { MorselLayer } from '@/store/types';
+import { deepClone } from '@/utils/deep-clone';
 import { resolveKeyOrigin } from '@/writer/resolve-origin';
 import { writeConfigFile } from '@/writer/write-config';
 
@@ -44,8 +44,8 @@ vi.mock('@/store/layer', () => ({
 vi.mock('@/store/reactive/emit-changes', () => ({
   emitChanges: vi.fn(),
 }));
-vi.mock('@/store/store-state', () => ({
-  deepCloneConfig: vi.fn(),
+vi.mock('@/utils/deep-clone', () => ({
+  deepClone: vi.fn(),
 }));
 vi.mock('@/writer/resolve-origin', () => ({
   resolveKeyOrigin: vi.fn(),
@@ -110,7 +110,7 @@ describe('store-mutator', () => {
     vi.mocked(toMorselLayer).mockImplementation(
       (layer) => layer as MorselLayer,
     );
-    vi.mocked(deepCloneConfig).mockImplementation(
+    vi.mocked(deepClone).mockImplementation(
       (config) => structuredClone(config) as Record<string, unknown>,
     );
     vi.mocked(parsePath).mockImplementation((path) =>
