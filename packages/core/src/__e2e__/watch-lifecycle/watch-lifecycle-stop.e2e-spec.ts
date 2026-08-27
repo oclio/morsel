@@ -1,5 +1,6 @@
 import {
   clearWatcherRegistry,
+  createDebugCollector,
   setupTest,
   suppressConsoleError,
   waitForRemerge,
@@ -225,7 +226,7 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
   });
 
   it('stop() hook dispose failure → onDebug notified, not thrown', async () => {
-    const debugMessages: string[] = [];
+    const { messages: debugMessages, callback } = createDebugCollector();
 
     const hooks = [
       {
@@ -243,9 +244,7 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       hooks,
-      onDebug: (message: string) => {
-        debugMessages.push(message);
-      },
+      onDebug: callback,
     });
 
     await expect(store!.stop()).resolves.toBeUndefined();

@@ -1,4 +1,8 @@
-import { clearWatcherRegistry, setupTest } from '@oclio/morsel-e2e-helpers';
+import {
+  clearWatcherRegistry,
+  createDebugCollector,
+  setupTest,
+} from '@oclio/morsel-e2e-helpers';
 
 describe('env-match — envName matching edge cases', () => {
   let previousNodeEnvironment: string | undefined;
@@ -19,7 +23,7 @@ describe('env-match — envName matching edge cases', () => {
   it('$env present but envName undefined — $env ignored, warning emitted', async () => {
     delete process.env['NODE_ENV'];
 
-    const debugMessages: string[] = [];
+    const { messages: debugMessages, callback } = createDebugCollector();
 
     const { result } = await setupTest({
       projectConfig: {
@@ -28,9 +32,7 @@ describe('env-match — envName matching edge cases', () => {
           ci: { port: 8080 },
         },
       },
-      onDebug: (message: string) => {
-        debugMessages.push(message);
-      },
+      onDebug: callback,
     });
 
     expect(result!.config).toEqual({ port: 3000 });
@@ -40,7 +42,7 @@ describe('env-match — envName matching edge cases', () => {
   });
 
   it('envName matches no key in $env — $env stripped, no warning', async () => {
-    const debugMessages: string[] = [];
+    const { messages: debugMessages, callback } = createDebugCollector();
 
     const { result } = await setupTest({
       projectConfig: {
@@ -51,9 +53,7 @@ describe('env-match — envName matching edge cases', () => {
         },
       },
       envName: 'staging',
-      onDebug: (message: string) => {
-        debugMessages.push(message);
-      },
+      onDebug: callback,
     });
 
     expect(result!.config).toEqual({ port: 3000 });
@@ -61,7 +61,7 @@ describe('env-match — envName matching edge cases', () => {
   });
 
   it('$env block empty — $env ignored silently', async () => {
-    const debugMessages: string[] = [];
+    const { messages: debugMessages, callback } = createDebugCollector();
 
     const { result } = await setupTest({
       projectConfig: {
@@ -69,9 +69,7 @@ describe('env-match — envName matching edge cases', () => {
         $env: {},
       },
       envName: 'ci',
-      onDebug: (message: string) => {
-        debugMessages.push(message);
-      },
+      onDebug: callback,
     });
 
     expect(result!.config).toEqual({ port: 3000 });
@@ -114,7 +112,7 @@ describe('env-match — envName matching edge cases', () => {
   ])(
     '$env block not a plain object ($name) — debug warning, $env ignored',
     async ({ value }) => {
-      const debugMessages: string[] = [];
+      const { messages: debugMessages, callback } = createDebugCollector();
 
       const { result } = await setupTest({
         projectConfig: {
@@ -122,9 +120,7 @@ describe('env-match — envName matching edge cases', () => {
           $env: value,
         } as never,
         envName: 'ci',
-        onDebug: (message: string) => {
-          debugMessages.push(message);
-        },
+        onDebug: callback,
       });
 
       expect(result!.config).toEqual({ port: 3000 });
@@ -135,7 +131,7 @@ describe('env-match — envName matching edge cases', () => {
   );
 
   it('envName matches but $env[envName] not a plain object — $env ignored silently', async () => {
-    const debugMessages: string[] = [];
+    const { messages: debugMessages, callback } = createDebugCollector();
 
     const { result } = await setupTest({
       projectConfig: {
@@ -145,9 +141,7 @@ describe('env-match — envName matching edge cases', () => {
         },
       },
       envName: 'ci',
-      onDebug: (message: string) => {
-        debugMessages.push(message);
-      },
+      onDebug: callback,
     });
 
     expect(result!.config).toEqual({ port: 3000 });
@@ -155,7 +149,7 @@ describe('env-match — envName matching edge cases', () => {
   });
 
   it('envName matches but $env[envName] is null — $env ignored silently', async () => {
-    const debugMessages: string[] = [];
+    const { messages: debugMessages, callback } = createDebugCollector();
 
     const { result } = await setupTest({
       projectConfig: {
@@ -165,9 +159,7 @@ describe('env-match — envName matching edge cases', () => {
         },
       },
       envName: 'ci',
-      onDebug: (message: string) => {
-        debugMessages.push(message);
-      },
+      onDebug: callback,
     });
 
     expect(result!.config).toEqual({ port: 3000 });
@@ -175,7 +167,7 @@ describe('env-match — envName matching edge cases', () => {
   });
 
   it('envName matches but $env[envName] is an array — $env ignored silently', async () => {
-    const debugMessages: string[] = [];
+    const { messages: debugMessages, callback } = createDebugCollector();
 
     const { result } = await setupTest({
       projectConfig: {
@@ -185,9 +177,7 @@ describe('env-match — envName matching edge cases', () => {
         },
       },
       envName: 'ci',
-      onDebug: (message: string) => {
-        debugMessages.push(message);
-      },
+      onDebug: callback,
     });
 
     expect(result!.config).toEqual({ port: 3000 });

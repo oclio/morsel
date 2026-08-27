@@ -16,7 +16,7 @@ describe('validation-remerge — watch re-merge', () => {
   });
 
   it('remerge catch: validation fail on re-merge keeps config, onDebug notified', async () => {
-    const debugContexts: Record<string, unknown>[] = [];
+    const { contexts: debugContexts, callback } = createDebugCollector();
 
     const validate = (config: Record<string, unknown>) => {
       if (typeof config['port'] !== 'number') {
@@ -30,11 +30,7 @@ describe('validation-remerge — watch re-merge', () => {
       watch: true,
       createGlobalDir: true,
       validationPlugins: [{ name: 'port-type', validate }],
-      onDebug: (_message: string, context?: Record<string, unknown>) => {
-        if (context) {
-          debugContexts.push(context);
-        }
-      },
+      onDebug: callback,
     } as never);
 
     expect(store!.config).toEqual({ port: 3000 });
@@ -57,7 +53,7 @@ describe('validation-remerge — watch re-merge', () => {
   });
 
   it('remerge onDebug context has code: EVALIDATE', async () => {
-    const debugContexts: Record<string, unknown>[] = [];
+    const { contexts: debugContexts, callback } = createDebugCollector();
 
     const validate = (config: Record<string, unknown>) => {
       if (config['port'] === 'invalid') {
@@ -71,11 +67,7 @@ describe('validation-remerge — watch re-merge', () => {
       watch: true,
       createGlobalDir: true,
       validationPlugins: [{ name: 'port-type', validate }],
-      onDebug: (_message: string, context?: Record<string, unknown>) => {
-        if (context) {
-          debugContexts.push(context);
-        }
-      },
+      onDebug: callback,
     } as never);
 
     await writeConfig(projectDirectory, 'myapp.config.json', {

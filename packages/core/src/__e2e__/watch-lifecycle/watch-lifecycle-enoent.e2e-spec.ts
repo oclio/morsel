@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import {
   clearWatcherRegistry,
+  createDebugCollector,
   setupTest,
   suppressConsoleError,
   waitForDebugContext,
@@ -18,17 +19,13 @@ describe('watch-lifecycle-enoent — ENOENT during re-merge', () => {
   });
 
   it('ENOENT during re-merge → short-circuited, config frozen', async () => {
-    const debugContexts: Record<string, unknown>[] = [];
+    const { contexts: debugContexts, callback } = createDebugCollector();
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
       watch: true,
       createGlobalDir: true,
-      onDebug: (_message: string, context?: Record<string, unknown>) => {
-        if (context) {
-          debugContexts.push(context);
-        }
-      },
+      onDebug: callback,
     });
 
     expect(store!.config).toEqual({ port: 3000 });
@@ -45,17 +42,13 @@ describe('watch-lifecycle-enoent — ENOENT during re-merge', () => {
   });
 
   it('onDebug called with { code: ENOENT, sources: [...] }', async () => {
-    const debugContexts: Record<string, unknown>[] = [];
+    const { contexts: debugContexts, callback } = createDebugCollector();
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
       watch: true,
       createGlobalDir: true,
-      onDebug: (_message: string, context?: Record<string, unknown>) => {
-        if (context) {
-          debugContexts.push(context);
-        }
-      },
+      onDebug: callback,
     });
 
     await rm(path.join(projectDirectory, 'myapp.config.json'));
@@ -75,17 +68,13 @@ describe('watch-lifecycle-enoent — ENOENT during re-merge', () => {
   });
 
   it('enoentLogged suppresses duplicate ENOENT onDebug', async () => {
-    const debugContexts: Record<string, unknown>[] = [];
+    const { contexts: debugContexts, callback } = createDebugCollector();
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
       watch: true,
       createGlobalDir: true,
-      onDebug: (_message: string, context?: Record<string, unknown>) => {
-        if (context) {
-          debugContexts.push(context);
-        }
-      },
+      onDebug: callback,
     });
 
     await rm(path.join(projectDirectory, 'myapp.config.json'));
@@ -104,17 +93,13 @@ describe('watch-lifecycle-enoent — ENOENT during re-merge', () => {
   });
 
   it('enoentLogged cleared when all files reappear', async () => {
-    const debugContexts: Record<string, unknown>[] = [];
+    const { contexts: debugContexts, callback } = createDebugCollector();
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
       watch: true,
       createGlobalDir: true,
-      onDebug: (_message: string, context?: Record<string, unknown>) => {
-        if (context) {
-          debugContexts.push(context);
-        }
-      },
+      onDebug: callback,
     });
 
     await rm(path.join(projectDirectory, 'myapp.config.json'));

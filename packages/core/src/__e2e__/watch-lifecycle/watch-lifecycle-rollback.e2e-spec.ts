@@ -42,7 +42,7 @@ describe('watch-lifecycle-rollback — rollback & recovery', () => {
   });
 
   it('rollback on validation error: keeps config, onDebug EVALIDATE', async () => {
-    const debugContexts: Record<string, unknown>[] = [];
+    const { contexts: debugContexts, callback } = createDebugCollector();
 
     const validate = (config: Record<string, unknown>) => {
       if (config['port'] !== undefined && typeof config['port'] !== 'number') {
@@ -56,11 +56,7 @@ describe('watch-lifecycle-rollback — rollback & recovery', () => {
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       validationPlugins: [{ name: 'port-type', validate }],
-      onDebug: (_message: string, context?: Record<string, unknown>) => {
-        if (context) {
-          debugContexts.push(context);
-        }
-      },
+      onDebug: callback,
     });
 
     expect(store!.config).toEqual({ port: 3000 });

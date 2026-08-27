@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import {
   clearWatcherRegistry,
+  createDebugCollector,
   createTemporaryEnvironment,
   setupTest,
   writeConfig,
@@ -159,7 +160,7 @@ describe('boot-options — resolveOptions defaults', () => {
     const previousNodeEnvironment = process.env['NODE_ENV'];
     delete process.env['NODE_ENV'];
 
-    const debugMessages: string[] = [];
+    const { messages: debugMessages, callback } = createDebugCollector();
 
     try {
       const { result } = await setupTest({
@@ -170,9 +171,7 @@ describe('boot-options — resolveOptions defaults', () => {
             ci: { port: 8080 },
           },
         },
-        onDebug: (message: string) => {
-          debugMessages.push(message);
-        },
+        onDebug: callback,
       });
 
       expect(result!.config).toEqual({ port: 3000 });
@@ -215,14 +214,12 @@ describe('boot-options — resolveOptions defaults', () => {
   });
 
   it('onDebug at boot only fires on warnings, not on clean boot', async () => {
-    const debugMessages: string[] = [];
+    const { messages: debugMessages, callback } = createDebugCollector();
 
     const { result } = await setupTest({
       rootAsCwd: true,
       projectConfig: { port: 3000 },
-      onDebug: (message: string) => {
-        debugMessages.push(message);
-      },
+      onDebug: callback,
     });
 
     expect(result!.config).toEqual({ port: 3000 });

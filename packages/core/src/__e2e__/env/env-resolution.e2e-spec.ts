@@ -1,5 +1,6 @@
 import {
   clearWatcherRegistry,
+  createDebugCollector,
   setupTest,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
@@ -213,7 +214,7 @@ describe('env-resolution — $env resolution per layer', () => {
     delete process.env['NODE_ENV'];
 
     try {
-      const debugMessages: string[] = [];
+      const { messages: debugMessages, callback } = createDebugCollector();
 
       const hooks: readonly Hook[] = [
         {
@@ -230,9 +231,7 @@ describe('env-resolution — $env resolution per layer', () => {
 
       const { result } = await setupTest({
         hooks,
-        onDebug: (message: string) => {
-          debugMessages.push(message);
-        },
+        onDebug: callback,
       });
 
       expect(result!.config).toEqual({ base: 'value' });

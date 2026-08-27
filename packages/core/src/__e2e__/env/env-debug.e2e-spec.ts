@@ -2,6 +2,7 @@ import { writeFile } from 'node:fs/promises';
 
 import {
   clearWatcherRegistry,
+  createDebugCollector,
   setupTest,
   suppressConsoleError,
 } from '@oclio/morsel-e2e-helpers';
@@ -27,7 +28,7 @@ describe('env-debug — debug channels', () => {
   it('$env undefined warns via onDebug', async () => {
     delete process.env['NODE_ENV'];
 
-    const debugMessages: string[] = [];
+    const { messages: debugMessages, callback } = createDebugCollector();
 
     const { result } = await setupTest({
       projectConfig: {
@@ -36,9 +37,7 @@ describe('env-debug — debug channels', () => {
           ci: { port: 8080 },
         },
       },
-      onDebug: (message: string) => {
-        debugMessages.push(message);
-      },
+      onDebug: callback,
     });
 
     expect(result!.config).toEqual({ port: 3000 });

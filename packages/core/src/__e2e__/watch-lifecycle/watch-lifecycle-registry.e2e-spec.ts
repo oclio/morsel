@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import {
   clearWatcherRegistry,
+  createDebugCollector,
   setupTest,
   waitForRemerge,
   writeConfig,
@@ -218,17 +219,13 @@ describe('watch-lifecycle-registry — watcher registry & multi-store', () => {
   });
 
   it('rollback preserves watchers: parse error keeps watchers, recovery works', async () => {
-    const debugContexts: Record<string, unknown>[] = [];
+    const { contexts: debugContexts, callback } = createDebugCollector();
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
       watch: true,
       createGlobalDir: true,
-      onDebug: (_message: string, context?: Record<string, unknown>) => {
-        if (context) {
-          debugContexts.push(context);
-        }
-      },
+      onDebug: callback,
     });
 
     const configPath = path.resolve(projectDirectory, 'myapp.config.json');

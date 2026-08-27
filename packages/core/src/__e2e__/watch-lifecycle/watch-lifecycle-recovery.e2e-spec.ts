@@ -139,7 +139,7 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
   });
 
   it('verbose: true → full logging via onDebug', async () => {
-    const debugMessages: string[] = [];
+    const { messages: debugMessages, callback } = createDebugCollector();
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
@@ -147,9 +147,7 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
       createGlobalDir: true,
       defaults: { port: 4000 },
       verbose: true,
-      onDebug: (message: string) => {
-        debugMessages.push(message);
-      },
+      onDebug: callback,
     });
 
     await rm(projectDirectory, { recursive: true, force: true });
@@ -192,16 +190,14 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
   });
 
   it('logToStores: onDebug per store, stderr once for noop stores', async () => {
-    const debugMessages: string[] = [];
+    const { messages: debugMessages, callback } = createDebugCollector();
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
       watch: true,
       createGlobalDir: true,
       defaults: { port: 4000 },
-      onDebug: (message: string) => {
-        debugMessages.push(message);
-      },
+      onDebug: callback,
     });
 
     await rm(projectDirectory, { recursive: true, force: true });
