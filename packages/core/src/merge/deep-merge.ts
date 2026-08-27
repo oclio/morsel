@@ -16,10 +16,9 @@ function mergeArray(
   override: unknown[],
   strategy: ArrayMergeStrategy,
 ): unknown[] {
-  const clonedBase = base.map((item) => deepClone(item));
   const clonedOverride = override.map((item) => deepClone(item));
   return strategy === 'concat'
-    ? [...clonedBase, ...clonedOverride]
+    ? [...base.map((item) => deepClone(item)), ...clonedOverride]
     : clonedOverride;
 }
 
@@ -84,4 +83,44 @@ export function deepMerge(
   }
 
   return result;
+}
+
+/**
+ * In-place variant of {@link deepMerge} — mutates `base` directly instead of
+ * cloning it. Use only when the caller owns `base` and no external references
+ * to it exist. Used by `mergeLayers` to avoid re-cloning the accumulator
+ * between successive layer merges.
+ *
+ * @param base - The base config (mutated in place, lower priority).
+ * @param override - The override config (higher priority, not mutated).
+ * @param strategy - Array merge strategy.
+ * @returns The same `base` object with override applied.
+ */
+export function deepMergeInPlace(
+  base: ConfigRecord,
+  override: ConfigRecord,
+  strategy: ArrayMergeStrategy,
+): ConfigRecord {
+  for (const [key, overrideValue] of Object.entries(override)) {
+    if (overrideValue === undefined) {
+      continue;
+    }
+    if (isUnsafeKey(key)) {
+      continue;
+    }
+    const baseValue = base[key];
+    if (isPlainObject(baseValue) && isPlainObject(overrideValue)) {
+      base[key] = deepMergeInPlace(baseValue, overrideValue, strategy);
+    } else if (Array.isArray(baseValue) && Array.isArray(overrideValue)) {
+      base[key] = mergeArray(baseValue, overrideValue, strategy);
+    } else if (isPlainObject(overrideValue)) {
+      base[key] = deepMerge({}, overrideValue, strategy);
+    } else if (Array.isArray(overrideValue)) {
+      base[key] = overrideValue.map((item) => deepClone(item));
+    } else {
+      base[key] = overrideValue;
+    }
+  }
+
+  return base;
 }

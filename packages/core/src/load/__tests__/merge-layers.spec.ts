@@ -2,10 +2,10 @@ import { createMockLayer } from '@oclio/test-helpers';
 
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
 import type { ResolvedLayer } from '@/load/resolve-layer';
-import { deepMerge } from '@/merge/deep-merge';
+import { deepMergeInPlace } from '@/merge/deep-merge';
 
 vi.mock('@/merge/deep-merge', () => ({
-  deepMerge: vi.fn(
+  deepMergeInPlace: vi.fn(
     (base: Record<string, unknown>, override: Record<string, unknown>) => ({
       ...base,
       ...override,
@@ -110,7 +110,7 @@ describe('mergeLayers', () => {
     expect(result).toEqual({});
   });
 
-  it('calls deepMerge for each layer in order', () => {
+  it('calls deepMergeInPlace for each layer in order', () => {
     const layers = [
       makeLayer('defaults', { a: 1 }),
       makeLayer('project', { b: 2 }),
@@ -118,17 +118,21 @@ describe('mergeLayers', () => {
 
     mergeLayers(layers, 'replace');
 
-    expect(deepMerge).toHaveBeenCalledTimes(2);
-    expect(deepMerge).toHaveBeenCalledWith({}, { a: 1 }, 'replace');
-    expect(deepMerge).toHaveBeenCalledWith({ a: 1 }, { b: 2 }, 'replace');
+    expect(deepMergeInPlace).toHaveBeenCalledTimes(2);
+    expect(deepMergeInPlace).toHaveBeenCalledWith({}, { a: 1 }, 'replace');
+    expect(deepMergeInPlace).toHaveBeenCalledWith(
+      { a: 1 },
+      { b: 2 },
+      'replace',
+    );
   });
 
-  it('passes arrayMerge strategy to deepMerge', () => {
+  it('passes arrayMerge strategy to deepMergeInPlace', () => {
     const layers = [makeLayer('defaults', { a: 1 })];
 
     mergeLayers(layers, 'concat');
 
-    expect(deepMerge).toHaveBeenCalledWith({}, { a: 1 }, 'concat');
+    expect(deepMergeInPlace).toHaveBeenCalledWith({}, { a: 1 }, 'concat');
   });
 
   it('returns the final merged result', () => {
