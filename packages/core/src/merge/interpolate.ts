@@ -1,6 +1,7 @@
 import { MorselError } from '@/errors/error';
 import { isPlainObject } from '@/merge/merge-helpers';
 import { getPathValue } from '@/paths/path-access';
+import { deepClone } from '@/utils/deep-clone';
 
 type ConfigRecord = Record<string, unknown>;
 
@@ -126,18 +127,4 @@ function resolveReference(
   }
 
   return value;
-}
-
-function deepClone(value: unknown): ConfigRecord {
-  if (isPlainObject(value)) {
-    const result: ConfigRecord = {};
-    for (const [key, value_] of Object.entries(value)) {
-      result[key] = deepClone(value_);
-    }
-    return result;
-  }
-  if (Array.isArray(value)) {
-    return value.map((item) => deepClone(item)) as unknown as ConfigRecord;
-  }
-  return value as ConfigRecord;
 }

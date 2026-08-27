@@ -7,10 +7,12 @@ import { isUnsafeKey } from '@/utils/unsafe-keys';
 const safeKey = fc
   .string({ minLength: 1 })
   .filter((s) => !isUnsafeKey(s))
-  // Exclude keys that would produce empty reference paths after trimming.
-  .filter((s) => s.trim().length > 0)
+  // Exclude keys that change after trim — interpolate trims reference paths.
+  .filter((s) => s === s.trim())
   // Exclude path separator characters that break reference resolution.
   .filter((s) => !/[.[\]\\]/.test(s))
+  // Exclude braces — they break {{...}} placeholder pattern matching.
+  .filter((s) => !/[{}]/.test(s))
   // Exclude numeric strings — parsePath interprets "0" as array index.
   .filter((s) => !/^\d+$/.test(s));
 const safeValue = fc.oneof(
