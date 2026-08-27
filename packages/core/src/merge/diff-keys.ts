@@ -40,24 +40,24 @@ function getPath(object: ConfigRecord, dottedKey: string): unknown {
 }
 
 /**
- * Detect keys present in `oldFlat` that changed or disappeared in `newFlat`.
+ * Detect keys present in `oldFlat` that changed or disappeared in `newFlat`,
+ * writing them directly into the shared `changes` map.
  *
+ * @param changes - Shared map mutated in place with detected changes.
  * @param oldFlat - Flattened previous config.
  * @param newFlat - Flattened new config.
  * @param oldObject - Original previous config (for getPath on type changes).
  * @param newObject - Original new config (for getPath on type changes).
  * @param visited - Set populated with every key seen in oldFlat.
- * @returns A Map of changes for keys present in oldFlat.
  */
 function detectRemovedAndModified(
+  changes: Map<string, KeyChange>,
   oldFlat: Map<string, unknown>,
   newFlat: Map<string, unknown>,
   oldObject: ConfigRecord,
   newObject: ConfigRecord,
   visited: Set<string>,
-): Map<string, KeyChange> {
-  const changes = new Map<string, KeyChange>();
-
+): void {
   for (const [key, previous] of oldFlat) {
     visited.add(key);
 
@@ -85,27 +85,25 @@ function detectRemovedAndModified(
       changes.set(key, { next, prev: previous, category: 'modified' });
     }
   }
-
-  return changes;
 }
 
 /**
- * Detect keys present in `newFlat` that are new or replaced an object in `oldFlat`.
+ * Detect keys present in `newFlat` that are new or replaced an object in
+ * `oldFlat`, writing them directly into the shared `changes` map.
  *
+ * @param changes - Shared map mutated in place with detected changes.
  * @param newFlat - Flattened new config.
  * @param oldFlat - Flattened previous config.
  * @param oldObject - Original previous config (for getPath on type changes).
  * @param visited - Keys already seen in oldFlat (skip them).
- * @returns A Map of changes for keys only present in newFlat.
  */
 function detectAdded(
+  changes: Map<string, KeyChange>,
   newFlat: Map<string, unknown>,
   oldFlat: Map<string, unknown>,
   oldObject: ConfigRecord,
   visited: Set<string>,
-): Map<string, KeyChange> {
-  const changes = new Map<string, KeyChange>();
-
+): void {
   for (const [key, next] of newFlat) {
     if (visited.has(key)) {
       continue;
@@ -122,8 +120,6 @@ function detectAdded(
       });
     }
   }
-
-  return changes;
 }
 
 /**
@@ -222,16 +218,16 @@ export function diffKeys(
   const newFlat = flatten(newObject);
   const visited = new Set<string>();
 
-  const removedAndModified = detectRemovedAndModified(
+  const changes = new Map<string, KeyChange>();
+  detectRemovedAndModified(
+    changes,
     oldFlat,
     newFlat,
     oldObject,
     newObject,
     visited,
   );
-  const added = detectAdded(newFlat, oldFlat, oldObject, visited);
-
-  const changes = new Map([...removedAndModified, ...added]);
+  detectAdded(changes, newFlat, oldFlat, oldObject, visited);
 
   synthesizeAddedParents(changes, oldObject, newObject);
   synthesizeRemovedParents(changes, oldObject, newObject);

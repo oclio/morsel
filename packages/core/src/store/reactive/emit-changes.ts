@@ -30,11 +30,14 @@ export function emitChanges(
   listeners: Map<string, Set<Listener>>,
   wildcardListeners = new Map<string, Set<Listener>>(),
 ): void {
-  const changes = [...diffKeys(oldConfig, newConfig)].map(([key, change]) => ({
-    key,
-    change,
-    depth: key.split('.').length,
-  }));
+  const changes: {
+    key: string;
+    change: { category: string; next: unknown; prev: unknown };
+    depth: number;
+  }[] = [];
+  for (const [key, change] of diffKeys(oldConfig, newConfig)) {
+    changes.push({ key, change, depth: key.split('.').length });
+  }
 
   const removed = changes
     .filter(({ change }) => change.category === 'removed')
