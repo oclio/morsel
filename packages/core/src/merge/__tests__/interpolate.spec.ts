@@ -1,5 +1,5 @@
 import { MorselError } from '@/errors/error';
-import { interpolate } from '@/merge/interpolate';
+import { interpolate, interpolateInPlace } from '@/merge/interpolate';
 
 describe('interpolate', () => {
   describe('${VAR} env interpolation', () => {
@@ -257,6 +257,45 @@ describe('interpolate', () => {
 
     expect((input['items'] as Record<string, unknown>[])[0]!['name']).toBe(
       '${NAME}',
+    );
+  });
+});
+
+describe('interpolateInPlace', () => {
+  it('produces the same result as interpolate', () => {
+    const input = {
+      host: 'localhost',
+      url: 'postgres://{{host}}:${PORT}',
+      port: 5432,
+      dbPort: '{{port}}',
+    };
+
+    const cloned = structuredClone(input);
+    const safe = interpolate(cloned, { PORT: '5432' });
+    const inPlace = interpolateInPlace(input, { PORT: '5432' });
+
+    expect(inPlace).toEqual(safe);
+  });
+
+  it('mutates the input config in place', () => {
+    const input = { url: '${DB_URL}' };
+
+    interpolateInPlace(input, { DB_URL: 'resolved' });
+
+    expect(input['url']).toBe('resolved');
+  });
+
+  it('returns the same object reference', () => {
+    const input = { url: '${DB_URL}' };
+
+    const result = interpolateInPlace(input, { DB_URL: 'resolved' });
+
+    expect(result).toBe(input);
+  });
+
+  it('detects circular references', () => {
+    expect(() => interpolateInPlace({ a: '{{b}}', b: '{{a}}' })).toThrow(
+      MorselError,
     );
   });
 });

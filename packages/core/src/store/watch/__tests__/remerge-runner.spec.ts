@@ -4,7 +4,7 @@ import { MorselError } from '@/errors/error';
 import { buildLayers } from '@/load/build-layers';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
 import type { ResolvedLayer } from '@/load/resolve-layer';
-import { interpolate } from '@/merge/interpolate';
+import { interpolateInPlace } from '@/merge/interpolate';
 import { resolveGlobalPath, resolveProjectPath } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
 import { noop } from '@/store/boot/assert-name';
@@ -36,7 +36,7 @@ vi.mock('@/store/layer', () => ({
   toMorselLayer: vi.fn(),
 }));
 vi.mock('@/merge/interpolate', () => ({
-  interpolate: vi.fn(),
+  interpolateInPlace: vi.fn(),
 }));
 vi.mock('@/utils/deep-clone', () => ({
   deepClone: vi.fn(),
@@ -112,7 +112,7 @@ describe('createRemerge', () => {
     vi.mocked(buildLayers).mockResolvedValue(layers);
     vi.mocked(mergeLayers).mockReturnValue({ merged: true });
     vi.mocked(applyMutability).mockReturnValue({ frozen: true });
-    vi.mocked(interpolate).mockImplementation((config) => config);
+    vi.mocked(interpolateInPlace).mockImplementation((config) => config);
     vi.mocked(toMorselLayer).mockImplementation((layer) => ({
       source: layer.source,
       path: layer.path,

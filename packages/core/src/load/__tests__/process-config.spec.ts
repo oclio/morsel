@@ -2,7 +2,7 @@ import { applyValidation } from '@/load/apply-validation';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
 import { processConfig } from '@/load/process-config';
 import type { ResolvedLayer } from '@/load/resolve-layer';
-import { interpolate } from '@/merge/interpolate';
+import { interpolateInPlace } from '@/merge/interpolate';
 import { deepClone } from '@/utils/deep-clone';
 
 vi.mock('@/load/apply-validation', () => ({
@@ -13,7 +13,7 @@ vi.mock('@/load/merge-layers', () => ({
   mergeLayers: vi.fn(),
 }));
 vi.mock('@/merge/interpolate', () => ({
-  interpolate: vi.fn(),
+  interpolateInPlace: vi.fn(),
 }));
 vi.mock('@/utils/deep-clone', () => ({
   deepClone: vi.fn(),
@@ -51,7 +51,7 @@ describe('processConfig', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(mergeLayers).mockReturnValue(mergedConfig);
-    vi.mocked(interpolate).mockReturnValue(interpolatedConfig);
+    vi.mocked(interpolateInPlace).mockReturnValue(interpolatedConfig);
     vi.mocked(applyValidation).mockReturnValue(validatedConfig);
     vi.mocked(applyMutability).mockReturnValue(finalConfig);
     vi.mocked(deepClone).mockReturnValue(clonedConfig);
@@ -65,10 +65,10 @@ describe('processConfig', () => {
     expect(mergeLayers).toHaveBeenCalledWith(layers, 'concat');
   });
 
-  it('calls interpolate with the merged result', () => {
+  it('calls interpolateInPlace with the merged result', () => {
     processConfig(makeLayers(), 'replace', [], 'frozen');
 
-    expect(interpolate).toHaveBeenCalledWith(mergedConfig);
+    expect(interpolateInPlace).toHaveBeenCalledWith(mergedConfig);
   });
 
   it('calls applyValidation with the interpolated result and plugins', () => {
