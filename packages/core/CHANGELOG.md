@@ -1,5 +1,11 @@
 # @oclio/morsel
 
+## 0.9.1
+
+### Patch Changes
+
+- 09d57ec: Fix prototype pollution in `deepMerge` and `interpolate`: unsafe keys (`__proto__`, `constructor`, `prototype`) are now filtered during deep cloning. Consolidate three duplicate `deepClone` implementations into a single shared utility in `@/utils/deep-clone`.
+
 ## 0.9.0
 
 ### Minor Changes
