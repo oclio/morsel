@@ -1,32 +1,16 @@
-import {
-  clearWatcherRegistry,
-  createTemporaryEnvironment,
-  writeConfig,
-} from '@oclio/morsel-e2e-helpers';
+import { clearWatcherRegistry, setupTest } from '@oclio/morsel-e2e-helpers';
 
 import { loadConfig, loadConfigSync } from '@/index';
 
 describe('boot-parity — sync/async + concurrent', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
   });
 
   it('loadConfig and loadConfigSync produce identical config and layers for same input', async () => {
-    await writeConfig(globalDirectory, 'myapp.config.json', {
-      host: '0.0.0.0',
-      features: { cache: true },
-    });
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-      features: { auth: true },
+    const { projectDirectory, globalDirectory } = await setupTest({
+      globalConfig: { host: '0.0.0.0', features: { cache: true } },
+      projectConfig: { port: 3000, features: { auth: true } },
     });
 
     const defaults = { port: 4000, host: 'localhost' };
@@ -65,8 +49,8 @@ describe('boot-parity — sync/async + concurrent', () => {
   });
 
   it('concurrent loadConfig via Promise.all loads multiple configs in parallel', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
     });
 
     const results = await Promise.all([

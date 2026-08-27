@@ -1,132 +1,105 @@
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
+  setupTest,
   suppressConsoleError,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
-import { watchConfig } from '@/index';
-
 describe('boot-watch — watchConfig specifics', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
   suppressConsoleError();
 
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
   });
 
   it('watchConfig returns store with all methods', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
     });
 
-    expect(typeof store.on).toBe('function');
-    expect(typeof store.get).toBe('function');
-    expect(typeof store.set).toBe('function');
-    expect(typeof store.has).toBe('function');
-    expect(typeof store.unset).toBe('function');
-    expect(typeof store.all).toBe('function');
-    expect(typeof store.dotify).toBe('function');
-    expect(typeof store.push).toBe('function');
-    expect(typeof store.unshift).toBe('function');
-    expect(typeof store.pop).toBe('function');
-    expect(typeof store.shift).toBe('function');
-    expect(typeof store.splice).toBe('function');
-    expect(typeof store.indexOf).toBe('function');
-    expect(typeof store.lastIndexOf).toBe('function');
-    expect(typeof store.stop).toBe('function');
+    expect(typeof store!.on).toBe('function');
+    expect(typeof store!.get).toBe('function');
+    expect(typeof store!.set).toBe('function');
+    expect(typeof store!.has).toBe('function');
+    expect(typeof store!.unset).toBe('function');
+    expect(typeof store!.all).toBe('function');
+    expect(typeof store!.dotify).toBe('function');
+    expect(typeof store!.push).toBe('function');
+    expect(typeof store!.unshift).toBe('function');
+    expect(typeof store!.pop).toBe('function');
+    expect(typeof store!.shift).toBe('function');
+    expect(typeof store!.splice).toBe('function');
+    expect(typeof store!.indexOf).toBe('function');
+    expect(typeof store!.lastIndexOf).toBe('function');
+    expect(typeof store!.stop).toBe('function');
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('watchConfig accepts watchDebounce option at boot', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
       watchDebounce: 100,
     });
 
-    expect(store.config).toEqual({ port: 3000 });
+    expect(store!.config).toEqual({ port: 3000 });
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('watchConfig with projectPath undefined → store boots, no project directory watched', async () => {
-    await writeConfig(globalDirectory, 'myapp.config.json', { port: 3000 });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
+      globalConfig: { port: 3000 },
+      watch: true,
     });
 
-    expect(store.config).toEqual({ port: 3000 });
+    expect(store!.config).toEqual({ port: 3000 });
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('watchConfig with globalPath undefined → store boots, no global directory watched', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
+      skipGlobalDirectory: true,
     });
 
-    expect(store.config).toEqual({ port: 3000 });
+    expect(store!.config).toEqual({ port: 3000 });
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('AbortSignal already aborted → stop() called after hook init', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
     const controller = new AbortController();
     controller.abort();
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
       signal: controller.signal,
     });
 
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    expect(() => store.on('port', () => {})).toThrow(
+    expect(() => store!.on('port', () => {})).toThrow(
       'morsel: store is stopped',
     );
   });
 
   it('AbortSignal aborts after boot → stop() called', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
     const controller = new AbortController();
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
       signal: controller.signal,
     });
 
     let isFired = false;
-    store.on('port', () => {
+    store!.on('port', () => {
       isFired = true;
     });
 
@@ -142,16 +115,13 @@ describe('boot-watch — watchConfig specifics', () => {
   });
 
   it('AbortSignal already aborted AND hook init throws → EHOOK takes precedence', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
     const controller = new AbortController();
     controller.abort();
 
     await expect(
-      watchConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: globalDirectory,
+      setupTest({
+        projectConfig: { port: 3000 },
+        watch: true,
         signal: controller.signal,
         hooks: [
           {
@@ -168,14 +138,11 @@ describe('boot-watch — watchConfig specifics', () => {
   });
 
   it('AbortSignal fires during initHooks → store stopped via signal.aborted check', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
     const controller = new AbortController();
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
       signal: controller.signal,
       hooks: [
         {
@@ -189,6 +156,6 @@ describe('boot-watch — watchConfig specifics', () => {
       ],
     } as never);
 
-    expect(() => store.on('port', () => {})).toThrow('store is stopped');
+    expect(() => store!.on('port', () => {})).toThrow('store is stopped');
   });
 });

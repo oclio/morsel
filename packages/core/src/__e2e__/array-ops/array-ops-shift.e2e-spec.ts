@@ -1,81 +1,55 @@
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
+  setupTest,
   suppressConsoleError,
-  writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
-import { watchConfig } from '@/index';
-
 describe('array-ops-shift — shift()', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
   suppressConsoleError();
 
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
   });
 
   it('shift removes first element and returns its value', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      tags: ['a', 'b', 'c'],
+    const { store } = await setupTest({
+      projectConfig: { tags: ['a', 'b', 'c'] },
+      watch: true,
     });
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
-    });
-
-    const removed = await store.shift('tags');
+    const removed = await store!.shift('tags');
 
     expect(removed).toBe('a');
-    expect(store.get('tags')).toEqual(['b', 'c']);
+    expect(store!.get('tags')).toEqual(['b', 'c']);
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('shift on empty array returns undefined', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      tags: [],
+    const { store } = await setupTest({
+      projectConfig: { tags: [] },
+      watch: true,
     });
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
-    });
-
-    const removed = await store.shift('tags');
+    const removed = await store!.shift('tags');
 
     expect(removed).toBeUndefined();
-    expect(store.get('tags')).toEqual([]);
+    expect(store!.get('tags')).toEqual([]);
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('shift on non-array key throws MorselError(EVALIDATE)', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
+    const { store } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
     });
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
-    });
-
-    await expect(store.shift('port')).rejects.toMatchObject({
+    await expect(store!.shift('port')).rejects.toMatchObject({
       name: 'MorselError',
       code: 'EVALIDATE',
     });
 
-    await store.stop();
+    await store!.stop();
   });
 });

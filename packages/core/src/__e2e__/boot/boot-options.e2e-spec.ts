@@ -162,25 +162,20 @@ describe('boot-options — resolveOptions defaults', () => {
     const debugMessages: string[] = [];
 
     try {
-      const { directory } = await createTemporaryEnvironment();
-
-      await writeConfig(directory, 'myapp.config.json', {
-        port: 3000,
-        $env: {
-          ci: { port: 8080 },
+      const { result } = await setupTest({
+        rootAsCwd: true,
+        projectConfig: {
+          port: 3000,
+          $env: {
+            ci: { port: 8080 },
+          },
         },
-      });
-
-      const { config } = await loadConfig({
-        name: 'myapp',
-        cwd: directory,
-        globalDir: `${directory}/global`,
         onDebug: (message: string) => {
           debugMessages.push(message);
         },
       });
 
-      expect(config).toEqual({ port: 3000 });
+      expect(result!.config).toEqual({ port: 3000 });
       expect(debugMessages.length).toBeGreaterThan(0);
       expect(debugMessages.some((message) => message.includes('$env'))).toBe(
         true,

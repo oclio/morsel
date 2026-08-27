@@ -1,30 +1,18 @@
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import {
-  clearWatcherRegistry,
-  createTemporaryEnvironment,
-  writeConfig,
-} from '@oclio/morsel-e2e-helpers';
+import { clearWatcherRegistry, setupTest } from '@oclio/morsel-e2e-helpers';
 
 import { loadConfig, MorselError, watchConfig } from '@/index';
 
 describe('boot-errors — error cases at boot', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
   });
 
   it('throws MorselError(EPARSE) on invalid JSON via loadConfig', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
     });
 
     const configPath = path.resolve(projectDirectory, 'myapp.config.json');
@@ -44,8 +32,8 @@ describe('boot-errors — error cases at boot', () => {
   });
 
   it('throws MorselError(EPARSE) on invalid JSON via watchConfig', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
     });
 
     const configPath = path.resolve(projectDirectory, 'myapp.config.json');
@@ -61,8 +49,8 @@ describe('boot-errors — error cases at boot', () => {
   });
 
   it('throws MorselError(EPARSE) on empty 0-byte file', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
     });
 
     const configPath = path.resolve(projectDirectory, 'myapp.config.json');
@@ -78,8 +66,8 @@ describe('boot-errors — error cases at boot', () => {
   });
 
   it('MorselError has path, code, and cause', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
     });
 
     const configPath = path.resolve(projectDirectory, 'myapp.config.json');
