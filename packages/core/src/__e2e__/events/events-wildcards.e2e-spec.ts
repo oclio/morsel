@@ -3,7 +3,7 @@ import {
   setupTest,
   waitForRemerge,
   writeConfig,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 describe('events-wildcards — wildcard patterns', () => {
   beforeEach(() => {

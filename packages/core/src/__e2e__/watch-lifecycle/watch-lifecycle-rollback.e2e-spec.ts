@@ -9,7 +9,7 @@ import {
   waitForDebugContext,
   waitForRemerge,
   writeConfig,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 describe('watch-lifecycle-rollback — rollback & recovery', () => {
   beforeEach(() => {

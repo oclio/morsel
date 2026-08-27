@@ -6,7 +6,7 @@ import {
   createDebugCollector,
   setupTest,
   writeConfig,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 describe('plugin-errors — ENOPLUGIN errors', () => {
   beforeEach(() => {

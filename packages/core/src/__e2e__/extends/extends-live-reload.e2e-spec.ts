@@ -5,7 +5,7 @@ import {
   suppressConsoleError,
   waitForRemerge,
   writeConfig,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 import { loadConfig, watchConfig } from '@/index';
 

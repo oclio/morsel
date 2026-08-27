@@ -8,7 +8,7 @@ import {
   setupTest,
   withEnvironmentVariable,
   writeConfig,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 import { loadConfig } from '@/index';
 

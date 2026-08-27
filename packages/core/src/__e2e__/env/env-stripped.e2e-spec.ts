@@ -1,4 +1,4 @@
-import { clearWatcherRegistry, setupTest } from '@oclio/morsel-test-helpers';
+import { clearWatcherRegistry, setupTest } from '@oclio/test-helpers';
 
 describe('env-stripped — $env stripped from result', () => {
   beforeEach(() => {

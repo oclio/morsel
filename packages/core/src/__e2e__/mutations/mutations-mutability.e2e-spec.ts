@@ -2,7 +2,7 @@ import {
   clearWatcherRegistry,
   setupTest,
   suppressConsoleError,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 describe('mutations-mutability — interaction with configMutability', () => {
   suppressConsoleError();

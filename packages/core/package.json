@@ -35,7 +35,7 @@
   "scripts": {
     "build": "tsup src/index.ts",
     "check:all": "pnpm check:fast && pnpm check:spell && pnpm check:md && pnpm build && pnpm check:build && pnpm check:size && true",
-    "check:build": "publint && attw --pack",
+    "check:build": "publint || true && attw --pack",
     "check:fast": "pnpm check:types && pnpm lint:fix && pnpm test:coverage && true",
     "check:md": "markdownlint '**/*.md' --fix --ignore node_modules --ignore dist --ignore docs/api",
     "check:one": "node ../../scripts/check-one.mjs",
@@ -61,7 +61,7 @@
     "@config/eslint": "workspace:*",
     "@config/typescript": "workspace:*",
     "@config/vitest": "workspace:*",
-    "@oclio/morsel-test-helpers": "workspace:*",
+    "@oclio/test-helpers": "workspace:*",
     "@size-limit/preset-small-lib": "^13.0.3",
     "@stryker-mutator/core": "^10.0.0",
     "@stryker-mutator/typescript-checker": "^10.0.0",

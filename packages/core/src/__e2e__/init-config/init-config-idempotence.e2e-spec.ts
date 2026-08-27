@@ -7,7 +7,7 @@ import {
   morselPlugin,
   setupTest,
   writeConfig,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 import { initConfig } from '@/index';
 

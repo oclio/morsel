@@ -9,7 +9,7 @@ import {
   waitForDebugContext,
   waitForRemerge,
   writeConfig,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 describe('watch-lifecycle-enoent — ENOENT during re-merge', () => {
   suppressConsoleError();

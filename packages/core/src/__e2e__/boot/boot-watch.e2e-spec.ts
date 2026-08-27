@@ -3,7 +3,7 @@ import {
   setupTest,
   suppressConsoleError,
   writeConfig,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 describe('boot-watch — watchConfig specifics', () => {
   suppressConsoleError();

@@ -5,7 +5,7 @@
     "types": ["node", "vitest/globals"],
     "paths": {
       "@/*": ["./src/*"],
-      "@oclio/morsel-test-helpers": ["../test-helpers/src/index.ts"]
+      "@oclio/test-helpers": ["../test-helpers/src/index.ts"]
     }
   },
   "include": ["src/**/*"],

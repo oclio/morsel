@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { clearWatcherRegistry, setupTest } from '@oclio/morsel-test-helpers';
+import { clearWatcherRegistry, setupTest } from '@oclio/test-helpers';
 
 import { initConfig } from '@/index';
 

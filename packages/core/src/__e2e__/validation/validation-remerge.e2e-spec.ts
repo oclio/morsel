@@ -6,7 +6,7 @@ import {
   suppressConsoleError,
   waitForDebugContext,
   writeConfig,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 describe('validation-remerge — watch re-merge', () => {
   suppressConsoleError();

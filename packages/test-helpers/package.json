@@ -1,13 +1,8 @@
 {
-  "name": "@oclio/morsel-test-helpers",
+  "name": "@oclio/test-helpers",
   "version": "0.1.0",
+  "private": true,
   "description": "Test helpers for @oclio/morsel",
-  "license": "MIT",
-  "author": {
-    "name": "oclio",
-    "email": "hello@oclka.dev",
-    "url": "https://oclka.dev"
-  },
   "type": "module",
   "exports": {
     ".": {
@@ -16,7 +11,7 @@
   },
   "devDependencies": {
     "@config/typescript": "workspace:*",
-    "@types/node": "^26.2.0",
+    "@types/node": "^26.3.0",
     "vitest": "^4.1.11"
   }
 }

@@ -3,7 +3,7 @@ import {
   createTemporaryEnvironment,
   waitForRemerge,
   writeConfig,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 import { watchConfig } from '@/index';
 

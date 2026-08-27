@@ -1,4 +1,4 @@
-import { clearWatcherRegistry, setupTest } from '@oclio/morsel-test-helpers';
+import { clearWatcherRegistry, setupTest } from '@oclio/test-helpers';
 
 describe('read-ops-get — get() API', () => {
   beforeEach(() => {

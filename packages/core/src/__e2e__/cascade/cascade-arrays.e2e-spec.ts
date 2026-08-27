@@ -1,4 +1,4 @@
-import { clearWatcherRegistry, setupTest } from '@oclio/morsel-test-helpers';
+import { clearWatcherRegistry, setupTest } from '@oclio/test-helpers';
 
 describe('cascade-arrays — array merge strategies', () => {
   beforeEach(() => {

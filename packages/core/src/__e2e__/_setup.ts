@@ -1,4 +1,4 @@
-import { registerMorselRuntime } from '@oclio/morsel-test-helpers';
+import { registerMorselRuntime } from '@oclio/test-helpers';
 
 import {
   clearRegistry,

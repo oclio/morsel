@@ -3,7 +3,7 @@ import {
   clearWatcherRegistry,
   setupTest,
   writeConfig,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 describe('watch-lifecycle-extends — extends directory watching', () => {
   beforeEach(() => {

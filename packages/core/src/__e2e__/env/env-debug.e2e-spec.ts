@@ -6,7 +6,7 @@ import {
   setupTest,
   suppressConsoleError,
   withEnvironmentVariable,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 describe('env-debug — debug channels', () => {
   suppressConsoleError();

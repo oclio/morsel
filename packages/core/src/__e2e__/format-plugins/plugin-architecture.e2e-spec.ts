@@ -4,7 +4,7 @@ import {
   clearWatcherRegistry,
   createThrowingPlugin,
   setupTest,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 describe('plugin-architecture — core/plugin separation', () => {
   beforeEach(() => {

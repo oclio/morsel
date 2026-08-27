@@ -8,7 +8,7 @@ import {
   suppressConsoleError,
   waitForDebugContext,
   writeConfig,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 describe('watch-lifecycle-recovery — directory deletion & reconnection', () => {
   suppressConsoleError();

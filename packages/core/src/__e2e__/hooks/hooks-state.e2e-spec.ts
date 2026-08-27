@@ -4,7 +4,7 @@ import {
   createDebugCollector,
   setupTest,
   writeConfig,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 import { loadConfigSync } from '@/index';
 

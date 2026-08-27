@@ -25,32 +25,32 @@
 
 ## Packages
 
-| Package                                             | Description                                            | Status        |
-| --------------------------------------------------- | ------------------------------------------------------ | ------------- |
-| **Core**                                            |                                                        |               |
-| [`@oclio/morsel`](packages/core)                    | Config loader: discovery, merge, live-reload, plugins  | 🔓 Unreleased |
-| **Format Plugins**                                  |                                                        |               |
-| `jsonPlugin`                                        | `.json`                                                | ✅ Built-in   |
-| `@oclio/morsel-json5`                               | `.json5`                                               | 📋 Planned    |
-| `@oclio/morsel-yaml`                                | `.yaml`, `.yml`                                        | 📋 Planned    |
-| `@oclio/morsel-toml`                                | `.toml`                                                | 📋 Planned    |
-| `@oclio/morsel-ini`                                 | `.ini`                                                 | 📋 Planned    |
-| `@oclio/morsel-ts`                                  | `.ts`, `.mts`                                          | 📋 Planned    |
-| `@oclio/morsel-js`                                  | `.js`, `.mjs`, `.cjs`                                  | 📋 Planned    |
-| **Validation**                                      |                                                        |               |
-| `@oclio/morsel-zod`                                 | zod                                                    | 📋 Planned    |
-| `@oclio/morsel-ajv`                                 | ajv                                                    | 📋 Planned    |
-| `@oclio/morsel-yup`                                 | yup                                                    | 📋 Planned    |
-| `@oclio/morsel-valibot`                             | valibot                                                | 📋 Planned    |
-| `@oclio/morsel-schema`                              | JSON schema                                            | 📋 Planned    |
-| `@oclio/morsel-env`                                 | env validation                                         | 📋 Planned    |
-| **Ecosystem**                                       |                                                        |               |
-| `@oclio/morsel-multi`                               | load and manage multiple named configs in one instance | 📋 Planned    |
-| **Tooling**                                         |                                                        |               |
-| `@oclio/morsel-cli`                                 | command-line tool for config inspection and management | 📋 Planned    |
-| `morsel/action`                                     | GitHub Action for config validation in CI pipelines    | 📋 Planned    |
-| **Internal**                                        |                                                        |               |
-| [`@oclio/morsel-e2e-helpers`](packages/e2e-helpers) | E2E test helpers                                       | ✅ Internal   |
+| Package                                        | Description                                            | Status        |
+| ---------------------------------------------- | ------------------------------------------------------ | ------------- |
+| **Core**                                       |                                                        |               |
+| [`@oclio/morsel`](packages/core)               | Config loader: discovery, merge, live-reload, plugins  | 🔓 Unreleased |
+| **Format Plugins**                             |                                                        |               |
+| `jsonPlugin`                                   | `.json`                                                | ✅ Built-in   |
+| `@oclio/morsel-json5`                          | `.json5`                                               | 📋 Planned    |
+| `@oclio/morsel-yaml`                           | `.yaml`, `.yml`                                        | 📋 Planned    |
+| `@oclio/morsel-toml`                           | `.toml`                                                | 📋 Planned    |
+| `@oclio/morsel-ini`                            | `.ini`                                                 | 📋 Planned    |
+| `@oclio/morsel-ts`                             | `.ts`, `.mts`                                          | 📋 Planned    |
+| `@oclio/morsel-js`                             | `.js`, `.mjs`, `.cjs`                                  | 📋 Planned    |
+| **Validation**                                 |                                                        |               |
+| `@oclio/morsel-zod`                            | zod                                                    | 📋 Planned    |
+| `@oclio/morsel-ajv`                            | ajv                                                    | 📋 Planned    |
+| `@oclio/morsel-yup`                            | yup                                                    | 📋 Planned    |
+| `@oclio/morsel-valibot`                        | valibot                                                | 📋 Planned    |
+| `@oclio/morsel-schema`                         | JSON schema                                            | 📋 Planned    |
+| `@oclio/morsel-env`                            | env validation                                         | 📋 Planned    |
+| **Ecosystem**                                  |                                                        |               |
+| `@oclio/morsel-multi`                          | load and manage multiple named configs in one instance | 📋 Planned    |
+| **Tooling**                                    |                                                        |               |
+| `@oclio/morsel-cli`                            | command-line tool for config inspection and management | 📋 Planned    |
+| `morsel/action`                                | GitHub Action for config validation in CI pipelines    | 📋 Planned    |
+| **Internal**                                   |                                                        |               |
+| [`@oclio/test-helpers`](packages/test-helpers) | Unit & E2E test helpers                                | ✅ Internal   |
 
 ## Contributing
 

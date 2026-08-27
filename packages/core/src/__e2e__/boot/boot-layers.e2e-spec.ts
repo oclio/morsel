@@ -6,7 +6,7 @@ import {
   clearWatcherRegistry,
   createDebugCollector,
   setupTest,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 import { loadConfigSync } from '@/index';
 

@@ -2,7 +2,7 @@ import {
   clearWatcherRegistry,
   setupTest,
   suppressConsoleError,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 describe('watch-lifecycle-signal — AbortSignal integration', () => {
   suppressConsoleError();

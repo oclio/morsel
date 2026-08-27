@@ -4,7 +4,7 @@ import {
   setupTest,
   waitForRemerge,
   writeConfig,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 describe('events-types — event type verification', () => {
   beforeEach(() => {

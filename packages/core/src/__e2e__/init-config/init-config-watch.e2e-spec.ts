@@ -2,7 +2,7 @@ import {
   assertRemerge,
   clearWatcherRegistry,
   setupTest,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 import { initConfig } from '@/index';
 

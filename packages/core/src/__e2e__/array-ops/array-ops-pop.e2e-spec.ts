@@ -2,7 +2,7 @@ import {
   clearWatcherRegistry,
   setupTest,
   suppressConsoleError,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 describe('array-ops-pop — pop()', () => {
   suppressConsoleError();

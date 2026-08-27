@@ -11,7 +11,7 @@ import {
   suppressConsoleError,
   waitForRemerge,
   writeConfig,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 import type { WriteEvent } from '@/hooks/types';
 

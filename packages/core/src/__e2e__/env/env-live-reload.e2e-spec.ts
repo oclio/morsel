@@ -5,7 +5,7 @@ import {
   suppressConsoleError,
   withEnvironmentVariable,
   writeConfig,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 describe('env-live-reload — watch + $env', () => {
   suppressConsoleError();

@@ -5,7 +5,7 @@ import {
   clearWatcherRegistry,
   createTemporaryEnvironment,
   writeConfig,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 import { loadConfig } from '@/index';
 import { resolveProjectPath } from '@/paths/resolve-paths';

@@ -2,7 +2,7 @@ import {
   clearWatcherRegistry,
   createDebugCollector,
   setupTest,
-} from '@oclio/morsel-test-helpers';
+} from '@oclio/test-helpers';
 
 describe('env-match — envName matching edge cases', () => {
   let previousNodeEnvironment: string | undefined;
