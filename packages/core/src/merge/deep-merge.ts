@@ -55,32 +55,50 @@ function deepCloneValue(value: unknown): unknown {
  * @param strategy - Array merge strategy.
  * @returns A new merged config record — inputs are not mutated.
  */
+function cloneBaseEntries(base: ConfigRecord): ConfigRecord {
+  const result: ConfigRecord = {};
+  for (const [key, baseValue] of Object.entries(base)) {
+    if (isUnsafeKey(key)) continue;
+    result[key] = deepCloneValue(baseValue);
+  }
+  return result;
+}
+
+function mergeOverrideEntry(
+  baseValue: unknown,
+  overrideValue: unknown,
+  strategy: ArrayMergeStrategy,
+): unknown {
+  if (isPlainObject(baseValue) && isPlainObject(overrideValue)) {
+    return deepMerge(baseValue, overrideValue, strategy);
+  }
+  if (Array.isArray(baseValue) && Array.isArray(overrideValue)) {
+    return mergeArray(baseValue, overrideValue, strategy);
+  }
+  if (isPlainObject(overrideValue)) {
+    return deepMerge({}, overrideValue, strategy);
+  }
+  if (Array.isArray(overrideValue)) {
+    return overrideValue.map((item) => deepCloneValue(item));
+  }
+  return overrideValue;
+}
+
 export function deepMerge(
   base: ConfigRecord,
   override: ConfigRecord,
   strategy: ArrayMergeStrategy,
 ): ConfigRecord {
-  const result: ConfigRecord = { ...base };
+  const result = cloneBaseEntries(base);
 
   for (const [key, overrideValue] of Object.entries(override)) {
-    if (isUnsafeKey(key)) continue;
     if (overrideValue === undefined) {
       continue;
     }
-
-    const baseValue = base[key];
-
-    if (isPlainObject(baseValue) && isPlainObject(overrideValue)) {
-      result[key] = deepMerge(baseValue, overrideValue, strategy);
-    } else if (Array.isArray(baseValue) && Array.isArray(overrideValue)) {
-      result[key] = mergeArray(baseValue, overrideValue, strategy);
-    } else if (isPlainObject(overrideValue)) {
-      result[key] = deepMerge({}, overrideValue, strategy);
-    } else if (Array.isArray(overrideValue)) {
-      result[key] = overrideValue.map((item) => deepCloneValue(item));
-    } else {
-      result[key] = overrideValue;
+    if (isUnsafeKey(key)) {
+      continue;
     }
+    result[key] = mergeOverrideEntry(base[key], overrideValue, strategy);
   }
 
   return result;
