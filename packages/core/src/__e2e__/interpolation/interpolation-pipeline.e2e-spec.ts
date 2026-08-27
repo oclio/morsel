@@ -1,7 +1,7 @@
 import {
+  assertRemerge,
   clearWatcherRegistry,
   setupTest,
-  waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
@@ -84,9 +84,7 @@ describe('interpolation-pipeline — integration with pipeline', () => {
       host: '${MORSEL_HOST}',
     });
 
-    await waitForRemerge(store!, (config) => config['host'] === 'example.com');
-
-    expect(store!.config).toEqual({ host: 'example.com' });
+    await assertRemerge(store!, { host: 'example.com' });
 
     await store!.stop();
   });

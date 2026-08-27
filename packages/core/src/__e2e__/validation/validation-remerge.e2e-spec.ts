@@ -1,10 +1,10 @@
 import {
+  assertRemerge,
   clearWatcherRegistry,
   createDebugCollector,
   setupTest,
   suppressConsoleError,
   waitForDebugContext,
-  waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
@@ -123,12 +123,7 @@ describe('validation-remerge — watch re-merge', () => {
       port: 8080,
     });
 
-    await waitForRemerge(
-      store!,
-      (config) => (config as Record<string, unknown>)['port'] === 8080,
-    );
-
-    expect(store!.config).toEqual({ port: 8080 });
+    await assertRemerge(store!, { port: 8080 });
 
     await store!.stop();
   });

@@ -3,6 +3,7 @@ import { homedir } from 'node:os';
 import path from 'node:path';
 
 import {
+  assertRemerge,
   clearWatcherRegistry,
   setupTest,
   waitForRemerge,
@@ -50,12 +51,7 @@ describe('watch-lifecycle-file-ops — file create/delete/recreate', () => {
     await writeConfig(globalDirectory, 'myapp.config.json', {
       host: '0.0.0.0',
     });
-    await waitForRemerge(
-      store!,
-      (config) => (config as Record<string, unknown>)['host'] === '0.0.0.0',
-    );
-
-    expect(store!.config).toEqual({ port: 3000, host: '0.0.0.0' });
+    await assertRemerge(store!, { port: 3000, host: '0.0.0.0' });
 
     await store!.stop();
   });
@@ -125,12 +121,7 @@ describe('watch-lifecycle-file-ops — file create/delete/recreate', () => {
     expect(store!.config).toEqual({ port: 3000 });
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
-    await waitForRemerge(
-      store!,
-      (config) => (config as Record<string, unknown>)['port'] === 8080,
-    );
-
-    expect(store!.config).toEqual({ port: 8080 });
+    await assertRemerge(store!, { port: 8080 });
 
     await store!.stop();
   });
@@ -151,12 +142,7 @@ describe('watch-lifecycle-file-ops — file create/delete/recreate', () => {
       port: 8080,
     });
 
-    await waitForRemerge(
-      store!,
-      (config) => config['port'] === 8080 && config['host'] === '127.0.0.1',
-    );
-
-    expect(store!.config).toEqual({ port: 8080, host: '127.0.0.1' });
+    await assertRemerge(store!, { port: 8080, host: '127.0.0.1' });
 
     await store!.stop();
   });
@@ -176,24 +162,14 @@ describe('watch-lifecycle-file-ops — file create/delete/recreate', () => {
     expect(store!.config).toEqual({ port: 3000, host: 'localhost' });
 
     await writeConfig(projectDirectory, 'otherapp.config.json', { port: 8080 });
-    await waitForRemerge(
-      store!,
-      (config) => (config as Record<string, unknown>)['port'] === 8080,
-    );
-
-    expect(store!.config).toEqual({ port: 8080, host: 'localhost' });
+    await assertRemerge(store!, { port: 8080, host: 'localhost' });
 
     await mkdir(globalDirectory, { recursive: true });
     await writeConfig(globalDirectory, 'otherapp.config.json', {
       host: '0.0.0.0',
     });
 
-    await waitForRemerge(
-      store!,
-      (config) => (config as Record<string, unknown>)['host'] === '0.0.0.0',
-    );
-
-    expect(store!.config).toEqual({ port: 8080, host: '0.0.0.0' });
+    await assertRemerge(store!, { port: 8080, host: '0.0.0.0' });
 
     await store!.stop();
     await rm(globalDirectory, { recursive: true, force: true });

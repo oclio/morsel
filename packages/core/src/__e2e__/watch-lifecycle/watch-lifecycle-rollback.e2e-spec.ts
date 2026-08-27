@@ -2,6 +2,7 @@ import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
+  assertRemerge,
   clearWatcherRegistry,
   createDebugCollector,
   setupTest,
@@ -105,12 +106,7 @@ describe('watch-lifecycle-rollback — rollback & recovery', () => {
     expect(contexts.some((context) => context['code'] === 'EPARSE')).toBe(true);
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
-    await waitForRemerge(
-      store!,
-      (config) => (config as Record<string, unknown>)['port'] === 8080,
-    );
-
-    expect(store!.config).toEqual({ port: 8080 });
+    await assertRemerge(store!, { port: 8080 });
 
     await store!.stop();
   });
@@ -125,12 +121,7 @@ describe('watch-lifecycle-rollback — rollback & recovery', () => {
     expect(store!.config).toEqual({ port: 3000 });
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
-    await waitForRemerge(
-      store!,
-      (config) => (config as Record<string, unknown>)['port'] === 8080,
-    );
-
-    expect(store!.config).toEqual({ port: 8080 });
+    await assertRemerge(store!, { port: 8080 });
 
     await store!.stop();
   });

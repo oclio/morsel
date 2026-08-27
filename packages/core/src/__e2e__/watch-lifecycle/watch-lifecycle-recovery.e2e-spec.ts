@@ -1,12 +1,12 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 
 import {
+  assertRemerge,
   clearWatcherRegistry,
   createDebugCollector,
   setupTest,
   suppressConsoleError,
   waitForDebugContext,
-  waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
@@ -49,12 +49,7 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
     await mkdir(projectDirectory, { recursive: true });
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
 
-    await waitForRemerge(
-      store!,
-      (config) => (config as Record<string, unknown>)['port'] === 8080,
-    );
-
-    expect(store!.config).toEqual({ port: 8080 });
+    await assertRemerge(store!, { port: 8080 });
 
     await store!.stop();
   });
@@ -74,12 +69,7 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
       host: '0.0.0.0',
     });
 
-    await waitForRemerge(
-      store!,
-      (config) => (config as Record<string, unknown>)['host'] === '0.0.0.0',
-    );
-
-    expect(store!.config).toEqual({ port: 3000, host: '0.0.0.0' });
+    await assertRemerge(store!, { port: 3000, host: '0.0.0.0' });
 
     await store!.stop();
   });
@@ -99,12 +89,7 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
     await mkdir(projectDirectory, { recursive: true });
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
 
-    await waitForRemerge(
-      store!,
-      (config) => (config as Record<string, unknown>)['port'] === 8080,
-    );
-
-    expect(store!.config).toEqual({ port: 8080 });
+    await assertRemerge(store!, { port: 8080 });
 
     await store!.stop();
   });
@@ -128,12 +113,7 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
       host: '127.0.0.1',
     });
 
-    await waitForRemerge(
-      store!,
-      (config) => config['port'] === 8080 && config['host'] === '127.0.0.1',
-    );
-
-    expect(store!.config).toEqual({ port: 8080, host: '127.0.0.1' });
+    await assertRemerge(store!, { port: 8080, host: '127.0.0.1' });
 
     await store!.stop();
   });

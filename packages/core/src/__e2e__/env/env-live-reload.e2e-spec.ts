@@ -1,8 +1,8 @@
 import {
+  assertRemerge,
   clearWatcherRegistry,
   setupTest,
   suppressConsoleError,
-  waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
@@ -35,9 +35,7 @@ describe('env-live-reload — watch + $env', () => {
       },
     });
 
-    await waitForRemerge(store!, (config) => config['port'] === 9090);
-
-    expect(store!.config).toEqual({ port: 9090 });
+    await assertRemerge(store!, { port: 9090 });
 
     await store!.stop();
   });
@@ -61,9 +59,7 @@ describe('env-live-reload — watch + $env', () => {
       },
     });
 
-    await waitForRemerge(store!, (config) => config['port'] === 8080);
-
-    expect(store!.config).toEqual({ port: 8080 });
+    await assertRemerge(store!, { port: 8080 });
 
     await store!.stop();
   });
@@ -87,9 +83,7 @@ describe('env-live-reload — watch + $env', () => {
       port: 3000,
     });
 
-    await waitForRemerge(store!, (config) => config['port'] === 3000);
-
-    expect(store!.config).toEqual({ port: 3000 });
+    await assertRemerge(store!, { port: 3000 });
 
     await store!.stop();
   });

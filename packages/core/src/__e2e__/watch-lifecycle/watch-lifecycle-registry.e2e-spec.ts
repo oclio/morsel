@@ -2,6 +2,7 @@ import { mkdir, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
+  assertRemerge,
   clearWatcherRegistry,
   createDebugCollector,
   setupTest,
@@ -35,12 +36,7 @@ describe('watch-lifecycle-registry — watcher registry & multi-store', () => {
     await store1!.stop();
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
-    await waitForRemerge(
-      store2,
-      (config) => (config as Record<string, unknown>)['port'] === 8080,
-    );
-
-    expect(store2.config).toEqual({ port: 8080 });
+    await assertRemerge(store2, { port: 8080 });
 
     await store2.stop();
   });
@@ -115,12 +111,7 @@ describe('watch-lifecycle-registry — watcher registry & multi-store', () => {
 
     await writeConfig(projectDirectory, 'app1.config.json', { port: 4000 });
 
-    await waitForRemerge(
-      store1!,
-      (config) => (config as Record<string, unknown>)['port'] === 4000,
-    );
-
-    expect(store1!.config).toEqual({ port: 4000 });
+    await assertRemerge(store1!, { port: 4000 });
     expect(store2.config).toEqual({ port: 8080 });
 
     await store1!.stop();

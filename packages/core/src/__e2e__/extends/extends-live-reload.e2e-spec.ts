@@ -1,4 +1,5 @@
 import {
+  assertRemerge,
   clearWatcherRegistry,
   setupTest,
   suppressConsoleError,
@@ -35,9 +36,7 @@ describe('extends-live-reload — watch + extends', () => {
 
     await writeConfig(projectDirectory, 'base.json', { host: '0.0.0.0' });
 
-    await waitForRemerge(store, (config) => config['host'] === '0.0.0.0');
-
-    expect(store.config).toEqual({ port: 3000, host: '0.0.0.0' });
+    await assertRemerge(store, { port: 3000, host: '0.0.0.0' });
 
     await store.stop();
   });
@@ -63,9 +62,7 @@ describe('extends-live-reload — watch + extends', () => {
       port: 3000,
     });
 
-    await waitForRemerge(store, (config) => config['host'] === '0.0.0.0');
-
-    expect(store.config).toEqual({ port: 3000, host: '0.0.0.0' });
+    await assertRemerge(store, { port: 3000, host: '0.0.0.0' });
 
     await store.stop();
   });
@@ -125,9 +122,7 @@ describe('extends-live-reload — watch + extends', () => {
       host: '127.0.0.1',
     });
 
-    await waitForRemerge(store, (config) => config['host'] === '127.0.0.1');
-
-    expect(store.config).toEqual({ port: 3000, host: '127.0.0.1' });
+    await assertRemerge(store, { port: 3000, host: '127.0.0.1' });
 
     await store.stop();
   });

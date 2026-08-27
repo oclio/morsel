@@ -3,10 +3,10 @@ import { mkdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
+  assertRemerge,
   clearWatcherRegistry,
   setupTest,
   suppressConsoleError,
-  waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
@@ -54,9 +54,7 @@ describe('hooks-watchable — LayerWatchableHook', () => {
     await writeConfig(projectDirectory, 'hook-data.json', {
       hookKey: 'updated',
     });
-    await waitForRemerge(store, (config) => config['hookKey'] === 'updated');
-
-    expect(store.config).toEqual({ hookKey: 'updated', port: 3000 });
+    await assertRemerge(store, { hookKey: 'updated', port: 3000 });
 
     await store.stop();
   });
@@ -92,9 +90,7 @@ describe('hooks-watchable — LayerWatchableHook', () => {
     expect(store.config).toEqual({ env: 'dev', port: 3000 });
 
     await writeConfig(projectDirectory, 'env.json', { env: 'prod' });
-    await waitForRemerge(store, (config) => config['env'] === 'prod');
-
-    expect(store.config).toEqual({ env: 'prod', port: 3000 });
+    await assertRemerge(store, { env: 'prod', port: 3000 });
 
     await store.stop();
   });
@@ -141,13 +137,7 @@ describe('hooks-watchable — LayerWatchableHook', () => {
     await mkdir(watchedDirectory, { recursive: true });
     await writeConfig(watchedDirectory, 'data.json', { key: 'recreated' });
 
-    await waitForRemerge(
-      store,
-      (config) => config['key'] === 'recreated',
-      5000,
-    );
-
-    expect(store.config).toEqual({ key: 'recreated', port: 3000 });
+    await assertRemerge(store, { key: 'recreated', port: 3000 }, 5000);
 
     await store.stop();
   });

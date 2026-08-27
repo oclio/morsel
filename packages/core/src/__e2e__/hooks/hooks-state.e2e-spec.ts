@@ -1,8 +1,8 @@
 import {
+  assertRemerge,
   clearWatcherRegistry,
   createDebugCollector,
   setupTest,
-  waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
@@ -37,13 +37,9 @@ describe('hooks-state — stateless, init, dispose', () => {
     expect(store!.config).toEqual({ call: 1, port: 3000 });
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
-    await waitForRemerge(
-      store!,
-      (config) => (config as Record<string, unknown>)['port'] === 8080,
-    );
+    await assertRemerge(store!, { call: 2, port: 8080 });
 
     expect(callCount).toBe(2);
-    expect(store!.config).toEqual({ call: 2, port: 8080 });
 
     await store!.stop();
   });

@@ -1,7 +1,7 @@
 import {
+  assertRemerge,
   clearWatcherRegistry,
   setupTest,
-  waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
@@ -74,12 +74,7 @@ describe('hooks-lifecycle — layer insertion and ordering', () => {
     expect(store!.config).toEqual({ hookKey: 'hook-value', port: 3000 });
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
-    await waitForRemerge(
-      store!,
-      (config) => (config as Record<string, unknown>)['port'] === 8080,
-    );
-
-    expect(store!.config).toEqual({ hookKey: 'hook-value', port: 8080 });
+    await assertRemerge(store!, { hookKey: 'hook-value', port: 8080 });
 
     await store!.stop();
   });

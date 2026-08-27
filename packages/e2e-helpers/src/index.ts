@@ -1,3 +1,4 @@
+export { assertRemerge } from './assert-remerge';
 export type { DebugCallback, DebugCollector } from './debug-collector';
 export { createDebugCollector } from './debug-collector';
 export type {

@@ -1,7 +1,7 @@
 import {
+  assertRemerge,
   clearWatcherRegistry,
   setupTest,
-  waitForRemerge,
 } from '@oclio/morsel-e2e-helpers';
 
 import { initConfig } from '@/index';
@@ -26,9 +26,7 @@ describe('init-config-watch — watch integration', () => {
       content: { port: 8080 },
     });
 
-    await waitForRemerge(store!, (config) => config['port'] === 8080);
-
-    expect(store!.config).toEqual({ port: 8080 });
+    await assertRemerge(store!, { port: 8080 });
 
     await store!.stop();
   });

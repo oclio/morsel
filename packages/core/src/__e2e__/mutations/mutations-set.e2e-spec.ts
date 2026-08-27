@@ -3,6 +3,7 @@ import { readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
+  assertRemerge,
   clearWatcherRegistry,
   createEventCollector,
   createThrowingPlugin,
@@ -130,9 +131,7 @@ describe('mutations-set — set() API', () => {
 
     expect(store!.config).toEqual({ port: 8080 });
 
-    await waitForRemerge(store!, (config) => config['port'] === 8080);
-
-    expect(store!.config).toEqual({ port: 8080 });
+    await assertRemerge(store!, { port: 8080 });
 
     await store!.stop();
   });
@@ -453,9 +452,7 @@ describe('mutations-set — set() API', () => {
 
     await store!.set('port', 8080);
 
-    await waitForRemerge(store!, (config) => config['port'] === 8080);
-
-    expect(store!.config).toEqual({ port: 8080 });
+    await assertRemerge(store!, { port: 8080 });
 
     await store!.stop();
   });

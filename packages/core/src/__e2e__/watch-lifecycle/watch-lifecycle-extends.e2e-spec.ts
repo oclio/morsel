@@ -1,7 +1,7 @@
 import {
+  assertRemerge,
   clearWatcherRegistry,
   setupTest,
-  waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
@@ -21,12 +21,7 @@ describe('watch-lifecycle-extends — extends directory watching', () => {
     expect(store!.config).toEqual({ port: 4000, host: 'localhost' });
 
     await writeConfig(projectDirectory, 'base.json', { port: 8080 });
-    await waitForRemerge(
-      store!,
-      (config) => (config as Record<string, unknown>)['port'] === 8080,
-    );
-
-    expect(store!.config).toEqual({ port: 8080, host: 'localhost' });
+    await assertRemerge(store!, { port: 8080, host: 'localhost' });
 
     await store!.stop();
   });
@@ -46,20 +41,10 @@ describe('watch-lifecycle-extends — extends directory watching', () => {
       extends: './sub/base.json',
     });
 
-    await waitForRemerge(
-      store!,
-      (config) => (config as Record<string, unknown>)['port'] === 4000,
-    );
-
-    expect(store!.config).toEqual({ port: 4000 });
+    await assertRemerge(store!, { port: 4000 });
 
     await writeConfig(subdirectory, 'base.json', { port: 8080 });
-    await waitForRemerge(
-      store!,
-      (config) => (config as Record<string, unknown>)['port'] === 8080,
-    );
-
-    expect(store!.config).toEqual({ port: 8080 });
+    await assertRemerge(store!, { port: 8080 });
 
     await store!.stop();
   });
@@ -75,12 +60,7 @@ describe('watch-lifecycle-extends — extends directory watching', () => {
     expect(store!.config).toEqual({ port: 4000 });
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-    await waitForRemerge(
-      store!,
-      (config) => (config as Record<string, unknown>)['port'] === 3000,
-    );
-
-    expect(store!.config).toEqual({ port: 3000 });
+    await assertRemerge(store!, { port: 3000 });
 
     await writeConfig(projectDirectory, 'base.json', { port: 9999 });
 

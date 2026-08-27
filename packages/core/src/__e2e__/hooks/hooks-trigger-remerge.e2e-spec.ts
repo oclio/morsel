@@ -1,4 +1,5 @@
 import {
+  assertRemerge,
   clearWatcherRegistry,
   setupTest,
   waitForRemerge,
@@ -37,10 +38,9 @@ describe('hooks-trigger-remerge — triggerRemerge', () => {
     expect(store!.config).toEqual({ call: 1, port: 3000 });
 
     triggerFunction!();
-    await waitForRemerge(store!, (config) => config['call'] === 2);
+    await assertRemerge(store!, { call: 2, port: 3000 });
 
     expect(callCount).toBe(2);
-    expect(store!.config).toEqual({ call: 2, port: 3000 });
 
     await store!.stop();
   });
