@@ -1,5 +1,7 @@
 import { existsSync, watch } from 'node:fs';
 
+import { createMockStoreState } from '@oclio/test-helpers';
+
 import type { DebugCallback } from '@/load/resolve-env';
 import { noop } from '@/store/boot/assert-name';
 import type { StoreState } from '@/store/store-state';
@@ -40,35 +42,15 @@ function createMockStore(
     }
     set.add(base);
   }
-  return {
-    _config: {},
-    _proxy: undefined,
-    _stoppedConfig: undefined,
-    _layers: [],
-    listeners: new Map(),
-    wildcardListeners: new Map(),
-    stopped: false,
-    watchers: new Set(),
+  return createMockStoreState({
     watchedFiles: map,
     projectPath: '/fake/myapp.config.json',
     options: {
       verbose: false,
       onDebug: vi.fn(),
       ...optionsOverride,
-    } as never,
-    lastConfig: {},
-    remergeInProgress: false,
-    remergeDone: undefined,
-    pendingRemerge: false,
-    debounceTimers: new Map(),
-    debounceMs: 300,
-    remerge: vi.fn(),
-    enoentLogged: new Set(),
-    writeQueue: Promise.resolve(),
-    queueEnabled: true,
-    inTransaction: false,
-    transactionDirtyKeys: new Map(),
-  };
+    },
+  }) as StoreState;
 }
 
 describe('createWatcher', () => {

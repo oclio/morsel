@@ -1,3 +1,5 @@
+import { createMockStoreState } from '@oclio/test-helpers';
+
 import { getWritableTargetFile } from '@/store/store-mutation-helpers';
 import type { StoreState } from '@/store/store-state';
 import { resolveKeyOrigin } from '@/writer/resolve-origin';
@@ -7,32 +9,7 @@ vi.mock('@/writer/resolve-origin', () => ({
 }));
 
 function createState(overrides: Partial<StoreState> = {}): StoreState {
-  return {
-    _config: {},
-    _proxy: undefined,
-    _stoppedConfig: undefined,
-    _layers: [],
-    listeners: new Map(),
-    wildcardListeners: new Map(),
-    stopped: false,
-    watchers: new Set(),
-    watchedFiles: new Map(),
-    projectPath: '/project/config.json',
-    options: {} as never,
-    lastConfig: {},
-    remergeInProgress: false,
-    remergeDone: undefined,
-    pendingRemerge: false,
-    debounceTimers: new Map(),
-    debounceMs: 300,
-    remerge: vi.fn(),
-    enoentLogged: new Set(),
-    writeQueue: Promise.resolve(),
-    queueEnabled: true,
-    inTransaction: false,
-    transactionDirtyKeys: new Map(),
-    ...overrides,
-  } as StoreState;
+  return createMockStoreState(overrides) as StoreState;
 }
 
 describe('store-mutation-helpers', () => {

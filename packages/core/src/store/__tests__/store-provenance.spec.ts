@@ -1,3 +1,5 @@
+import { createMockLayer } from '@oclio/test-helpers';
+
 import { resolveProvenance } from '@/store/store-provenance';
 import type { MorselLayer } from '@/store/types';
 
@@ -7,14 +9,12 @@ function layer(
   path?: string,
   hookName?: string,
 ): MorselLayer {
-  return {
+  return createMockLayer({
     source,
     config,
     path,
-    exists: true,
-    extendsPaths: [],
     ...(hookName !== undefined && { hookName }),
-  };
+  }) as MorselLayer;
 }
 
 describe('resolveProvenance', () => {

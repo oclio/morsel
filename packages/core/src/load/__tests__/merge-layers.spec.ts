@@ -1,3 +1,5 @@
+import { createMockLayer } from '@oclio/test-helpers';
+
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
 import type { ResolvedLayer } from '@/load/resolve-layer';
 import { deepMerge } from '@/merge/deep-merge';
@@ -15,13 +17,11 @@ function makeLayer(
   source: ResolvedLayer['source'],
   config: Record<string, unknown>,
 ): ResolvedLayer {
-  return {
+  return createMockLayer({
     source,
     path: `/fake/${source}.json`,
-    exists: true,
     config,
-    extendsPaths: [],
-  };
+  }) as ResolvedLayer;
 }
 
 describe('applyMutability', () => {

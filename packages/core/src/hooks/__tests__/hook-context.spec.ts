@@ -1,28 +1,12 @@
+import { createMockResolvedOptions } from '@oclio/test-helpers';
+
 import { createHookContext } from '@/hooks/hook-context';
 import type { ResolvedOptions } from '@/store/boot/assert-name';
 
 function makeOptions(
   overrides: Partial<ResolvedOptions> = {},
 ): ResolvedOptions {
-  return {
-    name: 'myapp',
-    cwd: '/project',
-    defaults: {},
-    overrides: {},
-    globalDir: '/global',
-    arrayMerge: 'replace',
-    envName: 'test',
-    configMutability: 'frozen',
-    verbose: false,
-    onDebug: (): void => {},
-    formatPlugins: [],
-    validationPlugins: [],
-    hooks: [],
-    watch: true,
-    proxy: true,
-    queue: true,
-    ...overrides,
-  } as ResolvedOptions;
+  return createMockResolvedOptions(overrides) as ResolvedOptions;
 }
 
 describe('createHookContext', () => {

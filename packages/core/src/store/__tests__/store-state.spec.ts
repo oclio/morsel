@@ -7,36 +7,22 @@ vi.mock('@/merge/merge-helpers', () => ({
   isPlainObject: vi.fn(),
 }));
 
+import {
+  createMockLayer,
+  createMockResolvedOptions,
+} from '@oclio/test-helpers';
+
 import type { MorselLayer } from '@/store/types';
 
-const mockOptions = {
-  name: 'myapp',
-  cwd: '/project',
-  defaults: {},
-  overrides: {},
-  globalDir: '/global',
-  arrayMerge: 'replace',
-  envName: 'test',
-  configMutability: 'frozen',
-  verbose: false,
+const mockOptions = createMockResolvedOptions({
   onDebug: vi.fn(),
-  formatPlugins: [],
-  validationPlugins: [],
-  hooks: [],
-  watch: true,
-  proxy: true,
-  queue: true,
-} as ResolvedOptions;
+}) as ResolvedOptions;
 
 function makeLayer(overrides: Partial<MorselLayer> = {}): MorselLayer {
-  return {
-    source: 'project',
+  return createMockLayer({
     path: '/path/to/config.json',
-    config: {},
-    exists: true,
-    extendsPaths: [],
     ...overrides,
-  };
+  }) as MorselLayer;
 }
 
 describe('createStoreState', () => {

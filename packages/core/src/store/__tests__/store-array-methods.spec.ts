@@ -1,3 +1,5 @@
+import { createMockStoreState } from '@oclio/test-helpers';
+
 import {
   popKey,
   pushKey,
@@ -26,32 +28,11 @@ vi.mock('@/store/array-ops', async () => {
 function createState<T extends Record<string, unknown>>(
   overrides: Partial<StoreState<T>> = {},
 ): StoreState<T> {
-  return {
+  return createMockStoreState<T>({
     _config: { foo: 'bar' } as unknown as T,
-    _proxy: undefined,
-    _stoppedConfig: undefined,
-    _layers: [],
-    listeners: new Map(),
-    wildcardListeners: new Map(),
-    stopped: false,
-    watchers: new Set(),
-    watchedFiles: new Map(),
-    projectPath: '/project/config.json',
-    options: { hooks: [] } as never,
-    lastConfig: {},
-    remergeInProgress: false,
-    remergeDone: undefined,
-    pendingRemerge: false,
-    debounceTimers: new Map(),
-    debounceMs: 300,
-    remerge: vi.fn(),
-    enoentLogged: new Set(),
-    writeQueue: Promise.resolve(),
-    queueEnabled: true,
-    inTransaction: false,
-    transactionDirtyKeys: new Map(),
+    options: { hooks: [] },
     ...overrides,
-  } as StoreState<T>;
+  }) as unknown as StoreState<T>;
 }
 
 describe('createArrayMethods', () => {

@@ -1,3 +1,5 @@
+import { createMockStoreState, setupStoreMocks } from '@oclio/test-helpers';
+
 import { runWriteHooks } from '@/hooks/run-hooks';
 import { applyValidation } from '@/load/apply-validation';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
@@ -8,7 +10,6 @@ import { toMorselLayer } from '@/store/layer';
 import { emitChanges } from '@/store/reactive/emit-changes';
 import { doDeleteKey } from '@/store/store-mutation-delete';
 import type { StoreState } from '@/store/store-state';
-import type { MorselLayer } from '@/store/types';
 import { deepClone } from '@/utils/deep-clone';
 import { resolveKeyOrigin } from '@/writer/resolve-origin';
 import { writeConfigFile } from '@/writer/write-config';
@@ -56,10 +57,8 @@ function createState<T extends Record<string, unknown>>(
   overrides: Partial<StoreState<T>> = {},
 ): StoreState<T> {
   const projectPath = overrides.projectPath ?? '/project/config.json';
-  return {
+  return createMockStoreState<T>({
     _config: { foo: 'bar' } as unknown as T,
-    _proxy: undefined,
-    _stoppedConfig: undefined,
     _layers: [
       {
         source: 'project',
@@ -68,76 +67,29 @@ function createState<T extends Record<string, unknown>>(
         exists: true,
         extendsPaths: [],
       },
-    ] as never,
-    listeners: new Map(),
-    wildcardListeners: new Map(),
-    stopped: false,
-    watchers: new Set(),
-    watchedFiles: new Map(),
+    ],
     projectPath,
-    options: {} as never,
-    lastConfig: {},
-    remergeInProgress: false,
-    remergeDone: undefined,
-    pendingRemerge: false,
-    debounceTimers: new Map(),
-    debounceMs: 300,
-    remerge: vi.fn(),
-    enoentLogged: new Set(),
-    writeQueue: Promise.resolve(),
-    queueEnabled: true,
-    inTransaction: false,
-    transactionDirtyKeys: new Map(),
     ...overrides,
-  } as StoreState<T>;
+  }) as unknown as StoreState<T>;
 }
 
 describe('store-mutation-delete', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(applyValidation).mockImplementation((config) => config);
-    vi.mocked(applyMutability).mockImplementation((config) => config);
-    vi.mocked(mergeLayers).mockImplementation((layers) => {
-      let merged = {};
-      for (const layer of layers) {
-        merged = { ...merged, ...layer.config };
-      }
-      return merged;
+    setupStoreMocks({
+      applyValidation,
+      applyMutability,
+      mergeLayers,
+      interpolate,
+      toMorselLayer,
+      deepClone,
+      parsePath,
+      hasRemovedPathValue,
+      getPathValue,
+      emitChanges,
+      resolveKeyOrigin,
+      writeConfigFile,
+      runWriteHooks,
     });
-    vi.mocked(interpolate).mockImplementation((config) => config);
-    vi.mocked(toMorselLayer).mockImplementation(
-      (layer) => layer as MorselLayer,
-    );
-    vi.mocked(deepClone).mockImplementation(
-      (config) => structuredClone(config) as Record<string, unknown>,
-    );
-    vi.mocked(parsePath).mockImplementation((path) =>
-      typeof path === 'string' ? path.split('.') : [...path],
-    );
-    vi.mocked(hasRemovedPathValue).mockReturnValue(true);
-    vi.mocked(getPathValue).mockImplementation((object, path) => {
-      const segments = typeof path === 'string' ? path.split('.') : [...path];
-      let current: unknown = object;
-      for (const seg of segments) {
-        current = (current as Record<string, unknown>)?.[seg];
-      }
-      return current;
-    });
-    vi.mocked(emitChanges).mockImplementation(() => {});
-    vi.mocked(resolveKeyOrigin).mockReturnValue({
-      filePath: '/project/config.json',
-      layer: {
-        source: 'project',
-        path: '/project/config.json',
-        config: {},
-        exists: true,
-        extendsPaths: [],
-      } as never,
-      isWritable: true,
-      exists: true,
-    });
-    vi.mocked(writeConfigFile).mockResolvedValue(undefined);
-    vi.mocked(runWriteHooks).mockResolvedValue(undefined);
   });
 
   it('returns false when key does not exist', async () => {

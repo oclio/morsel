@@ -29,6 +29,7 @@ export default {
     'remerge',
     'remerged',
     'toctou',
+    'unconfigured',
     'unflatten',
     'unflattened',
     'unsets',
