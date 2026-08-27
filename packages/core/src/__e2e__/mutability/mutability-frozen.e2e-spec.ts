@@ -1,95 +1,58 @@
-import { mkdir } from 'node:fs/promises';
-
-import {
-  clearWatcherRegistry,
-  createTemporaryEnvironment,
-  writeConfig,
-} from '@oclio/morsel-e2e-helpers';
-
-import { loadConfig } from '@/index';
+import { clearWatcherRegistry, setupTest } from '@oclio/morsel-e2e-helpers';
 
 describe('mutability-frozen — frozen mode (default)', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   it('frozen default: Object.isFrozen(config) is true', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
     });
 
-    expect(Object.isFrozen(config)).toBe(true);
+    expect(Object.isFrozen(result!.config)).toBe(true);
   });
 
   it('frozen nested: recursive freeze, nested objects frozen', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      tools: { eslint: true, prettier: false },
+    const { result } = await setupTest({
+      projectConfig: { tools: { eslint: true, prettier: false } },
+      createGlobalDir: true,
     });
 
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
-    });
-
-    const tools = (config as Record<string, unknown>)['tools'];
+    const tools = (result!.config as Record<string, unknown>)['tools'];
     expect(Object.isFrozen(tools)).toBe(true);
   });
 
   it('frozen mutation throws: assigning property throws in strict mode', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
     });
 
     expect(() => {
-      (config as Record<string, unknown>)['foo'] = 'bar';
+      (result!.config as Record<string, unknown>)['foo'] = 'bar';
     }).toThrow();
   });
 
   it('frozen delete blocked → TypeError', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
     });
 
     expect(() => {
-      delete (config as Record<string, unknown>)['port'];
+      delete (result!.config as Record<string, unknown>)['port'];
     }).toThrow();
   });
 
   it('frozen arrays frozen: arrays in config are also frozen', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      items: ['a', 'b', 'c'],
+    const { result } = await setupTest({
+      projectConfig: { items: ['a', 'b', 'c'] },
+      createGlobalDir: true,
     });
 
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
-    });
-
-    const items = (config as Record<string, unknown>)['items'];
+    const items = (result!.config as Record<string, unknown>)['items'];
     expect(Array.isArray(items)).toBe(true);
     expect(Object.isFrozen(items)).toBe(true);
   });

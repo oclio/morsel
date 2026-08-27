@@ -1,44 +1,28 @@
-import { mkdir, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
+  setupTest,
   suppressConsoleError,
-  writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
-import { watchConfig } from '@/index';
-
 describe('mutations-aliases — mutateKey/deleteKey aliases', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
   suppressConsoleError();
 
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   it('mutateKey: same behavior as set', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
     });
 
-    await store.mutateKey('port', 8080);
+    await store!.mutateKey('port', 8080);
 
-    expect(store.config).toEqual({ port: 8080 });
+    expect(store!.config).toEqual({ port: 8080 });
 
     const content = JSON.parse(
       await readFile(
@@ -48,25 +32,19 @@ describe('mutations-aliases — mutateKey/deleteKey aliases', () => {
     ) as Record<string, unknown>;
     expect(content).toEqual({ port: 8080 });
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('deleteKey: same behavior as unset', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-      host: 'localhost',
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000, host: 'localhost' },
+      watch: true,
     });
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
-    });
-
-    const result = await store.deleteKey('host');
+    const result = await store!.deleteKey('host');
 
     expect(result).toBe(true);
-    expect(store.has('host')).toBe(false);
+    expect(store!.has('host')).toBe(false);
 
     const content = JSON.parse(
       await readFile(
@@ -76,6 +54,6 @@ describe('mutations-aliases — mutateKey/deleteKey aliases', () => {
     ) as Record<string, unknown>;
     expect(content['host']).toBeUndefined();
 
-    await store.stop();
+    await store!.stop();
   });
 });

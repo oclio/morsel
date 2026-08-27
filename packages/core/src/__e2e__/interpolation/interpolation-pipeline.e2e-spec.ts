@@ -1,28 +1,17 @@
-import { mkdir } from 'node:fs/promises';
-
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
+  setupTest,
   waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
-import { interpolate, loadConfig, watchConfig } from '@/index';
+import { interpolate } from '@/index';
 
 describe('interpolation-pipeline — integration with pipeline', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
   const savedVariables = new Map<string, string | undefined>();
 
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   afterEach(() => {
@@ -45,9 +34,6 @@ describe('interpolation-pipeline — integration with pipeline', () => {
 
   it('interpolation runs after merge, before validation', async () => {
     setEnvironment('MORSEL_PORT', '8080');
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: '${MORSEL_PORT}',
-    });
 
     const validationPlugin = {
       name: 'port-validator',
@@ -59,78 +45,67 @@ describe('interpolation-pipeline — integration with pipeline', () => {
       },
     };
 
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
+      projectConfig: { port: '${MORSEL_PORT}' },
+      createGlobalDir: true,
       validationPlugins: [validationPlugin],
     } as never);
 
-    expect(config).toEqual({ port: '8080', validated: true });
+    expect(result!.config).toEqual({ port: '8080', validated: true });
   });
 
   it('interpolation in watchConfig boot', async () => {
     setEnvironment('MORSEL_HOST', 'localhost');
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      host: '${MORSEL_HOST}',
+
+    const { store } = await setupTest({
+      projectConfig: { host: '${MORSEL_HOST}' },
+      watch: true,
+      createGlobalDir: true,
     });
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
-    });
+    expect(store!.config).toEqual({ host: 'localhost' });
 
-    expect(store.config).toEqual({ host: 'localhost' });
-
-    await store.stop();
+    await store!.stop();
   });
 
   it('interpolation in re-merge', async () => {
     setEnvironment('MORSEL_HOST', 'localhost');
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      host: '${MORSEL_HOST}',
+
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { host: '${MORSEL_HOST}' },
+      watch: true,
+      createGlobalDir: true,
     });
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
-    });
-
-    expect(store.config).toEqual({ host: 'localhost' });
+    expect(store!.config).toEqual({ host: 'localhost' });
 
     setEnvironment('MORSEL_HOST', 'example.com');
     await writeConfig(projectDirectory, 'myapp.config.json', {
       host: '${MORSEL_HOST}',
     });
 
-    await waitForRemerge(store, (config) => config['host'] === 'example.com');
+    await waitForRemerge(store!, (config) => config['host'] === 'example.com');
 
-    expect(store.config).toEqual({ host: 'example.com' });
+    expect(store!.config).toEqual({ host: 'example.com' });
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('interpolation in mutateKey (after optimistic update)', async () => {
     setEnvironment('MORSEL_PORT', '8080');
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-      url: 'localhost',
-    });
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
+      projectConfig: { port: 3000, url: 'localhost' },
+      watch: true,
+      createGlobalDir: true,
       configMutability: 'mutable',
     });
 
-    await store.set('port', '${MORSEL_PORT}');
+    await store!.set('port', '${MORSEL_PORT}');
 
-    expect(store.config).toEqual({ port: '8080', url: 'localhost' });
+    expect(store!.config).toEqual({ port: '8080', url: 'localhost' });
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('interpolation produces new config (deep clone before resolving)', () => {

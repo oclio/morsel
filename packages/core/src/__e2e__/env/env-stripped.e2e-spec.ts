@@ -1,39 +1,23 @@
-import {
-  clearWatcherRegistry,
-  createTemporaryEnvironment,
-  writeConfig,
-} from '@oclio/morsel-e2e-helpers';
-
-import { loadConfig } from '@/index';
+import { clearWatcherRegistry, setupTest } from '@oclio/morsel-e2e-helpers';
 
 describe('env-stripped — $env stripped from result', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
   });
 
   it('$env key not in config nor in any layer.config', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-      $env: {
-        ci: { port: 8080 },
+    const { result } = await setupTest({
+      projectConfig: {
+        port: 3000,
+        $env: {
+          ci: { port: 8080 },
+        },
+        extends: './base.json',
       },
-      extends: './base.json',
-    });
-
-    const { config, layers } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
       envName: 'ci',
     });
+
+    const { config, layers } = result!;
 
     expect(config).not.toHaveProperty('$env');
     expect(config).not.toHaveProperty('extends');
@@ -45,23 +29,21 @@ describe('env-stripped — $env stripped from result', () => {
   });
 
   it('$env stripped from all 4 layers simultaneously', async () => {
-    await writeConfig(globalDirectory, 'myapp.config.json', {
-      port: 8080,
-      $env: { ci: { port: 9090 } },
-    });
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-      $env: { ci: { port: 9000 } },
-    });
-
-    const { config, layers } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
+      globalConfig: {
+        port: 8080,
+        $env: { ci: { port: 9090 } },
+      },
+      projectConfig: {
+        port: 3000,
+        $env: { ci: { port: 9000 } },
+      },
       envName: 'ci',
       defaults: { port: 4000, $env: { ci: { port: 7000 } } },
       overrides: { port: 6000, $env: { ci: { port: 9999 } } },
     });
+
+    const { config, layers } = result!;
 
     expect(config).not.toHaveProperty('$env');
 

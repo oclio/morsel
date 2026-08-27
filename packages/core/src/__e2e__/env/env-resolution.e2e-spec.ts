@@ -1,6 +1,6 @@
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
+  setupTest,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
@@ -8,34 +8,24 @@ import type { Hook } from '@/index';
 import { loadConfig } from '@/index';
 
 describe('env-resolution — $env resolution per layer', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
   });
 
   it('overrides keys from $env block matching envName', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-      host: 'localhost',
-      timeout: 5000,
-      $env: {
-        ci: { port: 8080, host: '0.0.0.0' },
+    const { result } = await setupTest({
+      projectConfig: {
+        port: 3000,
+        host: 'localhost',
+        timeout: 5000,
+        $env: {
+          ci: { port: 8080, host: '0.0.0.0' },
+        },
       },
-    });
-
-    const { config, layers } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
       envName: 'ci',
     });
+
+    const { config, layers } = result!;
 
     expect(config).toEqual({ port: 8080, host: '0.0.0.0', timeout: 5000 });
 
@@ -45,62 +35,59 @@ describe('env-resolution — $env resolution per layer', () => {
   });
 
   it('$env.ci nested object merges with file body, not replaces', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      tools: { eslint: true, prettier: true },
-      server: { db: { host: 'localhost', port: 5432 } },
-      $env: {
-        ci: {
-          tools: { eslint: false },
-          server: { db: { port: 9999 } },
+    const { result } = await setupTest({
+      projectConfig: {
+        tools: { eslint: true, prettier: true },
+        server: { db: { host: 'localhost', port: 5432 } },
+        $env: {
+          ci: {
+            tools: { eslint: false },
+            server: { db: { port: 9999 } },
+          },
         },
       },
-    });
-
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
       envName: 'ci',
     });
 
-    expect(config).toEqual({
+    expect(result!.config).toEqual({
       tools: { eslint: false, prettier: true },
       server: { db: { host: 'localhost', port: 9999 } },
     });
   });
 
   it('nested $env within $env block is not applied recursively', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-      $env: {
-        ci: {
-          port: 8080,
-          $env: {
-            prod: { port: 9999 },
+    const { result } = await setupTest({
+      projectConfig: {
+        port: 3000,
+        $env: {
+          ci: {
+            port: 8080,
+            $env: {
+              prod: { port: 9999 },
+            },
           },
         },
       },
-    });
-
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
       envName: 'ci',
     });
 
-    expect(config).toEqual({ port: 8080 });
-    expect(config).not.toHaveProperty('$env');
+    expect(result!.config).toEqual({ port: 8080 });
+    expect(result!.config).not.toHaveProperty('$env');
   });
 
   it('each file in extends chain applies its own $env before merge', async () => {
-    await writeConfig(projectDirectory, 'base.json', {
-      port: 4000,
-      host: '0.0.0.0',
-      $env: {
-        ci: { port: 8080 },
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: {
+        port: 4000,
+        host: '0.0.0.0',
+        $env: {
+          ci: { port: 8080 },
+        },
       },
+      projectFilename: 'base.json',
+      envName: 'ci',
     });
+
     await writeConfig(projectDirectory, 'myapp.config.json', {
       extends: './base.json',
       host: 'localhost',
@@ -120,19 +107,17 @@ describe('env-resolution — $env resolution per layer', () => {
   });
 
   it('$env in global file resolved during global layer cleanup', async () => {
-    await writeConfig(globalDirectory, 'myapp.config.json', {
-      port: 4000,
-      $env: {
-        ci: { port: 8080 },
+    const { result } = await setupTest({
+      globalConfig: {
+        port: 4000,
+        $env: {
+          ci: { port: 8080 },
+        },
       },
-    });
-
-    const { config, layers } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
       envName: 'ci',
     });
+
+    const { config, layers } = result!;
 
     expect(config).toEqual({ port: 8080 });
 
@@ -141,10 +126,7 @@ describe('env-resolution — $env resolution per layer', () => {
   });
 
   it('defaults and overrides apply $env but do not follow extends', async () => {
-    const { config, layers } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
       envName: 'ci',
       defaults: {
         port: 4000,
@@ -157,6 +139,8 @@ describe('env-resolution — $env resolution per layer', () => {
         extends: './overrides-base.json',
       },
     });
+
+    const { config, layers } = result!;
 
     expect(config).toEqual({ port: 8080, host: '0.0.0.0' });
 
@@ -171,23 +155,21 @@ describe('env-resolution — $env resolution per layer', () => {
   });
 
   it('$env in all 4 layers resolved independently', async () => {
-    await writeConfig(globalDirectory, 'myapp.config.json', {
-      port: 4000,
-      $env: { ci: { port: 8080 } },
-    });
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-      $env: { ci: { port: 9000 } },
-    });
-
-    const { config, layers } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
+      globalConfig: {
+        port: 4000,
+        $env: { ci: { port: 8080 } },
+      },
+      projectConfig: {
+        port: 3000,
+        $env: { ci: { port: 9000 } },
+      },
       envName: 'ci',
       defaults: { port: 5000, $env: { ci: { port: 7000 } } },
       overrides: { port: 6000, $env: { ci: { port: 9999 } } },
     });
+
+    const { config, layers } = result!;
 
     expect(config).toEqual({ port: 9999 });
 
@@ -210,13 +192,12 @@ describe('env-resolution — $env resolution per layer', () => {
       },
     ];
 
-    const { config, layers } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
       hooks,
       envName: 'production',
     });
+
+    const { config, layers } = result!;
 
     expect(config).not.toHaveProperty('$env');
     expect(config).toEqual({ base: 'value', overridden: true });
@@ -247,18 +228,15 @@ describe('env-resolution — $env resolution per layer', () => {
         },
       ];
 
-      const { config } = await loadConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: globalDirectory,
+      const { result } = await setupTest({
         hooks,
         onDebug: (message: string) => {
           debugMessages.push(message);
         },
       });
 
-      expect(config).toEqual({ base: 'value' });
-      expect(config).not.toHaveProperty('overridden');
+      expect(result!.config).toEqual({ base: 'value' });
+      expect(result!.config).not.toHaveProperty('overridden');
       expect(debugMessages.some((message) => message.includes('$env'))).toBe(
         true,
       );

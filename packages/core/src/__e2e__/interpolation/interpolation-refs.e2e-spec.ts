@@ -1,41 +1,22 @@
-import { mkdir } from 'node:fs/promises';
+import { clearWatcherRegistry, setupTest } from '@oclio/morsel-e2e-helpers';
 
-import {
-  clearWatcherRegistry,
-  createTemporaryEnvironment,
-  writeConfig,
-} from '@oclio/morsel-e2e-helpers';
-
-import { interpolate, loadConfig } from '@/index';
+import { interpolate } from '@/index';
 
 describe('interpolation-refs — {{ref.path}} cross-references', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   it('{{ref.path}} cross-references within config', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      host: 'localhost',
-      url: '{{host}}',
+    const { result } = await setupTest({
+      projectConfig: {
+        host: 'localhost',
+        url: '{{host}}',
+      },
+      createGlobalDir: true,
     });
 
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
-    });
-
-    expect(config).toEqual({ host: 'localhost', url: 'localhost' });
+    expect(result!.config).toEqual({ host: 'localhost', url: 'localhost' });
   });
 
   it('single {{ref.path}} preserves original type (number)', () => {

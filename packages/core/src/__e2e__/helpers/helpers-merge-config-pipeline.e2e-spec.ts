@@ -1,10 +1,4 @@
-import { mkdir } from 'node:fs/promises';
-
-import {
-  clearWatcherRegistry,
-  createTemporaryEnvironment,
-  writeConfig,
-} from '@oclio/morsel-e2e-helpers';
+import { clearWatcherRegistry, setupTest } from '@oclio/morsel-e2e-helpers';
 
 import {
   defineConfig,
@@ -15,22 +9,15 @@ import {
 } from '@/index';
 
 describe('helpers-merge-config-pipeline — mergeConfig + pipeline integration', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   it('mergeConfig + loadConfig → merged defaults applied', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 8080 },
+      createGlobalDir: true,
+    });
 
     const base = defineConfig({
       name: 'myapp',
@@ -52,7 +39,10 @@ describe('helpers-merge-config-pipeline — mergeConfig + pipeline integration',
   });
 
   it('mergeConfig + loadConfigSync → merged defaults applied in sync mode', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 8080 },
+      createGlobalDir: true,
+    });
 
     const base = defineConfig({
       name: 'myapp',
@@ -74,7 +64,10 @@ describe('helpers-merge-config-pipeline — mergeConfig + pipeline integration',
   });
 
   it('mergeConfig + watchConfig → merged defaults applied in watch mode', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 8080 },
+      createGlobalDir: true,
+    });
 
     const base = defineConfig({
       name: 'myapp',
@@ -98,8 +91,9 @@ describe('helpers-merge-config-pipeline — mergeConfig + pipeline integration',
   });
 
   it('mergeConfig + loadConfig with arrayMerge concat → arrays concatenated in pipeline', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      items: [9, 10],
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { items: [9, 10] },
+      createGlobalDir: true,
     });
 
     const base = defineConfig({

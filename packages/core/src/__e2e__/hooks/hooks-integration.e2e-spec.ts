@@ -1,29 +1,22 @@
-import { mkdir } from 'node:fs/promises';
-
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
+  setupTest,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
-import { loadConfig, watchConfig } from '@/index';
+import { loadConfig } from '@/index';
 
 describe('hooks-integration — hooks + other pipeline features', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   it('hooks + extends in same pipeline combined correctly', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
+    });
+
     await writeConfig(projectDirectory, 'base.json', {
       port: 4000,
       base: true,
@@ -57,6 +50,11 @@ describe('hooks-integration — hooks + other pipeline features', () => {
   });
 
   it('hooks + extends + $env combined → correct layers and config', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
+    });
+
     await writeConfig(projectDirectory, 'base.config.json', {
       port: 3000,
     });
@@ -125,8 +123,6 @@ describe('hooks-integration — hooks + other pipeline features', () => {
   });
 
   it('hooks + validation in same pipeline: hook output merged then validation runs', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
     const hooks = [
       {
         name: 'app-hook',
@@ -145,15 +141,14 @@ describe('hooks-integration — hooks + other pipeline features', () => {
       },
     };
 
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
       hooks,
       validationPlugins: [validationPlugin],
     } as never);
 
-    expect(config).toEqual({
+    expect(result!.config).toEqual({
       app: 'myapp',
       port: 3000,
       validated: true,
@@ -161,8 +156,6 @@ describe('hooks-integration — hooks + other pipeline features', () => {
   });
 
   it('signal checked after hook init completes', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
     const controller = new AbortController();
     let initCallCount = 0;
 
@@ -179,17 +172,17 @@ describe('hooks-integration — hooks + other pipeline features', () => {
 
     controller.abort();
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
+      createGlobalDir: true,
       hooks,
       signal: controller.signal,
-    });
+    } as never);
 
     expect(initCallCount).toBe(1);
-    expect(store.config).toEqual({ hookKey: 'val', port: 3000 });
+    expect(store!.config).toEqual({ hookKey: 'val', port: 3000 });
 
-    await store.stop();
+    await store!.stop();
   });
 });

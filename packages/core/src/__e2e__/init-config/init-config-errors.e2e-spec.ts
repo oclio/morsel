@@ -1,27 +1,21 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
-import {
-  clearWatcherRegistry,
-  createTemporaryEnvironment,
-} from '@oclio/morsel-e2e-helpers';
+import { clearWatcherRegistry, setupTest } from '@oclio/morsel-e2e-helpers';
 
 import { initConfig } from '@/index';
 
 describe('init-config-errors — error handling', () => {
-  let directory: string;
-  let projectDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    await mkdir(projectDirectory, { recursive: true });
   });
 
-  it('serialize failure → MorselError(EWRITE) with path and cause', () => {
+  it('serialize failure → MorselError(EWRITE) with path and cause', async () => {
+    const { projectDirectory } = await setupTest({
+      projectConfig: {},
+      projectFilename: '_setup-test.json',
+    });
+
     const throwingPlugin = {
       name: 'throwing',
       extensions: ['.json'],
@@ -42,7 +36,12 @@ describe('init-config-errors — error handling', () => {
     ).toThrow(expect.objectContaining({ name: 'MorselError', code: 'EWRITE' }));
   });
 
-  it('write failure → MorselError(EIO) with path and cause', () => {
+  it('write failure → MorselError(EIO) with path and cause', async () => {
+    const { directory } = await setupTest({
+      projectConfig: {},
+      projectFilename: '_setup-test.json',
+    });
+
     const readOnlyDirectory = path.resolve(directory, 'readonly');
     mkdirSync(readOnlyDirectory, { recursive: true, mode: 0o444 });
 
@@ -55,7 +54,12 @@ describe('init-config-errors — error handling', () => {
     ).toThrow(expect.objectContaining({ name: 'MorselError', code: 'EIO' }));
   });
 
-  it('mkdirSync failure → MorselError(EIO)', () => {
+  it('mkdirSync failure → MorselError(EIO)', async () => {
+    const { projectDirectory } = await setupTest({
+      projectConfig: {},
+      projectFilename: '_setup-test.json',
+    });
+
     const fileBlocker = path.resolve(projectDirectory, 'blocker');
     writeFileSync(fileBlocker, 'not a directory', 'utf8');
 
@@ -70,7 +74,12 @@ describe('init-config-errors — error handling', () => {
     ).toThrow(expect.objectContaining({ name: 'MorselError', code: 'EIO' }));
   });
 
-  it('empty formatPlugins → TypeError', () => {
+  it('empty formatPlugins → TypeError', async () => {
+    const { projectDirectory } = await setupTest({
+      projectConfig: {},
+      projectFilename: '_setup-test.json',
+    });
+
     expect(() =>
       initConfig({
         name: 'myapp',

@@ -4,26 +4,24 @@ import path from 'node:path';
 
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
   morselPlugin,
+  setupTest,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
 import { initConfig } from '@/index';
 
 describe('init-config-idempotence — existing file handling', () => {
-  let directory: string;
-  let projectDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    await mkdir(projectDirectory, { recursive: true });
   });
 
   it('existing .json file → return path, no overwrite', async () => {
+    const { projectDirectory } = await setupTest({
+      projectConfig: {},
+      projectFilename: '_setup-test.json',
+    });
+
     await writeConfig(projectDirectory, 'myapp.config.json', {
       port: 9999,
       original: true,
@@ -45,6 +43,11 @@ describe('init-config-idempotence — existing file handling', () => {
   });
 
   it('existing .morsel file → return path, no overwrite', async () => {
+    const { projectDirectory } = await setupTest({
+      projectConfig: {},
+      projectFilename: '_setup-test.json',
+    });
+
     const morselPath = path.resolve(projectDirectory, 'myapp.config.morsel');
     await writeFile(morselPath, 'port=3000', 'utf8');
 
@@ -62,6 +65,11 @@ describe('init-config-idempotence — existing file handling', () => {
   });
 
   it('existing file in .config/ directory → return path, no write', async () => {
+    const { projectDirectory } = await setupTest({
+      projectConfig: {},
+      projectFilename: '_setup-test.json',
+    });
+
     const configDirectory = path.resolve(projectDirectory, '.config');
     await mkdir(configDirectory, { recursive: true });
     const configPath = path.resolve(configDirectory, 'myapp.json');

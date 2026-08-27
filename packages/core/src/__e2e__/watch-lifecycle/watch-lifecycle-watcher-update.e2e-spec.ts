@@ -3,6 +3,7 @@ import { mkdir } from 'node:fs/promises';
 import {
   clearWatcherRegistry,
   createTemporaryEnvironment,
+  setupTest,
   waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
@@ -15,99 +16,81 @@ describe('watch-lifecycle-watcher-update — watcher update on re-merge', () => 
   });
 
   it('config always up to date → store.config reflects latest value', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
-
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-    await mkdir(`${directory}/global`, { recursive: true });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: `${directory}/global`,
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
+      createGlobalDir: true,
     });
 
-    expect(store.config).toEqual({ port: 3000 });
+    expect(store!.config).toEqual({ port: 3000 });
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
     await waitForRemerge(
-      store,
+      store!,
       (config) => (config as Record<string, unknown>)['port'] === 8080,
     );
 
-    expect(store.config).toEqual({ port: 8080 });
+    expect(store!.config).toEqual({ port: 8080 });
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('layers updated → layers update with new paths and exists', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
-
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-    await mkdir(`${directory}/global`, { recursive: true });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: `${directory}/global`,
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
+      createGlobalDir: true,
     });
 
-    const projectLayer = store.layers.find((l) => l.source === 'project');
+    const projectLayer = store!.layers.find((l) => l.source === 'project');
     expect(projectLayer?.exists).toBe(true);
     expect(projectLayer?.config).toEqual({ port: 3000 });
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
     await waitForRemerge(
-      store,
+      store!,
       (config) => (config as Record<string, unknown>)['port'] === 8080,
     );
 
-    const updatedProjectLayer = store.layers.find(
+    const updatedProjectLayer = store!.layers.find(
       (l) => l.source === 'project',
     );
     expect(updatedProjectLayer?.config).toEqual({ port: 8080 });
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('updateWatchers adds new directories for extends', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
-    const subdirectory = `${projectDirectory}/sub`;
-
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-    await mkdir(`${directory}/global`, { recursive: true });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: `${directory}/global`,
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
+      createGlobalDir: true,
     });
 
-    expect(store.config).toEqual({ port: 3000 });
+    expect(store!.config).toEqual({ port: 3000 });
 
+    const subdirectory = `${projectDirectory}/sub`;
     await writeConfig(subdirectory, 'base.json', { port: 4000 });
     await writeConfig(projectDirectory, 'myapp.config.json', {
       extends: './sub/base.json',
     });
 
     await waitForRemerge(
-      store,
+      store!,
       (config) => (config as Record<string, unknown>)['port'] === 4000,
     );
 
-    expect(store.config).toEqual({ port: 4000 });
+    expect(store!.config).toEqual({ port: 4000 });
 
     await writeConfig(subdirectory, 'base.json', { port: 8080 });
     await waitForRemerge(
-      store,
+      store!,
       (config) => (config as Record<string, unknown>)['port'] === 8080,
     );
 
-    expect(store.config).toEqual({ port: 8080 });
+    expect(store!.config).toEqual({ port: 8080 });
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('updateWatchers removes stale directories when extends removed', async () => {
@@ -146,33 +129,27 @@ describe('watch-lifecycle-watcher-update — watcher update on re-merge', () => 
   });
 
   it('re-merge emits changes after watcher update success', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
-
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-    await mkdir(`${directory}/global`, { recursive: true });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: `${directory}/global`,
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
+      createGlobalDir: true,
     });
 
     const events: { type: string; next: unknown; prev: unknown }[] = [];
-    store.on('port', (event) => {
+    store!.on('port', (event) => {
       events.push({ type: event.type, next: event.next, prev: event.prev });
     });
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
     await waitForRemerge(
-      store,
+      store!,
       (config) => (config as Record<string, unknown>)['port'] === 8080,
     );
 
     expect(events).toHaveLength(1);
     expect(events[0]).toEqual({ type: 'modified', next: 8080, prev: 3000 });
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('collectWatchedFiles called before setupWatchers (boot ordering)', async () => {

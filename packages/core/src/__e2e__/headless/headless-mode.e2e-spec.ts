@@ -1,36 +1,26 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
+  setupTest,
   suppressConsoleError,
-  writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
 import { watchConfig } from '@/index';
 
 describe('headless-mode — watch/proxy/queue flags', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
   suppressConsoleError();
 
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   describe('watch: false', () => {
     it('boots and reads config without watchers', async () => {
-      await writeConfig(projectDirectory, 'myapp.config.json', {
-        port: 3000,
+      const { projectDirectory, globalDirectory } = await setupTest({
+        projectConfig: { port: 3000 },
+        createGlobalDir: true,
       });
 
       const store = await watchConfig({
@@ -45,8 +35,9 @@ describe('headless-mode — watch/proxy/queue flags', () => {
     });
 
     it('set() persists to disk without re-merge', async () => {
-      await writeConfig(projectDirectory, 'myapp.config.json', {
-        port: 3000,
+      const { projectDirectory, globalDirectory } = await setupTest({
+        projectConfig: { port: 3000 },
+        createGlobalDir: true,
       });
 
       const store = await watchConfig({
@@ -72,8 +63,9 @@ describe('headless-mode — watch/proxy/queue flags', () => {
     });
 
     it('does not react to external file changes', async () => {
-      await writeConfig(projectDirectory, 'myapp.config.json', {
-        port: 3000,
+      const { projectDirectory, globalDirectory } = await setupTest({
+        projectConfig: { port: 3000 },
+        createGlobalDir: true,
       });
 
       const store = await watchConfig({
@@ -99,8 +91,9 @@ describe('headless-mode — watch/proxy/queue flags', () => {
     });
 
     it('on() listener fires on store.set() without watchers', async () => {
-      await writeConfig(projectDirectory, 'myapp.config.json', {
-        port: 3000,
+      const { projectDirectory, globalDirectory } = await setupTest({
+        projectConfig: { port: 3000 },
+        createGlobalDir: true,
       });
 
       const store = await watchConfig({
@@ -128,8 +121,9 @@ describe('headless-mode — watch/proxy/queue flags', () => {
     });
 
     it('signal still calls stop() without watchers', async () => {
-      await writeConfig(projectDirectory, 'myapp.config.json', {
-        port: 3000,
+      const { projectDirectory, globalDirectory } = await setupTest({
+        projectConfig: { port: 3000 },
+        createGlobalDir: true,
       });
 
       const controller = new AbortController();
@@ -153,9 +147,9 @@ describe('headless-mode — watch/proxy/queue flags', () => {
 
   describe('proxy: false', () => {
     it('store.config returns raw config object', async () => {
-      await writeConfig(projectDirectory, 'myapp.config.json', {
-        port: 3000,
-        host: 'localhost',
+      const { projectDirectory, globalDirectory } = await setupTest({
+        projectConfig: { port: 3000, host: 'localhost' },
+        createGlobalDir: true,
       });
 
       const store = await watchConfig({
@@ -173,8 +167,9 @@ describe('headless-mode — watch/proxy/queue flags', () => {
     });
 
     it('store.get() works without proxy', async () => {
-      await writeConfig(projectDirectory, 'myapp.config.json', {
-        server: { port: 3000, host: 'localhost' },
+      const { projectDirectory, globalDirectory } = await setupTest({
+        projectConfig: { server: { port: 3000, host: 'localhost' } },
+        createGlobalDir: true,
       });
 
       const store = await watchConfig({
@@ -193,8 +188,9 @@ describe('headless-mode — watch/proxy/queue flags', () => {
     });
 
     it('frozen config is frozen without proxy', async () => {
-      await writeConfig(projectDirectory, 'myapp.config.json', {
-        port: 3000,
+      const { projectDirectory, globalDirectory } = await setupTest({
+        projectConfig: { port: 3000 },
+        createGlobalDir: true,
       });
 
       const store = await watchConfig({
@@ -212,8 +208,9 @@ describe('headless-mode — watch/proxy/queue flags', () => {
     });
 
     it('mutable config: direct mutation does not persist to disk', async () => {
-      await writeConfig(projectDirectory, 'myapp.config.json', {
-        port: 3000,
+      const { projectDirectory, globalDirectory } = await setupTest({
+        projectConfig: { port: 3000 },
+        createGlobalDir: true,
       });
 
       const store = await watchConfig({
@@ -244,8 +241,9 @@ describe('headless-mode — watch/proxy/queue flags', () => {
 
   describe('queue: false', () => {
     it('set() works without queue', async () => {
-      await writeConfig(projectDirectory, 'myapp.config.json', {
-        port: 3000,
+      const { projectDirectory, globalDirectory } = await setupTest({
+        projectConfig: { port: 3000 },
+        createGlobalDir: true,
       });
 
       const store = await watchConfig({
@@ -272,9 +270,9 @@ describe('headless-mode — watch/proxy/queue flags', () => {
     });
 
     it('unset() works without queue', async () => {
-      await writeConfig(projectDirectory, 'myapp.config.json', {
-        port: 3000,
-        host: 'localhost',
+      const { projectDirectory, globalDirectory } = await setupTest({
+        projectConfig: { port: 3000, host: 'localhost' },
+        createGlobalDir: true,
       });
 
       const store = await watchConfig({
@@ -294,8 +292,9 @@ describe('headless-mode — watch/proxy/queue flags', () => {
     });
 
     it('stop() does not wait for in-flight mutation when queue is false', async () => {
-      await writeConfig(projectDirectory, 'myapp.config.json', {
-        port: 3000,
+      const { projectDirectory, globalDirectory } = await setupTest({
+        projectConfig: { port: 3000 },
+        createGlobalDir: true,
       });
 
       const store = await watchConfig({
@@ -320,8 +319,9 @@ describe('headless-mode — watch/proxy/queue flags', () => {
 
   describe('full headless — watch: false, proxy: false, queue: false', () => {
     it('boot + set + read + stop works end-to-end', async () => {
-      await writeConfig(projectDirectory, 'myapp.config.json', {
-        port: 3000,
+      const { projectDirectory, globalDirectory } = await setupTest({
+        projectConfig: { port: 3000 },
+        createGlobalDir: true,
       });
 
       const store = await watchConfig({
@@ -356,8 +356,9 @@ describe('headless-mode — watch/proxy/queue flags', () => {
     });
 
     it('on() fires without proxy, watch, or queue', async () => {
-      await writeConfig(projectDirectory, 'myapp.config.json', {
-        port: 3000,
+      const { projectDirectory, globalDirectory } = await setupTest({
+        projectConfig: { port: 3000 },
+        createGlobalDir: true,
       });
 
       const store = await watchConfig({

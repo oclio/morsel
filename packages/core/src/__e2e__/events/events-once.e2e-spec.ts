@@ -1,41 +1,26 @@
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
+  setupTest,
   suppressConsoleError,
   waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
-import { watchConfig } from '@/index';
-
 describe('events-once — once option', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
   suppressConsoleError();
 
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
   });
 
   it('once: true auto-unsubscribes after first event', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-    });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
     });
 
     let calls = 0;
-    store.on(
+    store!.on(
       'port',
       () => {
         calls++;
@@ -44,31 +29,26 @@ describe('events-once — once option', () => {
     );
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 3001 });
-    await waitForRemerge(store, (config) => config['port'] === 3001);
+    await waitForRemerge(store!, (config) => config['port'] === 3001);
 
     expect(calls).toBe(1);
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 3002 });
-    await waitForRemerge(store, (config) => config['port'] === 3002);
+    await waitForRemerge(store!, (config) => config['port'] === 3002);
 
     expect(calls).toBe(1);
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('once: true on wildcard auto-unsubscribes after first match', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      server: { host: 'localhost', port: 3000 },
-    });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { server: { host: 'localhost', port: 3000 } },
+      watch: true,
     });
 
     let calls = 0;
-    store.on(
+    store!.on(
       'server.*',
       () => {
         calls++;
@@ -80,7 +60,7 @@ describe('events-once — once option', () => {
       server: { host: '0.0.0.0', port: 3000 },
     });
     await waitForRemerge(
-      store,
+      store!,
       (config) =>
         (config['server'] as Record<string, unknown>)['host'] === '0.0.0.0',
     );
@@ -91,13 +71,13 @@ describe('events-once — once option', () => {
       server: { host: '1.1.1.1', port: 3000 },
     });
     await waitForRemerge(
-      store,
+      store!,
       (config) =>
         (config['server'] as Record<string, unknown>)['host'] === '1.1.1.1',
     );
 
     expect(calls).toBe(1);
 
-    await store.stop();
+    await store!.stop();
   });
 });

@@ -5,10 +5,11 @@ import {
   clearWatcherRegistry,
   createDebugCollector,
   createTemporaryEnvironment,
+  setupTest,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
-import { loadConfig, watchConfig } from '@/index';
+import { loadConfig } from '@/index';
 
 describe('plugin-errors — ENOPLUGIN errors', () => {
   let directory: string;
@@ -163,23 +164,22 @@ describe('plugin-errors — ENOPLUGIN errors', () => {
   });
 
   it('re-merge to .yaml extends → config preserved, no crash', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
+    const { contexts, callback } = createDebugCollector();
+
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
+      createGlobalDir: true,
+      onDebug: callback,
+    });
+
     await writeFile(
       path.resolve(projectDirectory, 'base.yaml'),
       'port: 9999',
       'utf8',
     );
 
-    const { contexts, callback } = createDebugCollector();
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
-      onDebug: callback,
-    });
-
-    expect(store.config).toEqual({ port: 3000 });
+    expect(store!.config).toEqual({ port: 3000 });
 
     await writeConfig(projectDirectory, 'myapp.config.json', {
       extends: './base.yaml',
@@ -187,7 +187,7 @@ describe('plugin-errors — ENOPLUGIN errors', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    expect(store.config).toEqual({ port: 3000 });
+    expect(store!.config).toEqual({ port: 3000 });
     expect(contexts.some((context) => context['code'] === 'ENOPLUGIN')).toBe(
       true,
     );
@@ -198,8 +198,8 @@ describe('plugin-errors — ENOPLUGIN errors', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    expect(store.config).toEqual({ port: 8080 });
+    expect(store!.config).toEqual({ port: 8080 });
 
-    await store.stop();
+    await store!.stop();
   });
 });

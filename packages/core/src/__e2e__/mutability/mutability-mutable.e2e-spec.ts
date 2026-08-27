@@ -1,71 +1,42 @@
-import { mkdir } from 'node:fs/promises';
-
-import {
-  clearWatcherRegistry,
-  createTemporaryEnvironment,
-  writeConfig,
-} from '@oclio/morsel-e2e-helpers';
-
-import { loadConfig } from '@/index';
+import { clearWatcherRegistry, setupTest } from '@oclio/morsel-e2e-helpers';
 
 describe('mutability-mutable — mutable mode', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   it('mutable: config not frozen, can be mutated', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
       configMutability: 'mutable',
     });
 
-    expect(Object.isFrozen(config)).toBe(false);
+    expect(Object.isFrozen(result!.config)).toBe(false);
 
-    const mutable = config as Record<string, unknown>;
+    const mutable = result!.config as Record<string, unknown>;
     mutable['port'] = 8080;
     expect(mutable['port']).toBe(8080);
   });
 
   it('mutable no Proxy: plain object, not a Proxy', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
       configMutability: 'mutable',
     });
 
-    expect(Object.getPrototypeOf(config)).toBe(Object.prototype);
+    expect(Object.getPrototypeOf(result!.config)).toBe(Object.prototype);
   });
 
   it('mutable nested not frozen: nested objects are mutable', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      database: { host: 'localhost' },
-    });
-
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
+      projectConfig: { database: { host: 'localhost' } },
+      createGlobalDir: true,
       configMutability: 'mutable',
     });
 
-    const database = (config as Record<string, unknown>)['database'];
+    const database = (result!.config as Record<string, unknown>)['database'];
     expect(Object.isFrozen(database)).toBe(false);
 
     const mutableDatabase = database as Record<string, unknown>;

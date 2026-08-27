@@ -1,53 +1,33 @@
-import { mkdir, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
+  setupTest,
   suppressConsoleError,
   waitForRemerge,
-  writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
 import type { WriteEvent } from '@/hooks/types';
-import { watchConfig } from '@/index';
 
 describe('mutations-unset — unset() API', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
   suppressConsoleError();
 
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   it('unset default target (all): delete from all writable layers', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-      host: 'localhost',
-    });
-    await writeConfig(globalDirectory, 'myapp.config.json', {
-      host: 'global-host',
+    const { store, projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000, host: 'localhost' },
+      globalConfig: { host: 'global-host' },
+      watch: true,
     });
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
-    });
-
-    const result = await store.unset('host');
+    const result = await store!.unset('host');
 
     expect(result).toBe(true);
-    expect(store.has('host')).toBe(false);
+    expect(store!.has('host')).toBe(false);
 
     const projectContent = JSON.parse(
       await readFile(
@@ -65,27 +45,19 @@ describe('mutations-unset — unset() API', () => {
     ) as Record<string, unknown>;
     expect(globalContent['host']).toBeUndefined();
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('unset target: project — delete from project only', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-      host: 'localhost',
-    });
-    await writeConfig(globalDirectory, 'myapp.config.json', {
-      host: 'global-host',
+    const { store, projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000, host: 'localhost' },
+      globalConfig: { host: 'global-host' },
+      watch: true,
     });
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
-    });
+    await store!.unset('host', 'project');
 
-    await store.unset('host', 'project');
-
-    expect(store.get('host')).toBe('global-host');
+    expect(store!.get('host')).toBe('global-host');
 
     const projectContent = JSON.parse(
       await readFile(
@@ -103,27 +75,19 @@ describe('mutations-unset — unset() API', () => {
     ) as Record<string, unknown>;
     expect(globalContent['host']).toBe('global-host');
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('unset target: global — delete from global only', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-      host: 'localhost',
-    });
-    await writeConfig(globalDirectory, 'myapp.config.json', {
-      host: 'global-host',
+    const { store, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000, host: 'localhost' },
+      globalConfig: { host: 'global-host' },
+      watch: true,
     });
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
-    });
+    await store!.unset('host', 'global');
 
-    await store.unset('host', 'global');
-
-    expect(store.get('host')).toBe('localhost');
+    expect(store!.get('host')).toBe('localhost');
 
     const globalContent = JSON.parse(
       await readFile(
@@ -133,74 +97,56 @@ describe('mutations-unset — unset() API', () => {
     ) as Record<string, unknown>;
     expect(globalContent['host']).toBeUndefined();
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('unset key in global + project with target: project — global reclaims via re-merge', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      host: 'project-host',
-    });
-    await writeConfig(globalDirectory, 'myapp.config.json', {
-      host: 'global-host',
-    });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
+      projectConfig: { host: 'project-host' },
+      globalConfig: { host: 'global-host' },
+      watch: true,
     });
 
-    expect(store.get('host')).toBe('project-host');
+    expect(store!.get('host')).toBe('project-host');
 
-    await store.unset('host', 'project');
+    await store!.unset('host', 'project');
 
-    await waitForRemerge(store, (config) => config['host'] === 'global-host');
+    await waitForRemerge(store!, (config) => config['host'] === 'global-host');
 
-    expect(store.get('host')).toBe('global-host');
+    expect(store!.get('host')).toBe('global-host');
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('unset key absent from target layer: returns false, no state corruption', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
     });
 
-    const result = await store.unset('missing', 'project');
+    const result = await store!.unset('missing', 'project');
 
     expect(result).toBe(false);
-    expect(store.config).toEqual({ port: 3000 });
+    expect(store!.config).toEqual({ port: 3000 });
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('unset key absent from in-memory config: returns false without writing', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
     });
 
-    const result = await store.unset('missing');
+    const result = await store!.unset('missing');
 
     expect(result).toBe(false);
-    expect(store.config).toEqual({ port: 3000 });
+    expect(store!.config).toEqual({ port: 3000 });
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('unset rollback on write failure: revert events, MorselError thrown', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-      host: 'localhost',
-    });
-
     const throwingPlugin = {
       name: 'throwing',
       extensions: ['.json'],
@@ -211,39 +157,33 @@ describe('mutations-unset — unset() API', () => {
       },
     };
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
+      projectConfig: { port: 3000, host: 'localhost' },
+      watch: true,
       formatPlugins: [throwingPlugin],
     });
 
     const events: { type: string; next: unknown; prev: unknown }[] = [];
-    store.on('host', (event) => {
+    store!.on('host', (event) => {
       events.push({ type: event.type, next: event.next, prev: event.prev });
     });
 
-    await expect(store.unset('host')).rejects.toMatchObject({
+    await expect(store!.unset('host')).rejects.toMatchObject({
       name: 'WriteError',
       code: 'EWRITE',
     });
 
-    expect(store.get('host')).toBe('localhost');
+    expect(store!.get('host')).toBe('localhost');
 
     const hasRevert = events.some(
       (event) => event.type === 'added' && event.next === 'localhost',
     );
     expect(hasRevert).toBe(true);
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('unset triggers after:write hook with isDelete: true', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-      host: 'localhost',
-    });
-
     const receivedEvents: WriteEvent[] = [];
     const hooks = [
       {
@@ -255,40 +195,33 @@ describe('mutations-unset — unset() API', () => {
       },
     ];
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
+      projectConfig: { port: 3000, host: 'localhost' },
+      watch: true,
       hooks,
     });
 
-    await store.unset('host');
+    await store!.unset('host');
 
     expect(receivedEvents).toHaveLength(1);
     expect(receivedEvents[0]!.keyPath).toBe('host');
     expect(receivedEvents[0]!.mutation.isDelete).toBe(true);
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('unset existing key: event removed, prev value', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-      host: 'localhost',
-    });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
+      projectConfig: { port: 3000, host: 'localhost' },
+      watch: true,
     });
 
     const events: { type: string; next: unknown; prev: unknown }[] = [];
-    store.on('host', (event) => {
+    store!.on('host', (event) => {
       events.push({ type: event.type, next: event.next, prev: event.prev });
     });
 
-    await store.unset('host');
+    await store!.unset('host');
 
     expect(events).toHaveLength(1);
     expect(events[0]).toEqual({
@@ -297,44 +230,32 @@ describe('mutations-unset — unset() API', () => {
       prev: 'localhost',
     });
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('unset on stopped store → Error(morsel: store is stopped)', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
     });
 
-    await store.stop();
+    await store!.stop();
 
-    await expect(store.unset('port')).rejects.toThrow(
+    await expect(store!.unset('port')).rejects.toThrow(
       'morsel: store is stopped',
     );
   });
 
   it('unset target all iterates all writable layers', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-      host: 'project-host',
-    });
-    await writeConfig(globalDirectory, 'myapp.config.json', {
-      host: 'global-host',
-      debug: true,
+    const { store, projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000, host: 'project-host' },
+      globalConfig: { host: 'global-host', debug: true },
+      watch: true,
     });
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
-    });
+    await store!.unset('host');
 
-    await store.unset('host');
-
-    expect(store.has('host')).toBe(false);
+    expect(store!.has('host')).toBe(false);
 
     const projectContent = JSON.parse(
       await readFile(
@@ -353,20 +274,17 @@ describe('mutations-unset — unset() API', () => {
     expect(globalContent['host']).toBeUndefined();
     expect(globalContent['debug']).toBe(true);
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('unset writes to each file in sequence', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { host: 'a' });
-    await writeConfig(globalDirectory, 'myapp.config.json', { host: 'b' });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store, projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { host: 'a' },
+      globalConfig: { host: 'b' },
+      watch: true,
     });
 
-    await store.unset('host');
+    await store!.unset('host');
 
     const projectContent = JSON.parse(
       await readFile(
@@ -383,13 +301,10 @@ describe('mutations-unset — unset() API', () => {
     expect(projectContent['host']).toBeUndefined();
     expect(globalContent['host']).toBeUndefined();
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('unset rollback on partial write failure', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { host: 'a' });
-    await writeConfig(globalDirectory, 'myapp.config.json', { host: 'b' });
-
     let serializeCallCount = 0;
     const throwingPlugin = {
       name: 'throwing',
@@ -405,25 +320,22 @@ describe('mutations-unset — unset() API', () => {
       },
     };
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
+      projectConfig: { host: 'a' },
+      globalConfig: { host: 'b' },
+      watch: true,
       formatPlugins: [throwingPlugin],
     });
 
-    await expect(store.unset('host')).rejects.toMatchObject({
+    await expect(store!.unset('host')).rejects.toMatchObject({
       name: 'WriteError',
       code: 'EWRITE',
     });
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('unset already-written files NOT reverted on failure — eventual consistency restored on next re-merge', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { host: 'a' });
-    await writeConfig(globalDirectory, 'myapp.config.json', { host: 'b' });
-
     let serializeCallCount = 0;
     const throwingPlugin = {
       name: 'throwing',
@@ -439,14 +351,14 @@ describe('mutations-unset — unset() API', () => {
       },
     };
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store, globalDirectory } = await setupTest({
+      projectConfig: { host: 'a' },
+      globalConfig: { host: 'b' },
+      watch: true,
       formatPlugins: [throwingPlugin],
     });
 
-    await expect(store.unset('host')).rejects.toThrow();
+    await expect(store!.unset('host')).rejects.toThrow();
 
     const globalFileContent = JSON.parse(
       await readFile(
@@ -456,25 +368,19 @@ describe('mutations-unset — unset() API', () => {
     ) as Record<string, unknown>;
     expect(globalFileContent['host']).toBeUndefined();
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('unset returns Promise<boolean>', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-      host: 'localhost',
+    const { store } = await setupTest({
+      projectConfig: { port: 3000, host: 'localhost' },
+      watch: true,
     });
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
-    });
-
-    const result = store.unset('host');
+    const result = store!.unset('host');
     expect(result).toBeInstanceOf(Promise);
     expect(await result).toBe(true);
 
-    await store.stop();
+    await store!.stop();
   });
 });

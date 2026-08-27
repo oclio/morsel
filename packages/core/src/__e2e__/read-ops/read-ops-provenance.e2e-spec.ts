@@ -1,37 +1,18 @@
-import { mkdir } from 'node:fs/promises';
-
-import {
-  clearWatcherRegistry,
-  createTemporaryEnvironment,
-  writeConfig,
-} from '@oclio/morsel-e2e-helpers';
-
-import { watchConfig } from '@/index';
+import { clearWatcherRegistry, setupTest } from '@oclio/morsel-e2e-helpers';
 
 describe('read-ops-provenance — getProvenance() API', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   it('getProvenance(path): returns value, source, and file for a key from defaults', async () => {
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
       defaults: { port: 3000 },
+      createGlobalDir: true,
+      watch: true,
     });
 
-    const provenance = store.getProvenance('port');
+    const provenance = store!.getProvenance('port');
 
     expect(provenance).toBeDefined();
     expect(provenance?.value).toBe(3000);
@@ -39,41 +20,35 @@ describe('read-ops-provenance — getProvenance() API', () => {
     expect(provenance?.file).toBeUndefined();
     expect(provenance?.overridden).toEqual([]);
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('getProvenance(path) on missing key: returns undefined', async () => {
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
       defaults: { port: 3000 },
+      createGlobalDir: true,
+      watch: true,
     });
 
-    expect(store.getProvenance('missing')).toBeUndefined();
-    expect(store.getProvenance('server.host')).toBeUndefined();
+    expect(store!.getProvenance('missing')).toBeUndefined();
+    expect(store!.getProvenance('server.host')).toBeUndefined();
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('getProvenance after stop: still returns last known provenance', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 8080,
-      host: '0.0.0.0',
-    });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 8080, host: '0.0.0.0' },
       defaults: { port: 3000 },
+      createGlobalDir: true,
+      watch: true,
     });
 
-    expect(store.getProvenance('port')?.value).toBe(8080);
+    expect(store!.getProvenance('port')?.value).toBe(8080);
 
-    await store.stop();
+    await store!.stop();
 
-    const provenance = store.getProvenance('port');
+    const provenance = store!.getProvenance('port');
 
     expect(provenance).toBeDefined();
     expect(provenance?.value).toBe(8080);
@@ -82,17 +57,14 @@ describe('read-ops-provenance — getProvenance() API', () => {
   });
 
   it('getProvenance: override chain across defaults, global, and project', async () => {
-    await writeConfig(globalDirectory, 'myapp.config.json', { port: 5000 });
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store, projectDirectory, globalDirectory } = await setupTest({
+      globalConfig: { port: 5000 },
+      projectConfig: { port: 8080 },
       defaults: { port: 3000 },
+      watch: true,
     });
 
-    const provenance = store.getProvenance('port');
+    const provenance = store!.getProvenance('port');
 
     expect(provenance).toBeDefined();
     expect(provenance?.value).toBe(8080);
@@ -111,15 +83,14 @@ describe('read-ops-provenance — getProvenance() API', () => {
       file: undefined,
     });
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('getProvenance: hook layer populates hookName', async () => {
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
       defaults: { port: 3000 },
+      createGlobalDir: true,
+      watch: true,
       hooks: [
         {
           name: 'feature-flags',
@@ -129,7 +100,7 @@ describe('read-ops-provenance — getProvenance() API', () => {
       ],
     });
 
-    const provenance = store.getProvenance('port');
+    const provenance = store!.getProvenance('port');
 
     expect(provenance).toBeDefined();
     expect(provenance?.value).toBe(4000);
@@ -137,42 +108,39 @@ describe('read-ops-provenance — getProvenance() API', () => {
     expect(provenance?.hookName).toBe('feature-flags');
     expect(provenance?.file).toBeUndefined();
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('getProvenance on object key: returns full object, no recursive descent', async () => {
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
       defaults: {
         server: { host: 'localhost', port: 3000 },
       },
+      createGlobalDir: true,
+      watch: true,
     });
 
-    const provenance = store.getProvenance('server');
+    const provenance = store!.getProvenance('server');
 
     expect(provenance).toBeDefined();
     expect(provenance?.value).toEqual({ host: 'localhost', port: 3000 });
     expect(provenance?.source).toBe('defaults');
     expect(provenance?.overridden).toEqual([]);
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('getProvenance on array key: returns full array, no per-index diff', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      tags: ['prod', 'eu-west'],
-    });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
+      projectConfig: {
+        tags: ['prod', 'eu-west'],
+      },
       defaults: { tags: ['dev'] },
+      createGlobalDir: true,
+      watch: true,
     });
 
-    const provenance = store.getProvenance('tags');
+    const provenance = store!.getProvenance('tags');
 
     expect(provenance).toBeDefined();
     expect(provenance?.value).toEqual(['prod', 'eu-west']);
@@ -185,6 +153,6 @@ describe('read-ops-provenance — getProvenance() API', () => {
       },
     ]);
 
-    await store.stop();
+    await store!.stop();
   });
 });

@@ -1,27 +1,12 @@
-import { mkdir } from 'node:fs/promises';
+import { clearWatcherRegistry, setupTest } from '@oclio/morsel-e2e-helpers';
 
-import {
-  clearWatcherRegistry,
-  createTemporaryEnvironment,
-  writeConfig,
-} from '@oclio/morsel-e2e-helpers';
-
-import { interpolate, loadConfig } from '@/index';
+import { interpolate } from '@/index';
 
 describe('interpolation-env — ${VAR} from process.env', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
   const savedVariables = new Map<string, string | undefined>();
 
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   afterEach(() => {
@@ -44,17 +29,13 @@ describe('interpolation-env — ${VAR} from process.env', () => {
 
   it('${VAR} interpolation from process.env', async () => {
     setEnvironment('MORSEL_PORT', '8080');
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: '${MORSEL_PORT}',
+
+    const { result } = await setupTest({
+      projectConfig: { port: '${MORSEL_PORT}' },
+      createGlobalDir: true,
     });
 
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
-    });
-
-    expect(config).toEqual({ port: '8080' });
+    expect(result!.config).toEqual({ port: '8080' });
   });
 
   it('${VAR} not found → left as-is', async () => {
@@ -62,17 +43,13 @@ describe('interpolation-env — ${VAR} from process.env', () => {
       savedVariables.set('MORSEL_MISSING', process.env['MORSEL_MISSING']);
     }
     Reflect.deleteProperty(process.env, 'MORSEL_MISSING');
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: '${MORSEL_MISSING}',
+
+    const { result } = await setupTest({
+      projectConfig: { port: '${MORSEL_MISSING}' },
+      createGlobalDir: true,
     });
 
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
-    });
-
-    expect(config).toEqual({ port: '${MORSEL_MISSING}' });
+    expect(result!.config).toEqual({ port: '${MORSEL_MISSING}' });
   });
 
   it('${VAR} with whitespace: ${ VAR } → trimmed', async () => {

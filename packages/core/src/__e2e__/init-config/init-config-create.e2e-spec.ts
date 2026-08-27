@@ -1,27 +1,21 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
-import {
-  clearWatcherRegistry,
-  createTemporaryEnvironment,
-} from '@oclio/morsel-e2e-helpers';
+import { clearWatcherRegistry, setupTest } from '@oclio/morsel-e2e-helpers';
 
 import { initConfig } from '@/index';
 
 describe('init-config-create — basic file creation', () => {
-  let directory: string;
-  let projectDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    await mkdir(projectDirectory, { recursive: true });
   });
 
-  it('writes ./<name>.config.json and returns the path', () => {
+  it('writes ./<name>.config.json and returns the path', async () => {
+    const { projectDirectory } = await setupTest({
+      projectConfig: {},
+      projectFilename: '_setup-test.json',
+    });
+
     const result = initConfig({
       name: 'myapp',
       cwd: projectDirectory,
@@ -38,7 +32,12 @@ describe('init-config-create — basic file creation', () => {
     expect(written).toEqual({ port: 3000 });
   });
 
-  it('writes {} when neither content nor fallbackContent provided', () => {
+  it('writes {} when neither content nor fallbackContent provided', async () => {
+    const { projectDirectory } = await setupTest({
+      projectConfig: {},
+      projectFilename: '_setup-test.json',
+    });
+
     const result = initConfig({
       name: 'myapp',
       cwd: projectDirectory,
@@ -53,7 +52,12 @@ describe('init-config-create — basic file creation', () => {
     expect(written).toEqual({});
   });
 
-  it('writes fallbackContent when content is not provided', () => {
+  it('writes fallbackContent when content is not provided', async () => {
+    const { projectDirectory } = await setupTest({
+      projectConfig: {},
+      projectFilename: '_setup-test.json',
+    });
+
     const result = initConfig({
       name: 'myapp',
       cwd: projectDirectory,
@@ -69,7 +73,12 @@ describe('init-config-create — basic file creation', () => {
     expect(written).toEqual({ port: 3000, host: 'localhost' });
   });
 
-  it('content takes priority over fallbackContent when both provided', () => {
+  it('content takes priority over fallbackContent when both provided', async () => {
+    const { projectDirectory } = await setupTest({
+      projectConfig: {},
+      projectFilename: '_setup-test.json',
+    });
+
     const result = initConfig({
       name: 'myapp',
       cwd: projectDirectory,
@@ -84,7 +93,12 @@ describe('init-config-create — basic file creation', () => {
     expect(written).toEqual({ port: 3000 });
   });
 
-  it('mkdir: cwd does not exist → mkdirSync creates parents', () => {
+  it('mkdir: cwd does not exist → mkdirSync creates parents', async () => {
+    const { directory } = await setupTest({
+      projectConfig: {},
+      projectFilename: '_setup-test.json',
+    });
+
     const nestedDirectory = `${directory}/project/nested/deep`;
 
     expect(existsSync(nestedDirectory)).toBe(false);

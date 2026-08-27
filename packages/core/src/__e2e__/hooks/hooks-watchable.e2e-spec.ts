@@ -4,35 +4,27 @@ import path from 'node:path';
 
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
+  setupTest,
   suppressConsoleError,
   waitForRemerge,
-  writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
 import { watchConfig } from '@/index';
 
 describe('hooks-watchable — LayerWatchableHook', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
   suppressConsoleError();
 
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   it('watchPaths directory watched at boot', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
+    });
     const hookDataPath = path.resolve(projectDirectory, 'hook-data.json');
 
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
     await writeFile(
       hookDataPath,
       JSON.stringify({ hookKey: 'initial' }),
@@ -73,9 +65,12 @@ describe('hooks-watchable — LayerWatchableHook', () => {
   });
 
   it('watchable live reload: modify file in watchPaths triggers re-merge', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
+    });
     const hookDataPath = path.resolve(projectDirectory, 'env.json');
 
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
     await writeFile(hookDataPath, JSON.stringify({ env: 'dev' }), 'utf8');
 
     const hooks = [
@@ -108,10 +103,13 @@ describe('hooks-watchable — LayerWatchableHook', () => {
   });
 
   it('watchPaths directory deletion triggers retry', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
+    });
     const watchedDirectory = path.resolve(projectDirectory, 'watched');
     const hookDataPath = path.resolve(watchedDirectory, 'data.json');
 
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
     await mkdir(watchedDirectory, { recursive: true });
     await writeFile(hookDataPath, JSON.stringify({ key: 'initial' }), 'utf8');
 

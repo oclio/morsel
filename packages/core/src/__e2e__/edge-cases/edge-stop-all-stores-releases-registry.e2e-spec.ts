@@ -1,12 +1,6 @@
-import { mkdir } from 'node:fs/promises';
+import { clearWatcherRegistry, setupTest } from '@oclio/morsel-e2e-helpers';
 
-import {
-  clearWatcherRegistry,
-  createTemporaryEnvironment,
-  writeConfig,
-} from '@oclio/morsel-e2e-helpers';
-
-import { clearRegistry, getRegistry, watchConfig } from '@/index';
+import { clearRegistry, getRegistry } from '@/index';
 
 describe('edge-stop-all-stores-releases-registry — registry empty after all stop', () => {
   clearWatcherRegistry();
@@ -14,23 +8,15 @@ describe('edge-stop-all-stores-releases-registry — registry empty after all st
   it('all stores stopped → registry is empty', async () => {
     clearRegistry();
 
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
-    const globalDirectory = `${directory}/global`;
-
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
+      watch: true,
     });
 
     expect(getRegistry().size).toBeGreaterThan(0);
 
-    await store.stop();
+    await store!.stop();
 
     expect(getRegistry().size).toBe(0);
   });

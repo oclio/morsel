@@ -1,29 +1,21 @@
-import { mkdir } from 'node:fs/promises';
-
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
+  setupTest,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
 import { loadConfig } from '@/index';
 
 describe('extends-array — array extends', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   it('extends [B, C] → merge in array order', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     await writeConfig(projectDirectory, 'b.json', {
       port: 8080,
       host: '0.0.0.0',
@@ -47,6 +39,10 @@ describe('extends-array — array extends', () => {
   });
 
   it('extends [B, C] → extendsPaths contains both resolved paths', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     await writeConfig(projectDirectory, 'b.json', { host: '0.0.0.0' });
     await writeConfig(projectDirectory, 'c.json', { timeout: 5000 });
     await writeConfig(projectDirectory, 'myapp.config.json', {
@@ -68,6 +64,10 @@ describe('extends-array — array extends', () => {
   });
 
   it('extends [B, missing] → B merged, missing = exists:false', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     await writeConfig(projectDirectory, 'b.json', { host: '0.0.0.0' });
     await writeConfig(projectDirectory, 'myapp.config.json', {
       extends: ['./b.json', './missing.json'],
@@ -89,6 +89,10 @@ describe('extends-array — array extends', () => {
   });
 
   it('extends array with duplicate paths → extendsPaths deduplicated via Set', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     await writeConfig(projectDirectory, 'base.json', { host: '0.0.0.0' });
     await writeConfig(projectDirectory, 'myapp.config.json', {
       extends: ['./base.json', './base.json'],
@@ -109,6 +113,10 @@ describe('extends-array — array extends', () => {
   });
 
   it('extends array with same file in two branches → not a cycle (visited is per-branch)', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     await writeConfig(projectDirectory, 'shared.json', { host: '0.0.0.0' });
     await writeConfig(projectDirectory, 'b1.json', {
       extends: './shared.json',
@@ -133,6 +141,10 @@ describe('extends-array — array extends', () => {
   });
 
   it('extends array with key conflicts between parents → last parent wins for shared keys', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     await writeConfig(projectDirectory, 'b.json', {
       host: 'b-host',
       port: 8080,

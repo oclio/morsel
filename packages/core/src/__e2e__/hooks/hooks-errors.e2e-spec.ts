@@ -1,33 +1,18 @@
-import { mkdir } from 'node:fs/promises';
-
 import {
   clearWatcherRegistry,
   createDebugCollector,
-  createTemporaryEnvironment,
   setupTest,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
-import { loadConfig, loadConfigSync, watchConfig } from '@/index';
+import { loadConfigSync } from '@/index';
 
 describe('hooks-errors — hook errors', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   it('throw at boot → MorselError(EHOOK)', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
     const hooks = [
       {
         name: 'boom',
@@ -39,12 +24,11 @@ describe('hooks-errors — hook errors', () => {
     ];
 
     await expect(
-      loadConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: globalDirectory,
+      setupTest({
+        projectConfig: { port: 3000 },
+        createGlobalDir: true,
         hooks,
-      }),
+      } as never),
     ).rejects.toMatchObject({
       name: 'MorselError',
       code: 'EHOOK',
@@ -52,8 +36,6 @@ describe('hooks-errors — hook errors', () => {
   });
 
   it('throw on re-merge → config kept, onDebug routed', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
     let shouldThrow = false;
     const { contexts, callback } = createDebugCollector();
 
@@ -70,25 +52,25 @@ describe('hooks-errors — hook errors', () => {
       },
     ];
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
+      createGlobalDir: true,
       hooks,
       onDebug: callback,
-    });
+    } as never);
 
-    expect(store.config).toEqual({ hookKey: 'hook-value', port: 3000 });
+    expect(store!.config).toEqual({ hookKey: 'hook-value', port: 3000 });
 
     shouldThrow = true;
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
 
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    expect(store.config).toEqual({ hookKey: 'hook-value', port: 3000 });
+    expect(store!.config).toEqual({ hookKey: 'hook-value', port: 3000 });
     expect(contexts.some((context) => context['code'] === 'EHOOK')).toBe(true);
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('hook recovery: stop throwing on re-merge → config updates', async () => {
@@ -133,7 +115,10 @@ describe('hooks-errors — hook errors', () => {
   });
 
   it('async hook in loadConfigSync: error message contains hook name', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
+    });
 
     const hooks = [
       {
