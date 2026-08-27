@@ -6,6 +6,7 @@ import {
   createDebugCollector,
   createTemporaryEnvironment,
   setupTest,
+  withEnvironmentVariable,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
@@ -104,10 +105,7 @@ describe('boot-options — resolveOptions defaults', () => {
   });
 
   it('applies $env block matching explicit envName, not NODE_ENV', async () => {
-    const previousNodeEnvironment = process.env['NODE_ENV'];
-    process.env['NODE_ENV'] = 'ci';
-
-    try {
+    await withEnvironmentVariable('NODE_ENV', 'ci', async () => {
       const { result } = await setupTest({
         rootAsCwd: true,
         projectConfig: {
@@ -121,20 +119,11 @@ describe('boot-options — resolveOptions defaults', () => {
       });
 
       expect(result!.config).toEqual({ port: 9000 });
-    } finally {
-      if (previousNodeEnvironment === undefined) {
-        delete process.env['NODE_ENV'];
-      } else {
-        process.env['NODE_ENV'] = previousNodeEnvironment;
-      }
-    }
+    });
   });
 
   it('applies $env block matching process.env.NODE_ENV', async () => {
-    const previousNodeEnvironment = process.env['NODE_ENV'];
-    process.env['NODE_ENV'] = 'ci';
-
-    try {
+    await withEnvironmentVariable('NODE_ENV', 'ci', async () => {
       const { result } = await setupTest({
         rootAsCwd: true,
         projectConfig: {
@@ -147,22 +136,13 @@ describe('boot-options — resolveOptions defaults', () => {
       });
 
       expect(result!.config).toEqual({ port: 8080 });
-    } finally {
-      if (previousNodeEnvironment === undefined) {
-        delete process.env['NODE_ENV'];
-      } else {
-        process.env['NODE_ENV'] = previousNodeEnvironment;
-      }
-    }
+    });
   });
 
   it('ignores $env block and warns onDebug when NODE_ENV unset', async () => {
-    const previousNodeEnvironment = process.env['NODE_ENV'];
-    delete process.env['NODE_ENV'];
-
     const { messages: debugMessages, callback } = createDebugCollector();
 
-    try {
+    await withEnvironmentVariable('NODE_ENV', undefined, async () => {
       const { result } = await setupTest({
         rootAsCwd: true,
         projectConfig: {
@@ -179,13 +159,7 @@ describe('boot-options — resolveOptions defaults', () => {
       expect(debugMessages.some((message) => message.includes('$env'))).toBe(
         true,
       );
-    } finally {
-      if (previousNodeEnvironment === undefined) {
-        delete process.env['NODE_ENV'];
-      } else {
-        process.env['NODE_ENV'] = previousNodeEnvironment;
-      }
-    }
+    });
   });
 
   it('verbose: true accepted at boot, config loads without error', async () => {

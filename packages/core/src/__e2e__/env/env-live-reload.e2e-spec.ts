@@ -3,6 +3,7 @@ import {
   clearWatcherRegistry,
   setupTest,
   suppressConsoleError,
+  withEnvironmentVariable,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
@@ -89,10 +90,7 @@ describe('env-live-reload — watch + $env', () => {
   });
 
   it('NODE_ENV change after boot does not affect envName', async () => {
-    const previousNodeEnvironment = process.env['NODE_ENV'];
-    process.env['NODE_ENV'] = 'development';
-
-    try {
+    await withEnvironmentVariable('NODE_ENV', 'development', async () => {
       const { store, projectDirectory } = await setupTest({
         projectConfig: {
           port: 3000,
@@ -128,12 +126,6 @@ describe('env-live-reload — watch + $env', () => {
       expect(store!.config).toEqual({ port: 8080, label: 'dev' });
 
       await store!.stop();
-    } finally {
-      if (previousNodeEnvironment === undefined) {
-        delete process.env['NODE_ENV'];
-      } else {
-        process.env['NODE_ENV'] = previousNodeEnvironment;
-      }
-    }
+    });
   });
 });

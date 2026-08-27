@@ -2,6 +2,7 @@ import {
   assertRemerge,
   clearWatcherRegistry,
   setupTest,
+  withEnvironmentVariable,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
@@ -291,12 +292,9 @@ describe('hooks-lifecycle — layer insertion and ordering', () => {
   });
 
   it('HookContext.cwd and envName correct with defaults', async () => {
-    const previousNodeEnvironment = process.env['NODE_ENV'];
-    process.env['NODE_ENV'] = 'production';
-
     let receivedEnvironmentName: string | undefined;
 
-    try {
+    await withEnvironmentVariable('NODE_ENV', 'production', async () => {
       const hooks = [
         {
           name: 'context-hook',
@@ -315,12 +313,6 @@ describe('hooks-lifecycle — layer insertion and ordering', () => {
       } as never);
 
       expect(receivedEnvironmentName).toBe('production');
-    } finally {
-      if (previousNodeEnvironment === undefined) {
-        delete process.env['NODE_ENV'];
-      } else {
-        process.env['NODE_ENV'] = previousNodeEnvironment;
-      }
-    }
+    });
   });
 });

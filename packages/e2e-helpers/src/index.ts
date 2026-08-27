@@ -25,4 +25,5 @@ export type { EventObservable } from './wait-event';
 export { waitForEvent } from './wait-event';
 export type { ReadableStore } from './wait-remerge';
 export { waitForRemerge } from './wait-remerge';
+export { withEnvironmentVariable } from './with-env-variable';
 export { writeConfig } from './write-config';

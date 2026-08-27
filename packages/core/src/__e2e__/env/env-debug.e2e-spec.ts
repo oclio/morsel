@@ -5,77 +5,67 @@ import {
   createDebugCollector,
   setupTest,
   suppressConsoleError,
+  withEnvironmentVariable,
 } from '@oclio/morsel-e2e-helpers';
 
 describe('env-debug — debug channels', () => {
-  let previousNodeEnvironment: string | undefined;
-
   suppressConsoleError();
 
   beforeEach(() => {
     clearWatcherRegistry();
-    previousNodeEnvironment = process.env['NODE_ENV'];
-  });
-
-  afterEach(() => {
-    if (previousNodeEnvironment === undefined) {
-      delete process.env['NODE_ENV'];
-    } else {
-      process.env['NODE_ENV'] = previousNodeEnvironment;
-    }
   });
 
   it('$env undefined warns via onDebug', async () => {
-    delete process.env['NODE_ENV'];
+    await withEnvironmentVariable('NODE_ENV', undefined, async () => {
+      const { messages: debugMessages, callback } = createDebugCollector();
 
-    const { messages: debugMessages, callback } = createDebugCollector();
-
-    const { result } = await setupTest({
-      projectConfig: {
-        port: 3000,
-        $env: {
-          ci: { port: 8080 },
+      const { result } = await setupTest({
+        projectConfig: {
+          port: 3000,
+          $env: {
+            ci: { port: 8080 },
+          },
         },
-      },
-      onDebug: callback,
-    });
+        onDebug: callback,
+      });
 
-    expect(result!.config).toEqual({ port: 3000 });
-    expect(debugMessages.some((message) => message.includes('$env'))).toBe(
-      true,
-    );
+      expect(result!.config).toEqual({ port: 3000 });
+      expect(debugMessages.some((message) => message.includes('$env'))).toBe(
+        true,
+      );
+    });
   });
 
   it('$env undefined with onDebug === noop — message goes to stderr', async () => {
-    delete process.env['NODE_ENV'];
-
-    const { result } = await setupTest({
-      projectConfig: {
-        port: 3000,
-        $env: {
-          ci: { port: 8080 },
+    await withEnvironmentVariable('NODE_ENV', undefined, async () => {
+      const { result } = await setupTest({
+        projectConfig: {
+          port: 3000,
+          $env: {
+            ci: { port: 8080 },
+          },
         },
-      },
-    });
+      });
 
-    expect(result!.config).toEqual({ port: 3000 });
-    expect(console.error).toHaveBeenCalled();
+      expect(result!.config).toEqual({ port: 3000 });
+      expect(console.error).toHaveBeenCalled();
+    });
   });
 
   it('$env undefined with no onDebug option — message goes to stderr', async () => {
-    delete process.env['NODE_ENV'];
-
-    const { result } = await setupTest({
-      projectConfig: {
-        port: 3000,
-        $env: {
-          ci: { port: 8080 },
+    await withEnvironmentVariable('NODE_ENV', undefined, async () => {
+      const { result } = await setupTest({
+        projectConfig: {
+          port: 3000,
+          $env: {
+            ci: { port: 8080 },
+          },
         },
-      },
-    });
+      });
 
-    expect(result!.config).toEqual({ port: 3000 });
-    expect(console.error).toHaveBeenCalled();
+      expect(result!.config).toEqual({ port: 3000 });
+      expect(console.error).toHaveBeenCalled();
+    });
   });
 
   it('re-merge failure with empty onDebug → no stderr, config kept', async () => {
