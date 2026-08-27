@@ -1,8 +1,6 @@
 import { createMockStoreState, setupStoreMocks } from '@oclio/test-helpers';
 
-import { applyValidation } from '@/load/apply-validation';
-import { applyMutability, mergeLayers } from '@/load/merge-layers';
-import { interpolate } from '@/merge/interpolate';
+import { processConfig } from '@/load/process-config';
 import { emitChanges } from '@/store/reactive/emit-changes';
 import {
   applyOptimisticUpdate,
@@ -13,15 +11,8 @@ import type { StoreState } from '@/store/store-state';
 import type { MorselLayer } from '@/store/types';
 import { deepClone } from '@/utils/deep-clone';
 
-vi.mock('@/load/apply-validation', () => ({
-  applyValidation: vi.fn(),
-}));
-vi.mock('@/load/merge-layers', () => ({
-  applyMutability: vi.fn(),
-  mergeLayers: vi.fn(),
-}));
-vi.mock('@/merge/interpolate', () => ({
-  interpolate: vi.fn(),
+vi.mock('@/load/process-config', () => ({
+  processConfig: vi.fn(),
 }));
 vi.mock('@/store/reactive/emit-changes', () => ({
   emitChanges: vi.fn(),
@@ -44,6 +35,11 @@ function createState<T extends Record<string, unknown>>(
         extendsPaths: [],
       },
     ],
+    options: {
+      arrayMerge: 'replace',
+      validationPlugins: [],
+      configMutability: 'mutable',
+    },
     ...overrides,
   }) as unknown as StoreState<T>;
 }
@@ -51,10 +47,7 @@ function createState<T extends Record<string, unknown>>(
 describe('store-optimistic-update', () => {
   beforeEach(() => {
     setupStoreMocks({
-      applyValidation,
-      applyMutability,
-      mergeLayers,
-      interpolate,
+      processConfig,
       deepClone,
       emitChanges,
     });
@@ -127,8 +120,10 @@ describe('store-optimistic-update', () => {
         },
       );
 
-      expect(applyMutability).toHaveBeenCalledWith(
-        expect.any(Object),
+      expect(processConfig).toHaveBeenCalledWith(
+        expect.any(Array),
+        expect.any(String),
+        expect.any(Array),
         'frozen',
       );
       expect(state.lastConfig).toBe(state._config);
@@ -149,7 +144,12 @@ describe('store-optimistic-update', () => {
         },
       );
 
-      expect(deepClone).toHaveBeenCalled();
+      expect(processConfig).toHaveBeenCalledWith(
+        expect.any(Array),
+        expect.any(String),
+        expect.any(Array),
+        'mutable',
+      );
       expect(state.lastConfig).not.toBe(state._config);
     });
   });
@@ -217,8 +217,10 @@ describe('store-optimistic-update', () => {
         },
       );
 
-      expect(applyMutability).toHaveBeenCalledWith(
-        expect.any(Object),
+      expect(processConfig).toHaveBeenCalledWith(
+        expect.any(Array),
+        expect.any(String),
+        expect.any(Array),
         'frozen',
       );
       expect(state.lastConfig).toBe(state._config);
@@ -239,7 +241,12 @@ describe('store-optimistic-update', () => {
         },
       );
 
-      expect(deepClone).toHaveBeenCalled();
+      expect(processConfig).toHaveBeenCalledWith(
+        expect.any(Array),
+        expect.any(String),
+        expect.any(Array),
+        'mutable',
+      );
       expect(state.lastConfig).not.toBe(state._config);
     });
   });

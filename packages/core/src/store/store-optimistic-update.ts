@@ -1,12 +1,35 @@
-import { applyValidation } from '@/load/apply-validation';
-import { applyMutability, mergeLayers } from '@/load/merge-layers';
-import { interpolate } from '@/merge/interpolate';
+import { processConfig } from '@/load/process-config';
 import { emitChanges } from '@/store/reactive/emit-changes';
 import type { StoreState } from '@/store/store-state';
 import type { MorselLayer } from '@/store/types';
 import { deepClone } from '@/utils/deep-clone';
 
 type ConfigRecord = Record<string, unknown>;
+
+/**
+ * Map over the store's layers, applying a mutation to those matching
+ * `targetFiles`. Returns `{ layers, changed }` — `changed` is false if no
+ * layer was actually modified.
+ */
+function mutateLayers(
+  layers: readonly MorselLayer[],
+  targetFiles: string[],
+  mutation: (layerConfig: ConfigRecord) => boolean,
+): { layers: MorselLayer[]; changed: boolean } {
+  let changed = false;
+  const newLayers = layers.map((layer) => {
+    if (targetFiles.includes(layer.path as string)) {
+      const clonedConfig = deepClone(layer.config);
+      const isChanged = mutation(clonedConfig);
+      if (isChanged) {
+        changed = true;
+        return { ...layer, config: clonedConfig } as MorselLayer;
+      }
+    }
+    return layer;
+  });
+  return { layers: newLayers, changed };
+}
 
 /**
  * Update the targeted layer in memory, re-merge the entire cascade,
@@ -20,42 +43,25 @@ export function applyOptimisticUpdateSilent<T extends ConfigRecord>(
   targetFiles: string[],
   mutation: (layerConfig: ConfigRecord) => boolean,
 ): boolean {
-  let isAnyLayerChanged = false;
-  const newLayers = state._layers.map((layer) => {
-    if (targetFiles.includes(layer.path as string)) {
-      const clonedConfig = deepClone(layer.config);
-      const isChanged = mutation(clonedConfig);
-      if (isChanged) {
-        isAnyLayerChanged = true;
-        return {
-          ...layer,
-          config: clonedConfig,
-        } as MorselLayer;
-      }
-    }
-    return layer;
-  });
-
-  if (!isAnyLayerChanged) {
+  const { layers: newLayers, changed } = mutateLayers(
+    state._layers,
+    targetFiles,
+    mutation,
+  );
+  if (!changed) {
     return false;
   }
 
-  const merged = mergeLayers(
+  const { config, lastConfig } = processConfig<T>(
     newLayers as unknown as import('@/load/resolve-layer').ResolvedLayer[],
     state.options.arrayMerge,
-  );
-  const interpolated = interpolate(merged);
-  const validated = applyValidation(
-    interpolated,
     state.options.validationPlugins,
+    mutability,
   );
-  const newConfig = applyMutability(validated, mutability) as T;
-  const newLastConfig =
-    mutability === 'mutable' ? deepClone(validated) : validated;
 
   state._layers = newLayers;
-  state._config = newConfig;
-  state.lastConfig = newLastConfig;
+  state._config = config;
+  state.lastConfig = lastConfig;
 
   return true;
 }
@@ -71,44 +77,27 @@ export function applyOptimisticUpdate<T extends ConfigRecord>(
   targetFiles: string[],
   mutation: (layerConfig: ConfigRecord) => boolean,
 ): boolean {
-  let isAnyLayerChanged = false;
-  const newLayers = state._layers.map((layer) => {
-    if (targetFiles.includes(layer.path as string)) {
-      const clonedConfig = deepClone(layer.config);
-      const isChanged = mutation(clonedConfig);
-      if (isChanged) {
-        isAnyLayerChanged = true;
-        return {
-          ...layer,
-          config: clonedConfig,
-        } as MorselLayer;
-      }
-    }
-    return layer;
-  });
-
-  if (!isAnyLayerChanged) {
+  const { layers: newLayers, changed } = mutateLayers(
+    state._layers,
+    targetFiles,
+    mutation,
+  );
+  if (!changed) {
     return false;
   }
 
-  const merged = mergeLayers(
+  const { config, validated, lastConfig } = processConfig<T>(
     newLayers as unknown as import('@/load/resolve-layer').ResolvedLayer[],
     state.options.arrayMerge,
-  );
-  const interpolated = interpolate(merged);
-  const validated = applyValidation(
-    interpolated,
     state.options.validationPlugins,
+    mutability,
   );
-  const newConfig = applyMutability(validated, mutability) as T;
-  const newLastConfig =
-    mutability === 'mutable' ? deepClone(validated) : validated;
 
   const previousSnapshot = state._config;
 
   state._layers = newLayers;
-  state._config = newConfig;
-  state.lastConfig = newLastConfig;
+  state._config = config;
+  state.lastConfig = lastConfig;
 
   emitChanges(
     previousSnapshot,

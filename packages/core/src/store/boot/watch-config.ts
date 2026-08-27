@@ -1,10 +1,8 @@
 import { MorselError } from '@/errors/error';
 import { createHookContext } from '@/hooks/hook-context';
 import type { Hook, HookContext } from '@/hooks/types';
-import { applyValidation } from '@/load/apply-validation';
 import { buildLayers } from '@/load/build-layers';
-import { applyMutability, mergeLayers } from '@/load/merge-layers';
-import { interpolate } from '@/merge/interpolate';
+import { processConfig } from '@/load/process-config';
 import { resolveGlobalPath, resolveProjectPath } from '@/paths/resolve-paths';
 import { resolveOptions } from '@/store/boot/assert-name';
 import { toMorselLayer } from '@/store/layer';
@@ -93,10 +91,12 @@ export async function watchConfig<T extends ConfigRecord = ConfigRecord>(
     triggerRemerge,
   );
 
-  const merged = mergeLayers(layers, resolved.arrayMerge);
-  const interpolated = interpolate(merged);
-  const validated = applyValidation(interpolated, resolved.validationPlugins);
-  const config = applyMutability(validated, resolved.configMutability) as T;
+  const { config } = processConfig<T>(
+    layers,
+    resolved.arrayMerge,
+    resolved.validationPlugins,
+    resolved.configMutability,
+  );
   const morselLayers = layers.map((layer) => toMorselLayer(layer));
 
   const debounceMs = options.watchDebounce ?? 300;

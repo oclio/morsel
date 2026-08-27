@@ -1,11 +1,9 @@
 import { createHookContext } from '@/hooks/hook-context';
 import { runHooksSync } from '@/hooks/run-hooks';
-import { applyValidation } from '@/load/apply-validation';
 import { buildLayers } from '@/load/build-layers';
-import { applyMutability, mergeLayers } from '@/load/merge-layers';
+import { processConfig } from '@/load/process-config';
 import type { ResolvedLayer } from '@/load/resolve-layer';
 import { resolveLayerSync } from '@/load/resolve-layer-sync';
-import { interpolate } from '@/merge/interpolate';
 import {
   resolveGlobalPath,
   resolveGlobalPathSync,
@@ -56,10 +54,12 @@ export function loadConfigSync<T extends ConfigRecord = ConfigRecord>(
     ...runHooksSync(hooks, 'after:overrides', context, onDebug),
   ];
 
-  const merged = mergeLayers(layers, resolved.arrayMerge);
-  const interpolated = interpolate(merged);
-  const validated = applyValidation(interpolated, resolved.validationPlugins);
-  const config = applyMutability(validated, resolved.configMutability) as T;
+  const { config } = processConfig<T>(
+    layers,
+    resolved.arrayMerge,
+    resolved.validationPlugins,
+    resolved.configMutability,
+  );
 
   return {
     config,
@@ -91,10 +91,12 @@ export async function loadConfig<T extends ConfigRecord = ConfigRecord>(
     projectPath,
   );
 
-  const merged = mergeLayers(layers, resolved.arrayMerge);
-  const interpolated = interpolate(merged);
-  const validated = applyValidation(interpolated, resolved.validationPlugins);
-  const config = applyMutability(validated, resolved.configMutability) as T;
+  const { config } = processConfig<T>(
+    layers,
+    resolved.arrayMerge,
+    resolved.validationPlugins,
+    resolved.configMutability,
+  );
 
   return {
     config,
