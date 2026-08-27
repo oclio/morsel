@@ -1,38 +1,27 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 
 import {
+  assertRemerge,
   clearWatcherRegistry,
   createDebugCollector,
-  createTemporaryEnvironment,
   setupTest,
+  suppressConsoleError,
   waitForDebugContext,
-  waitForRemerge,
   writeConfig,
-} from '@oclio/morsel-e2e-helpers';
-
-import { watchConfig } from '@/index';
+} from '@oclio/test-helpers';
 
 describe('watch-lifecycle-recovery — directory deletion & reconnection', () => {
+  suppressConsoleError();
+
   beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
     clearWatcherRegistry();
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it('directory deleted → fs.watch crash, config stays frozen', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
-
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-    await mkdir(`${directory}/global`, { recursive: true });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: `${directory}/global`,
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
+      createGlobalDir: true,
       defaults: { port: 4000 },
       onDebug: () => {},
     });
@@ -40,22 +29,16 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
     await rm(projectDirectory, { recursive: true, force: true });
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    expect(store.config).toEqual({ port: 3000 });
+    expect(store!.config).toEqual({ port: 3000 });
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('directory recreated → future fires captured', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
-
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-    await mkdir(`${directory}/global`, { recursive: true });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: `${directory}/global`,
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
+      createGlobalDir: true,
       defaults: { port: 4000 },
       onDebug: () => {},
     });
@@ -66,59 +49,36 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
     await mkdir(projectDirectory, { recursive: true });
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
 
-    await waitForRemerge(
-      store,
-      (config) => (config as Record<string, unknown>)['port'] === 8080,
-    );
+    await assertRemerge(store!, { port: 8080 });
 
-    expect(store.config).toEqual({ port: 8080 });
-
-    await store.stop();
+    await store!.stop();
   });
 
   it('createWatcher when directory does not exist → startRecovery immediate', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
-    const nonexistentGlobal = `${directory}/nonexistent-global`;
-
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: nonexistentGlobal,
+    const { store, globalDirectory: nonexistentGlobal } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
       defaults: { port: 3000, host: 'localhost' },
       onDebug: () => {},
     });
 
-    expect(store.config).toEqual({ port: 3000, host: 'localhost' });
+    expect(store!.config).toEqual({ port: 3000, host: 'localhost' });
 
     await mkdir(nonexistentGlobal, { recursive: true });
     await writeConfig(nonexistentGlobal, 'myapp.config.json', {
       host: '0.0.0.0',
     });
 
-    await waitForRemerge(
-      store,
-      (config) => (config as Record<string, unknown>)['host'] === '0.0.0.0',
-    );
+    await assertRemerge(store!, { port: 3000, host: '0.0.0.0' });
 
-    expect(store.config).toEqual({ port: 3000, host: '0.0.0.0' });
-
-    await store.stop();
+    await store!.stop();
   });
 
   it('retry timer polling every 1 second → reconnection within ~2s', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
-
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-    await mkdir(`${directory}/global`, { recursive: true });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: `${directory}/global`,
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
+      createGlobalDir: true,
       defaults: { port: 4000 },
       onDebug: () => {},
     });
@@ -129,34 +89,20 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
     await mkdir(projectDirectory, { recursive: true });
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
 
-    await waitForRemerge(
-      store,
-      (config) => (config as Record<string, unknown>)['port'] === 8080,
-    );
+    await assertRemerge(store!, { port: 8080 });
 
-    expect(store.config).toEqual({ port: 8080 });
-
-    await store.stop();
+    await store!.stop();
   });
 
   it('reconnection triggers full re-merge', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
-
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-    await mkdir(`${directory}/global`, { recursive: true });
-    await writeConfig(`${directory}/global`, 'myapp.config.json', {
-      host: '0.0.0.0',
-    });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: `${directory}/global`,
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      globalConfig: { host: '0.0.0.0' },
+      watch: true,
       onDebug: () => {},
     });
 
-    expect(store.config).toEqual({ port: 3000, host: '0.0.0.0' });
+    expect(store!.config).toEqual({ port: 3000, host: '0.0.0.0' });
 
     await rm(projectDirectory, { recursive: true, force: true });
     await new Promise((resolve) => setTimeout(resolve, 1100));
@@ -167,34 +113,21 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
       host: '127.0.0.1',
     });
 
-    await waitForRemerge(
-      store,
-      (config) => config['port'] === 8080 && config['host'] === '127.0.0.1',
-    );
+    await assertRemerge(store!, { port: 8080, host: '127.0.0.1' });
 
-    expect(store.config).toEqual({ port: 8080, host: '127.0.0.1' });
-
-    await store.stop();
+    await store!.stop();
   });
 
   it('verbose: true → full logging via onDebug', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
+    const { messages: debugMessages, callback } = createDebugCollector();
 
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-    await mkdir(`${directory}/global`, { recursive: true });
-
-    const debugMessages: string[] = [];
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: `${directory}/global`,
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
+      createGlobalDir: true,
       defaults: { port: 4000 },
       verbose: true,
-      onDebug: (message: string) => {
-        debugMessages.push(message);
-      },
+      onDebug: callback,
     });
 
     await rm(projectDirectory, { recursive: true, force: true });
@@ -202,7 +135,7 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
 
     expect(debugMessages.length).toBeGreaterThan(0);
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('verbose mode logs re-merge error with code and path in context', async () => {
@@ -237,22 +170,14 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
   });
 
   it('logToStores: onDebug per store, stderr once for noop stores', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
+    const { messages: debugMessages, callback } = createDebugCollector();
 
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-    await mkdir(`${directory}/global`, { recursive: true });
-
-    const debugMessages: string[] = [];
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: `${directory}/global`,
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
+      createGlobalDir: true,
       defaults: { port: 4000 },
-      onDebug: (message: string) => {
-        debugMessages.push(message);
-      },
+      onDebug: callback,
     });
 
     await rm(projectDirectory, { recursive: true, force: true });
@@ -267,28 +192,22 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
       true,
     );
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('onDebug noop → stderr fallback for re-merge errors', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
-
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-    await mkdir(`${directory}/global`, { recursive: true });
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: `${directory}/global`,
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
+      createGlobalDir: true,
       defaults: { port: 4000 },
     });
 
     await rm(projectDirectory, { recursive: true, force: true });
     await new Promise((resolve) => setTimeout(resolve, 1100));
 
-    expect(store.config).toEqual({ port: 3000 });
+    expect(store!.config).toEqual({ port: 3000 });
 
-    await store.stop();
+    await store!.stop();
   });
 });

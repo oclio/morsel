@@ -1,29 +1,22 @@
-import { mkdir } from 'node:fs/promises';
-
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
+  setupTest,
   writeConfig,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/test-helpers';
 
 import { loadConfig } from '@/index';
 
 describe('extends-layers — extends in non-project layers', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   it('extends in defaults → silently stripped (no throw, no warn)', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
+    });
+
     await writeConfig(projectDirectory, 'base.json', { host: '0.0.0.0' });
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
 
@@ -40,6 +33,11 @@ describe('extends-layers — extends in non-project layers', () => {
   });
 
   it('extends in overrides → silently stripped', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
+    });
+
     await writeConfig(projectDirectory, 'base.json', { host: '0.0.0.0' });
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
 
@@ -56,6 +54,11 @@ describe('extends-layers — extends in non-project layers', () => {
   });
 
   it('extends in global file → resolveExtends + cleanup applied', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
+    });
+
     await writeConfig(projectDirectory, 'base.json', { host: '0.0.0.0' });
     await writeConfig(globalDirectory, 'myapp.config.json', {
       extends: '../project/base.json',
@@ -74,6 +77,11 @@ describe('extends-layers — extends in non-project layers', () => {
   });
 
   it('extends in hook output → silently stripped', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
+    });
+
     await writeConfig(projectDirectory, 'base.json', { host: '0.0.0.0' });
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
 

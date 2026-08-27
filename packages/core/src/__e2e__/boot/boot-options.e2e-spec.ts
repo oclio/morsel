@@ -3,10 +3,12 @@ import path from 'node:path';
 
 import {
   clearWatcherRegistry,
+  createDebugCollector,
   createTemporaryEnvironment,
   setupTest,
+  withEnvironmentVariable,
   writeConfig,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/test-helpers';
 
 import { loadConfig } from '@/index';
 
@@ -103,10 +105,7 @@ describe('boot-options — resolveOptions defaults', () => {
   });
 
   it('applies $env block matching explicit envName, not NODE_ENV', async () => {
-    const previousNodeEnvironment = process.env['NODE_ENV'];
-    process.env['NODE_ENV'] = 'ci';
-
-    try {
+    await withEnvironmentVariable('NODE_ENV', 'ci', async () => {
       const { result } = await setupTest({
         rootAsCwd: true,
         projectConfig: {
@@ -120,20 +119,11 @@ describe('boot-options — resolveOptions defaults', () => {
       });
 
       expect(result!.config).toEqual({ port: 9000 });
-    } finally {
-      if (previousNodeEnvironment === undefined) {
-        delete process.env['NODE_ENV'];
-      } else {
-        process.env['NODE_ENV'] = previousNodeEnvironment;
-      }
-    }
+    });
   });
 
   it('applies $env block matching process.env.NODE_ENV', async () => {
-    const previousNodeEnvironment = process.env['NODE_ENV'];
-    process.env['NODE_ENV'] = 'ci';
-
-    try {
+    await withEnvironmentVariable('NODE_ENV', 'ci', async () => {
       const { result } = await setupTest({
         rootAsCwd: true,
         projectConfig: {
@@ -146,52 +136,30 @@ describe('boot-options — resolveOptions defaults', () => {
       });
 
       expect(result!.config).toEqual({ port: 8080 });
-    } finally {
-      if (previousNodeEnvironment === undefined) {
-        delete process.env['NODE_ENV'];
-      } else {
-        process.env['NODE_ENV'] = previousNodeEnvironment;
-      }
-    }
+    });
   });
 
   it('ignores $env block and warns onDebug when NODE_ENV unset', async () => {
-    const previousNodeEnvironment = process.env['NODE_ENV'];
-    delete process.env['NODE_ENV'];
+    const { messages: debugMessages, callback } = createDebugCollector();
 
-    const debugMessages: string[] = [];
-
-    try {
-      const { directory } = await createTemporaryEnvironment();
-
-      await writeConfig(directory, 'myapp.config.json', {
-        port: 3000,
-        $env: {
-          ci: { port: 8080 },
+    await withEnvironmentVariable('NODE_ENV', undefined, async () => {
+      const { result } = await setupTest({
+        rootAsCwd: true,
+        projectConfig: {
+          port: 3000,
+          $env: {
+            ci: { port: 8080 },
+          },
         },
+        onDebug: callback,
       });
 
-      const { config } = await loadConfig({
-        name: 'myapp',
-        cwd: directory,
-        globalDir: `${directory}/global`,
-        onDebug: (message: string) => {
-          debugMessages.push(message);
-        },
-      });
-
-      expect(config).toEqual({ port: 3000 });
+      expect(result!.config).toEqual({ port: 3000 });
       expect(debugMessages.length).toBeGreaterThan(0);
       expect(debugMessages.some((message) => message.includes('$env'))).toBe(
         true,
       );
-    } finally {
-      if (previousNodeEnvironment === undefined) {
-        delete process.env['NODE_ENV'];
-      } else {
-        process.env['NODE_ENV'] = previousNodeEnvironment;
-      }
-    }
+    });
   });
 
   it('verbose: true accepted at boot, config loads without error', async () => {
@@ -220,14 +188,12 @@ describe('boot-options — resolveOptions defaults', () => {
   });
 
   it('onDebug at boot only fires on warnings, not on clean boot', async () => {
-    const debugMessages: string[] = [];
+    const { messages: debugMessages, callback } = createDebugCollector();
 
     const { result } = await setupTest({
       rootAsCwd: true,
       projectConfig: { port: 3000 },
-      onDebug: (message: string) => {
-        debugMessages.push(message);
-      },
+      onDebug: callback,
     });
 
     expect(result!.config).toEqual({ port: 3000 });

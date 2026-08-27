@@ -2,7 +2,11 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { clearWatcherRegistry, setupTest } from '@oclio/morsel-e2e-helpers';
+import {
+  clearWatcherRegistry,
+  createDebugCollector,
+  setupTest,
+} from '@oclio/test-helpers';
 
 import { loadConfigSync } from '@/index';
 
@@ -239,7 +243,7 @@ describe('boot-layers — layer resolution + $env + hooks', () => {
   });
 
   it('$env block not a plain object → debug warning, $env ignored', async () => {
-    const debugMessages: string[] = [];
+    const { messages: debugMessages, callback } = createDebugCollector();
 
     const { result } = await setupTest({
       rootAsCwd: true,
@@ -248,9 +252,7 @@ describe('boot-layers — layer resolution + $env + hooks', () => {
         port: 3000,
         $env: 'not-an-object',
       },
-      onDebug: (message: string) => {
-        debugMessages.push(message);
-      },
+      onDebug: callback,
     } as never);
 
     expect(result!.config).toEqual({ port: 3000 });
@@ -258,7 +260,7 @@ describe('boot-layers — layer resolution + $env + hooks', () => {
   });
 
   it('envName matches but $env[envName] not a plain object → $env silently ignored, no warning', async () => {
-    const debugMessages: string[] = [];
+    const { messages: debugMessages, callback } = createDebugCollector();
 
     const { result } = await setupTest({
       rootAsCwd: true,
@@ -269,9 +271,7 @@ describe('boot-layers — layer resolution + $env + hooks', () => {
           production: 'not-an-object',
         },
       },
-      onDebug: (message: string) => {
-        debugMessages.push(message);
-      },
+      onDebug: callback,
     } as never);
 
     expect(result!.config).toEqual({ port: 3000 });

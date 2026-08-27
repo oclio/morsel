@@ -2,48 +2,34 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import {
-  clearWatcherRegistry,
-  createTemporaryEnvironment,
-  writeConfig,
-} from '@oclio/morsel-e2e-helpers';
+import { clearWatcherRegistry, setupTest } from '@oclio/test-helpers';
 
 import type { Hook } from '@/index';
-import { loadConfig, loadConfigSync } from '@/index';
+import { loadConfigSync } from '@/index';
 
 describe('cascade-reserved-keys — reserved keys stripped', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
   });
 
   it('extends and $env stripped from file layers, defaults, and overrides', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-      $env: {
-        ci: { port: 8080 },
-      },
-      extends: './base.json',
-    });
-
     const previousNodeEnvironment = process.env['NODE_ENV'];
     process.env['NODE_ENV'] = 'ci';
 
     try {
-      const { config, layers } = await loadConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: globalDirectory,
+      const { result } = await setupTest({
+        projectConfig: {
+          port: 3000,
+          $env: {
+            ci: { port: 8080 },
+          },
+          extends: './base.json',
+        },
         defaults: { port: 4000, extends: './defaults-base.json' },
         overrides: { debug: true, extends: './overrides-base.json' },
       });
+
+      const { config, layers } = result!;
 
       expect(config).not.toHaveProperty('$env');
       expect(config).not.toHaveProperty('extends');
@@ -76,13 +62,12 @@ describe('cascade-reserved-keys — reserved keys stripped', () => {
       },
     ];
 
-    const { config, layers } = await loadConfig({
-      name: 'myapp',
-      cwd: `${projectDirectory}`,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
       hooks,
       envName: 'development',
     });
+
+    const { config, layers } = result!;
 
     expect(config).not.toHaveProperty('extends');
     expect(config).not.toHaveProperty('$env');
@@ -146,13 +131,12 @@ describe('cascade-reserved-keys — reserved keys stripped', () => {
       },
     ];
 
-    const { config, layers } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
       hooks,
       envName: 'production',
     });
+
+    const { config, layers } = result!;
 
     expect(config).not.toHaveProperty('$env');
     expect(config).toEqual({ base: 'value', overridden: true });
@@ -164,23 +148,21 @@ describe('cascade-reserved-keys — reserved keys stripped', () => {
   });
 
   it('$env stripped from all 4 layers simultaneously', async () => {
-    await writeConfig(globalDirectory, 'myapp.config.json', {
-      port: 8080,
-      $env: { production: { port: 9090 } },
-    });
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-      $env: { production: { port: 9090 } },
-    });
-
-    const { config, layers } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
+      globalConfig: {
+        port: 8080,
+        $env: { production: { port: 9090 } },
+      },
+      projectConfig: {
+        port: 3000,
+        $env: { production: { port: 9090 } },
+      },
       defaults: { port: 4000, $env: { production: { port: 9090 } } },
       overrides: { debug: true, $env: { production: { port: 9090 } } },
       envName: 'production',
     });
+
+    const { config, layers } = result!;
 
     expect(config).not.toHaveProperty('$env');
 
@@ -190,22 +172,20 @@ describe('cascade-reserved-keys — reserved keys stripped', () => {
   });
 
   it('extends stripped from all 4 layers simultaneously', async () => {
-    await writeConfig(globalDirectory, 'myapp.config.json', {
-      port: 8080,
-      extends: './global-base.json',
-    });
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-      extends: './project-base.json',
-    });
-
-    const { config, layers } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
+      globalConfig: {
+        port: 8080,
+        extends: './global-base.json',
+      },
+      projectConfig: {
+        port: 3000,
+        extends: './project-base.json',
+      },
       defaults: { port: 4000, extends: './defaults-base.json' },
       overrides: { debug: true, extends: './overrides-base.json' },
     });
+
+    const { config, layers } = result!;
 
     expect(config).not.toHaveProperty('extends');
 
@@ -215,21 +195,19 @@ describe('cascade-reserved-keys — reserved keys stripped', () => {
   });
 
   it('extends and $env cannot be used as business keys in final config', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-      $env: { ci: { port: 8080 } },
-      extends: './base.json',
-    });
-
     const previousNodeEnvironment = process.env['NODE_ENV'];
     process.env['NODE_ENV'] = 'ci';
 
     try {
-      const { config } = await loadConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: globalDirectory,
+      const { result } = await setupTest({
+        projectConfig: {
+          port: 3000,
+          $env: { ci: { port: 8080 } },
+          extends: './base.json',
+        },
       });
+
+      const { config } = result!;
 
       expect(config).toEqual({ port: 8080 });
       expect(config).not.toHaveProperty('$env');

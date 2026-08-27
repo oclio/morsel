@@ -1,9 +1,10 @@
 import {
+  assertRemerge,
   clearWatcherRegistry,
   setupTest,
   waitForRemerge,
   writeConfig,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/test-helpers';
 
 describe('watch-lifecycle-debounce — debounce behavior', () => {
   beforeEach(() => {
@@ -72,9 +73,7 @@ describe('watch-lifecycle-debounce — debounce behavior', () => {
       port: 8080,
     });
 
-    await waitForRemerge(store!, (config) => config['port'] === 8080);
-
-    expect(store!.config).toEqual({ port: 8080 });
+    await assertRemerge(store!, { port: 8080 });
 
     await store!.stop();
   });
@@ -110,12 +109,7 @@ describe('watch-lifecycle-debounce — debounce behavior', () => {
     await new Promise((resolve) => setTimeout(resolve, 100));
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 3002 });
 
-    await waitForRemerge(
-      store!,
-      (config) => (config as Record<string, unknown>)['port'] === 3002,
-    );
-
-    expect(store!.config).toEqual({ port: 3002 });
+    await assertRemerge(store!, { port: 3002 });
 
     await store!.stop();
   });

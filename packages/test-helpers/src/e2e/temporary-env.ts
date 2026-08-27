@@ -2,6 +2,9 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
+/**
+Return value of {@link createTemporaryEnvironment}.
+*/
 export interface TemporaryEnvironment {
   readonly directory: string;
   readonly cleanup: () => Promise<void>;

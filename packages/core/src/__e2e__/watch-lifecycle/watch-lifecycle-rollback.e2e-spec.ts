@@ -2,13 +2,14 @@ import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
+  assertRemerge,
   clearWatcherRegistry,
   createDebugCollector,
   setupTest,
   waitForDebugContext,
   waitForRemerge,
   writeConfig,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/test-helpers';
 
 describe('watch-lifecycle-rollback — rollback & recovery', () => {
   beforeEach(() => {
@@ -42,7 +43,7 @@ describe('watch-lifecycle-rollback — rollback & recovery', () => {
   });
 
   it('rollback on validation error: keeps config, onDebug EVALIDATE', async () => {
-    const debugContexts: Record<string, unknown>[] = [];
+    const { contexts: debugContexts, callback } = createDebugCollector();
 
     const validate = (config: Record<string, unknown>) => {
       if (config['port'] !== undefined && typeof config['port'] !== 'number') {
@@ -56,11 +57,7 @@ describe('watch-lifecycle-rollback — rollback & recovery', () => {
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       validationPlugins: [{ name: 'port-type', validate }],
-      onDebug: (_message: string, context?: Record<string, unknown>) => {
-        if (context) {
-          debugContexts.push(context);
-        }
-      },
+      onDebug: callback,
     });
 
     expect(store!.config).toEqual({ port: 3000 });
@@ -109,12 +106,7 @@ describe('watch-lifecycle-rollback — rollback & recovery', () => {
     expect(contexts.some((context) => context['code'] === 'EPARSE')).toBe(true);
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
-    await waitForRemerge(
-      store!,
-      (config) => (config as Record<string, unknown>)['port'] === 8080,
-    );
-
-    expect(store!.config).toEqual({ port: 8080 });
+    await assertRemerge(store!, { port: 8080 });
 
     await store!.stop();
   });
@@ -129,12 +121,7 @@ describe('watch-lifecycle-rollback — rollback & recovery', () => {
     expect(store!.config).toEqual({ port: 3000 });
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
-    await waitForRemerge(
-      store!,
-      (config) => (config as Record<string, unknown>)['port'] === 8080,
-    );
-
-    expect(store!.config).toEqual({ port: 8080 });
+    await assertRemerge(store!, { port: 8080 });
 
     await store!.stop();
   });

@@ -1,36 +1,26 @@
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
+  setupTest,
   writeConfig,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/test-helpers';
 
 import type { Hook } from '@/index';
 import { loadConfig } from '@/index';
 
 describe('cascade-layers — layer trace', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
   });
 
   it('layers[] has 4 entries in order with coherent source/path/exists', async () => {
-    await writeConfig(globalDirectory, 'myapp.config.json', { port: 8080 });
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
-    const { layers } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
+      globalConfig: { port: 8080 },
+      projectConfig: { port: 3000 },
       defaults: { port: 4000 },
       overrides: { debug: true },
     });
+
+    const { layers } = result!;
 
     expect(layers).toHaveLength(4);
 
@@ -62,8 +52,6 @@ describe('cascade-layers — layer trace', () => {
   });
 
   it('layers with hooks intercalated — 4 core + N hooks in correct order', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
     const hooks: readonly Hook[] = [
       {
         name: 'before-defaults-hook',
@@ -82,14 +70,14 @@ describe('cascade-layers — layer trace', () => {
       },
     ];
 
-    const { layers } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
+      projectConfig: { port: 3000 },
       defaults: { port: 4000 },
       overrides: { debug: true },
       hooks,
     });
+
+    const { layers } = result!;
 
     expect(layers).toHaveLength(7);
 
@@ -112,11 +100,11 @@ describe('cascade-layers — layer trace', () => {
   });
 
   it('layer with non-empty extendsPaths when extending a file', async () => {
-    await writeConfig(projectDirectory, 'base.json', { host: 'localhost' });
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-      extends: './base.json',
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000, extends: './base.json' },
     });
+
+    await writeConfig(projectDirectory, 'base.json', { host: 'localhost' });
 
     const { layers } = await loadConfig({
       name: 'myapp',
@@ -131,8 +119,6 @@ describe('cascade-layers — layer trace', () => {
   });
 
   it('hook layer has hookName, core layers do not', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
     const hooks: readonly Hook[] = [
       {
         name: 'test-hook',
@@ -141,12 +127,12 @@ describe('cascade-layers — layer trace', () => {
       },
     ];
 
-    const { layers } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
+      projectConfig: { port: 3000 },
       hooks,
     });
+
+    const { layers } = result!;
 
     const hookLayer = layers.find((layer) => layer.source === 'hook');
     expect(hookLayer).toBeDefined();

@@ -1,3 +1,6 @@
+/**
+Minimal format plugin interface used by test helpers.
+*/
 export interface CustomFormatPlugin {
   readonly name: string;
   readonly extensions: readonly string[];

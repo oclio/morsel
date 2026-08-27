@@ -112,6 +112,16 @@ describe('interpolate', () => {
       expect(result['inherited']).toEqual({ a: 1, b: 2 });
     });
 
+    it('does not preserve type when {{ref}} has trailing content', () => {
+      const result = interpolate({
+        port: 5432,
+        label: '{{port}} extra',
+      });
+
+      expect(result['label']).toBe('5432 extra');
+      expect(typeof result['label']).toBe('string');
+    });
+
     it('resolves chained references (a → b → c)', () => {
       const result = interpolate({
         a: '{{b}}',

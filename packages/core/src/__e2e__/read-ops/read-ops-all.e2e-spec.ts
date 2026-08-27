@@ -1,40 +1,21 @@
-import { mkdir } from 'node:fs/promises';
-
-import {
-  clearWatcherRegistry,
-  createTemporaryEnvironment,
-  writeConfig,
-} from '@oclio/morsel-e2e-helpers';
-
-import { watchConfig } from '@/index';
+import { clearWatcherRegistry, setupTest } from '@oclio/test-helpers';
 
 describe('read-ops-all — all() API', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   it("all(): deep clone snapshot, mutations on result don't affect store", async () => {
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
       defaults: {
         port: 3000,
         server: { host: 'localhost', port: 8080 },
       },
+      createGlobalDir: true,
+      watch: true,
     });
 
-    const snapshot = store.all();
+    const snapshot = store!.all();
 
     expect(snapshot).toEqual({
       port: 3000,
@@ -45,27 +26,25 @@ describe('read-ops-all — all() API', () => {
     ((snapshot as Record<string, unknown>)['server'] as { host: string }).host =
       'changed';
 
-    expect(store.get('port')).toBe(3000);
-    expect(store.get('server.host')).toBe('localhost');
+    expect(store!.get('port')).toBe(3000);
+    expect(store!.get('server.host')).toBe('localhost');
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('all() after stop: returns last config', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-      host: 'localhost',
+    const { store } = await setupTest({
+      projectConfig: {
+        port: 3000,
+        host: 'localhost',
+      },
+      createGlobalDir: true,
+      watch: true,
     });
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
-    });
+    await store!.stop();
 
-    await store.stop();
-
-    const snapshot = store.all();
+    const snapshot = store!.all();
 
     expect(snapshot).toEqual({
       port: 3000,
@@ -74,43 +53,40 @@ describe('read-ops-all — all() API', () => {
   });
 
   it('all() nested objects are distinct references', async () => {
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
       defaults: {
         server: { host: 'localhost', port: 8080 },
         database: { host: 'db.example.com', port: 5432 },
       },
+      createGlobalDir: true,
+      watch: true,
     });
 
-    const snapshot = store.all();
+    const snapshot = store!.all();
 
-    expect(snapshot).not.toBe(store.config);
+    expect(snapshot).not.toBe(store!.config);
     expect((snapshot as Record<string, unknown>)['server']).not.toBe(
-      store.get('server'),
+      store!.get('server'),
     );
     expect((snapshot as Record<string, unknown>)['database']).not.toBe(
-      store.get('database'),
+      store!.get('database'),
     );
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('unicode and emoji values preserved without corruption', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      name: 'café',
-      emoji: '🚀',
-      nested: { greeting: 'こんにちは' },
+    const { store } = await setupTest({
+      projectConfig: {
+        name: 'café',
+        emoji: '🚀',
+        nested: { greeting: 'こんにちは' },
+      },
+      createGlobalDir: true,
+      watch: true,
     });
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
-    });
-
-    const snapshot = store.all();
+    const snapshot = store!.all();
 
     expect(snapshot).toEqual({
       name: 'café',
@@ -118,6 +94,6 @@ describe('read-ops-all — all() API', () => {
       nested: { greeting: 'こんにちは' },
     });
 
-    await store.stop();
+    await store!.stop();
   });
 });

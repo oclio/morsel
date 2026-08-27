@@ -1,69 +1,49 @@
-import { mkdir } from 'node:fs/promises';
-
-import {
-  clearWatcherRegistry,
-  createTemporaryEnvironment,
-} from '@oclio/morsel-e2e-helpers';
-
-import { watchConfig } from '@/index';
+import { clearWatcherRegistry, setupTest } from '@oclio/test-helpers';
 
 describe('read-ops-security — prototype protection', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   it.each(['__proto__', 'constructor', 'prototype'])(
     'get with %s string path throws TypeError',
     async (unsafeKey) => {
-      const store = await watchConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: globalDirectory,
+      const { store } = await setupTest({
         defaults: { port: 3000 },
+        createGlobalDir: true,
+        watch: true,
       });
 
-      expect(() => store.get(unsafeKey)).toThrow(TypeError);
+      expect(() => store!.get(unsafeKey)).toThrow(TypeError);
 
-      await store.stop();
+      await store!.stop();
     },
   );
 
   it.each(['__proto__', 'constructor'])(
     'has with %s string path throws TypeError',
     async (unsafeKey) => {
-      const store = await watchConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: globalDirectory,
+      const { store } = await setupTest({
         defaults: { port: 3000 },
+        createGlobalDir: true,
+        watch: true,
       });
 
-      expect(() => store.has(unsafeKey)).toThrow(TypeError);
+      expect(() => store!.has(unsafeKey)).toThrow(TypeError);
 
-      await store.stop();
+      await store!.stop();
     },
   );
 
   it('get with array path containing __proto__ throws TypeError (spec: any access rejected)', async () => {
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store } = await setupTest({
       defaults: { port: 3000 },
+      createGlobalDir: true,
+      watch: true,
     });
 
-    expect(() => store.get(['__proto__'])).toThrow(TypeError);
+    expect(() => store!.get(['__proto__'])).toThrow(TypeError);
 
-    await store.stop();
+    await store!.stop();
   });
 });

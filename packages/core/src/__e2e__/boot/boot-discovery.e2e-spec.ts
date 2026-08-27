@@ -1,72 +1,37 @@
-import { mkdir, writeFile } from 'node:fs/promises';
-
-import {
-  clearWatcherRegistry,
-  createTemporaryEnvironment,
-  setupTest,
-  writeConfig,
-} from '@oclio/morsel-e2e-helpers';
-
-import { loadConfig } from '@/index';
+import { clearWatcherRegistry, setupTest } from '@oclio/test-helpers';
 
 describe('boot-discovery — path resolution', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
   });
 
   it('discovers project file in .config/ subdirectory', async () => {
-    await mkdir(`${projectDirectory}/.config`, { recursive: true });
-    await writeConfig(`${projectDirectory}/.config`, 'myapp.json', {
-      port: 3000,
+    const { result } = await setupTest({
+      extraConfigs: [
+        { filename: '.config/myapp.json', content: { port: 3000 } },
+      ],
     });
 
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
-    });
-
-    expect(config).toEqual({ port: 3000 });
+    expect(result!.config).toEqual({ port: 3000 });
   });
 
   it('prefers <cwd>/<name>.config.* over <cwd>/.config/<name>.* when both exist', async () => {
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(`${projectDirectory}/.config`, { recursive: true });
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
-    });
-    await writeConfig(`${projectDirectory}/.config`, 'myapp.json', {
-      port: 9000,
+    const { result } = await setupTest({
+      projectConfig: { port: 3000 },
+      extraConfigs: [
+        { filename: '.config/myapp.json', content: { port: 9000 } },
+      ],
     });
 
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
-    });
-
-    expect(config).toEqual({ port: 3000 });
+    expect(result!.config).toEqual({ port: 3000 });
   });
 
   it('globalDir pointing to nonexistent directory → global layer exists:false, config:{}', async () => {
-    await mkdir(projectDirectory, { recursive: true });
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 3000,
+    const { result } = await setupTest({
+      projectConfig: { port: 3000 },
     });
 
-    const { config, layers } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: `${directory}/nonexistent-global`,
-    });
+    const { config, layers } = result!;
 
     expect(config).toEqual({ port: 3000 });
 
@@ -212,20 +177,11 @@ describe('boot-discovery — path resolution', () => {
       serialize: () => '',
     };
 
-    await mkdir(projectDirectory, { recursive: true });
-    await writeFile(
-      `${projectDirectory}/myapp.config.yaml`,
-      'port: 4000',
-      'utf8',
-    );
-
-    const { config } = await loadConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { result } = await setupTest({
+      rawFiles: [{ filename: 'myapp.config.yaml', content: 'port: 4000' }],
       formatPlugins: [yamlPlugin],
     });
 
-    expect(config).toEqual({ port: 4000 });
+    expect(result!.config).toEqual({ port: 4000 });
   });
 });

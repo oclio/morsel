@@ -320,6 +320,9 @@ describe('resolveProjectPath — multi-plugin', () => {
     await expect(
       resolveProjectPath({ name: 'myapp', cwd: '/project' }, []),
     ).rejects.toThrow(TypeError);
+    await expect(
+      resolveProjectPath({ name: 'myapp', cwd: '/project' }, []),
+    ).rejects.toThrow('morsel: formatPlugins must not be empty');
   });
 });
 
@@ -352,6 +355,9 @@ describe('resolveProjectPathSync', () => {
     expect(() =>
       resolveProjectPathSync({ name: 'myapp', cwd: '/project' }, []),
     ).toThrow(TypeError);
+    expect(() =>
+      resolveProjectPathSync({ name: 'myapp', cwd: '/project' }, []),
+    ).toThrow('morsel: formatPlugins must not be empty');
   });
 });
 
@@ -465,6 +471,9 @@ describe('resolveGlobalPath', () => {
     await expect(resolveGlobalPath({ name: 'myapp' }, [])).rejects.toThrow(
       TypeError,
     );
+    await expect(resolveGlobalPath({ name: 'myapp' }, [])).rejects.toThrow(
+      'morsel: formatPlugins must not be empty',
+    );
   });
 
   it('uses globalDir when provided', async () => {
@@ -504,6 +513,9 @@ describe('resolveGlobalPathSync', () => {
   it('throws TypeError when formatPlugins is empty', () => {
     expect(() => resolveGlobalPathSync({ name: 'myapp' }, [])).toThrow(
       TypeError,
+    );
+    expect(() => resolveGlobalPathSync({ name: 'myapp' }, [])).toThrow(
+      'morsel: formatPlugins must not be empty',
     );
   });
 });

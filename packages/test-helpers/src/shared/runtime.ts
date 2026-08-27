@@ -1,6 +1,13 @@
 type ConfigRecord = Record<string, unknown>;
+
+/**
+Options passed to `loadConfig` / `watchConfig` at runtime.
+*/
 export type RuntimeOptions = ConfigRecord & { readonly name: string };
 
+/**
+Minimal representation of a config layer (project, global, hook, …).
+*/
 export interface MinimalLayer {
   readonly source: string;
   readonly path: string | undefined;
@@ -10,11 +17,17 @@ export interface MinimalLayer {
   readonly hookName?: string;
 }
 
+/**
+Result returned by `loadConfig` — merged config plus layer stack.
+*/
 export interface ConfigResultLike {
   readonly config: ConfigRecord;
   readonly layers: readonly MinimalLayer[];
 }
 
+/**
+Minimal store interface returned by `watchConfig`.
+*/
 export interface StoreLike {
   readonly config: ConfigRecord;
   readonly layers: readonly MinimalLayer[];
@@ -31,6 +44,9 @@ export interface StoreLike {
   stop(): Promise<void>;
 }
 
+/**
+Runtime facade exposed by `@oclio/morsel` and consumed by test helpers.
+*/
 export interface MorselRuntime {
   loadConfig: (options: RuntimeOptions) => Promise<ConfigResultLike>;
   loadConfigSync?: (options: RuntimeOptions) => ConfigResultLike;
@@ -40,10 +56,23 @@ export interface MorselRuntime {
 
 const state: { runtime: MorselRuntime | undefined } = { runtime: undefined };
 
+/**
+ * Register the morsel runtime so that `setupTest` and other helpers can
+ * call `loadConfig` / `watchConfig` without a direct dependency on
+ * `@oclio/morsel`. Called once in the e2e setup file.
+ *
+ * @param runtime - The runtime facade to register.
+ */
 export function registerMorselRuntime(runtime: MorselRuntime): void {
   state.runtime = runtime;
 }
 
+/**
+ * Retrieve the previously registered morsel runtime.
+ *
+ * @returns The registered `MorselRuntime`.
+ * @throws If no runtime has been registered yet.
+ */
 export function getMorselRuntime(): MorselRuntime {
   if (!state.runtime) {
     throw new Error(

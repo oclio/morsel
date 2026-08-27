@@ -1,0 +1,17 @@
+{
+  "name": "@oclio/test-helpers",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Test helpers for @oclio/morsel",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts"
+    }
+  },
+  "devDependencies": {
+    "@config/typescript": "workspace:*",
+    "@types/node": "^26.3.0",
+    "vitest": "^4.1.11"
+  }
+}

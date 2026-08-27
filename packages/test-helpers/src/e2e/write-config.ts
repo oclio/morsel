@@ -6,6 +6,11 @@ type ConfigRecord = Record<string, unknown>;
 /**
  * Write a JSON config file atomically (.tmp + rename) to avoid
  * `fs.watch` firing on a half-written file.
+ *
+ * @param directory - Target directory (created if it does not exist).
+ * @param filename - File name within the directory (e.g. `'myapp.config.json'`).
+ * @param config - The config object to serialize as JSON.
+ * @returns The absolute path of the written file.
  */
 export async function writeConfig(
   directory: string,

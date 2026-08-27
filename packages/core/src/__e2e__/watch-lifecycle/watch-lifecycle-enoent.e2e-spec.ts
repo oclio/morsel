@@ -1,47 +1,34 @@
-import { mkdir, rm } from 'node:fs/promises';
+import { rm } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
+  createDebugCollector,
+  setupTest,
+  suppressConsoleError,
   waitForDebugContext,
   waitForRemerge,
   writeConfig,
-} from '@oclio/morsel-e2e-helpers';
-
-import { watchConfig } from '@/index';
+} from '@oclio/test-helpers';
 
 describe('watch-lifecycle-enoent — ENOENT during re-merge', () => {
+  suppressConsoleError();
+
   beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
     clearWatcherRegistry();
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it('ENOENT during re-merge → short-circuited, config frozen', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
+    const { contexts: debugContexts, callback } = createDebugCollector();
 
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-    await mkdir(`${directory}/global`, { recursive: true });
-
-    const debugContexts: Record<string, unknown>[] = [];
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: `${directory}/global`,
-      onDebug: (_message: string, context?: Record<string, unknown>) => {
-        if (context) {
-          debugContexts.push(context);
-        }
-      },
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
+      createGlobalDir: true,
+      onDebug: callback,
     });
 
-    expect(store.config).toEqual({ port: 3000 });
+    expect(store!.config).toEqual({ port: 3000 });
 
     await rm(path.join(projectDirectory, 'myapp.config.json'));
     await waitForDebugContext(
@@ -49,29 +36,19 @@ describe('watch-lifecycle-enoent — ENOENT during re-merge', () => {
       (context) => context['code'] === 'ENOENT',
     );
 
-    expect(store.config).toEqual({ port: 3000 });
+    expect(store!.config).toEqual({ port: 3000 });
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('onDebug called with { code: ENOENT, sources: [...] }', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
+    const { contexts: debugContexts, callback } = createDebugCollector();
 
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-    await mkdir(`${directory}/global`, { recursive: true });
-
-    const debugContexts: Record<string, unknown>[] = [];
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: `${directory}/global`,
-      onDebug: (_message: string, context?: Record<string, unknown>) => {
-        if (context) {
-          debugContexts.push(context);
-        }
-      },
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
+      createGlobalDir: true,
+      onDebug: callback,
     });
 
     await rm(path.join(projectDirectory, 'myapp.config.json'));
@@ -87,27 +64,17 @@ describe('watch-lifecycle-enoent — ENOENT during re-merge', () => {
     expect(enoentContext).toBeDefined();
     expect(enoentContext?.['sources']).toBeDefined();
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('enoentLogged suppresses duplicate ENOENT onDebug', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
+    const { contexts: debugContexts, callback } = createDebugCollector();
 
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-    await mkdir(`${directory}/global`, { recursive: true });
-
-    const debugContexts: Record<string, unknown>[] = [];
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: `${directory}/global`,
-      onDebug: (_message: string, context?: Record<string, unknown>) => {
-        if (context) {
-          debugContexts.push(context);
-        }
-      },
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
+      createGlobalDir: true,
+      onDebug: callback,
     });
 
     await rm(path.join(projectDirectory, 'myapp.config.json'));
@@ -122,27 +89,17 @@ describe('watch-lifecycle-enoent — ENOENT during re-merge', () => {
 
     expect(enoentCount).toBe(1);
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('enoentLogged cleared when all files reappear', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
+    const { contexts: debugContexts, callback } = createDebugCollector();
 
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-    await mkdir(`${directory}/global`, { recursive: true });
-
-    const debugContexts: Record<string, unknown>[] = [];
-
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: `${directory}/global`,
-      onDebug: (_message: string, context?: Record<string, unknown>) => {
-        if (context) {
-          debugContexts.push(context);
-        }
-      },
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
+      createGlobalDir: true,
+      onDebug: callback,
     });
 
     await rm(path.join(projectDirectory, 'myapp.config.json'));
@@ -158,7 +115,7 @@ describe('watch-lifecycle-enoent — ENOENT during re-merge', () => {
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
     await waitForRemerge(
-      store,
+      store!,
       (config) => (config as Record<string, unknown>)['port'] === 8080,
     );
 
@@ -175,6 +132,6 @@ describe('watch-lifecycle-enoent — ENOENT during re-merge', () => {
       debugContexts.filter((context) => context['code'] === 'ENOENT').length;
     expect(totalEnoentCount).toBe(2);
 
-    await store.stop();
+    await store!.stop();
   });
 });

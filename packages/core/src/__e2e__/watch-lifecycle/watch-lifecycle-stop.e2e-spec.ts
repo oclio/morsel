@@ -1,33 +1,20 @@
-import { mkdir } from 'node:fs/promises';
-
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
+  createDebugCollector,
   setupTest,
+  suppressConsoleError,
   waitForRemerge,
   writeConfig,
-} from '@oclio/morsel-e2e-helpers';
-
-import { watchConfig } from '@/index';
+} from '@oclio/test-helpers';
 
 describe('watch-lifecycle-stop — boot & stop() behavior', () => {
+  suppressConsoleError();
+
   beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
     clearWatcherRegistry();
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it('boot failure → watchConfig throws MorselError (no last valid state)', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
-    await mkdir(projectDirectory, { recursive: true });
-    await writeConfig(projectDirectory, 'myapp.config.json', {
-      port: 'not-a-number',
-    });
-
     const validate = (config: Record<string, unknown>) => {
       if (typeof config['port'] !== 'number') {
         throw new TypeError('port must be a number');
@@ -36,21 +23,15 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
     };
 
     await expect(
-      watchConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: `${directory}/global`,
+      setupTest({
+        watch: true,
+        projectConfig: { port: 'not-a-number' },
         validationPlugins: [{ name: 'port-type', validate }],
       }),
     ).rejects.toThrow();
   });
 
   it('boot with hook init failure → EHOOK, watchers released', async () => {
-    const { directory } = await createTemporaryEnvironment();
-    const projectDirectory = `${directory}/project`;
-    await mkdir(projectDirectory, { recursive: true });
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
     const hooks = [
       {
         name: 'failing-init',
@@ -63,10 +44,9 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
     ];
 
     await expect(
-      watchConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: `${directory}/global`,
+      setupTest({
+        watch: true,
+        projectConfig: { port: 3000 },
         hooks,
       }),
     ).rejects.toThrow();
@@ -246,7 +226,7 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
   });
 
   it('stop() hook dispose failure → onDebug notified, not thrown', async () => {
-    const debugMessages: string[] = [];
+    const { messages: debugMessages, callback } = createDebugCollector();
 
     const hooks = [
       {
@@ -264,9 +244,7 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       hooks,
-      onDebug: (message: string) => {
-        debugMessages.push(message);
-      },
+      onDebug: callback,
     });
 
     await expect(store!.stop()).resolves.toBeUndefined();

@@ -1,29 +1,21 @@
-import { mkdir } from 'node:fs/promises';
-
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
+  setupTest,
   writeConfig,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/test-helpers';
 
 import { loadConfig } from '@/index';
 
 describe('extends-env — extends + $env interaction', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   it('per file env: each file applies $env before merge', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     await writeConfig(projectDirectory, 'base.json', {
       port: 4000,
       $env: { ci: { port: 8080 } },
@@ -55,6 +47,10 @@ describe('extends-env — extends + $env interaction', () => {
   });
 
   it('$env can override extends key itself (resolveEnv called before reading extends)', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     await writeConfig(projectDirectory, 'base.json', { host: '0.0.0.0' });
     await writeConfig(projectDirectory, 'myapp.config.json', {
       $env: {
@@ -84,6 +80,10 @@ describe('extends-env — extends + $env interaction', () => {
   });
 
   it('deep chain with $env at every level (3+ levels)', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     await writeConfig(projectDirectory, 'c.json', {
       port: 9000,
       $env: { ci: { port: 9090 } },

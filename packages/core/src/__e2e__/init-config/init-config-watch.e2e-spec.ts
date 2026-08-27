@@ -1,37 +1,24 @@
-import { mkdir } from 'node:fs/promises';
-
 import {
+  assertRemerge,
   clearWatcherRegistry,
-  createTemporaryEnvironment,
-  waitForRemerge,
-} from '@oclio/morsel-e2e-helpers';
+  setupTest,
+} from '@oclio/test-helpers';
 
-import { initConfig, watchConfig } from '@/index';
+import { initConfig } from '@/index';
 
 describe('init-config-watch — watch integration', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   it('initConfig during active watch → fs.watch fires → re-merge', async () => {
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store, projectDirectory } = await setupTest({
+      watch: true,
       defaults: { port: 3000 },
+      createGlobalDir: true,
     });
 
-    expect(store.config).toEqual({ port: 3000 });
+    expect(store!.config).toEqual({ port: 3000 });
 
     initConfig({
       name: 'myapp',
@@ -39,10 +26,8 @@ describe('init-config-watch — watch integration', () => {
       content: { port: 8080 },
     });
 
-    await waitForRemerge(store, (config) => config['port'] === 8080);
+    await assertRemerge(store!, { port: 8080 });
 
-    expect(store.config).toEqual({ port: 8080 });
-
-    await store.stop();
+    await store!.stop();
   });
 });

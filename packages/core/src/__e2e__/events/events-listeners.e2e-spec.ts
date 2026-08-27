@@ -3,7 +3,7 @@ import {
   setupTest,
   waitForRemerge,
   writeConfig,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/test-helpers';
 
 describe('events-listeners — listener management', () => {
   beforeEach(() => {

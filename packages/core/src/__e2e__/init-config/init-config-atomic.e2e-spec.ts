@@ -1,27 +1,21 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
-import {
-  clearWatcherRegistry,
-  createTemporaryEnvironment,
-} from '@oclio/morsel-e2e-helpers';
+import { clearWatcherRegistry, setupTest } from '@oclio/test-helpers';
 
 import { initConfig } from '@/index';
 
 describe('init-config-atomic — atomic write', () => {
-  let directory: string;
-  let projectDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    await mkdir(projectDirectory, { recursive: true });
   });
 
-  it('writes atomically without leaving .tmp file behind', () => {
+  it('writes atomically without leaving .tmp file behind', async () => {
+    const { projectDirectory } = await setupTest({
+      projectConfig: {},
+      projectFilename: '_setup-test.json',
+    });
+
     const result = initConfig({
       name: 'myapp',
       cwd: projectDirectory,
@@ -41,7 +35,12 @@ describe('init-config-atomic — atomic write', () => {
     expect(written).toEqual({ port: 3000 });
   });
 
-  it('atomic write format: .tmp.<timestamp> then renameSync', () => {
+  it('atomic write format: .tmp.<timestamp> then renameSync', async () => {
+    const { projectDirectory } = await setupTest({
+      projectConfig: {},
+      projectFilename: '_setup-test.json',
+    });
+
     const result = initConfig({
       name: 'myapp',
       cwd: projectDirectory,

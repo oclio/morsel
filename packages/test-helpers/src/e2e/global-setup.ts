@@ -1,4 +1,4 @@
-import { getMorselRuntime } from './runtime';
+import { getMorselRuntime } from '../shared/runtime';
 
 /**
  * Clear the global watcher registry between e2e tests.

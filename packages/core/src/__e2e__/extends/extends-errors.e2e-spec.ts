@@ -1,31 +1,25 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
   clearWatcherRegistry,
   createDebugCollector,
-  createTemporaryEnvironment,
+  setupTest,
   writeConfig,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/test-helpers';
 
 import { loadConfig, watchConfig } from '@/index';
 
 describe('extends-errors — cycle and depth errors', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   it('self cycle: A extends A → ECYCLE', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     await writeConfig(projectDirectory, 'myapp.config.json', {
       extends: './myapp.config.json',
       port: 3000,
@@ -44,6 +38,10 @@ describe('extends-errors — cycle and depth errors', () => {
   });
 
   it('cycle: A extends B extends A → ECYCLE', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     await writeConfig(projectDirectory, 'a.json', {
       extends: './b.json',
       port: 3000,
@@ -69,6 +67,10 @@ describe('extends-errors — cycle and depth errors', () => {
   });
 
   it('cycle live reload: cycle via edit keeps config, onDebug routed', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     await writeConfig(projectDirectory, 'a.json', { port: 3000 });
     await writeConfig(projectDirectory, 'b.json', { port: 8080 });
     await writeConfig(projectDirectory, 'myapp.config.json', {
@@ -104,6 +106,10 @@ describe('extends-errors — cycle and depth errors', () => {
   });
 
   it('cycle recovery: fix cycle via edit → config updates', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     await writeConfig(projectDirectory, 'base.config.json', {
       port: 3000,
     });
@@ -138,6 +144,10 @@ describe('extends-errors — cycle and depth errors', () => {
   });
 
   it('max depth: chain > 10 → ECYCLE', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     for (let index = 11; index > 0; index--) {
       const entry: Record<string, unknown> = {
         port: index,
@@ -163,6 +173,10 @@ describe('extends-errors — cycle and depth errors', () => {
   });
 
   it('max depth exact: 10 levels succeeds, 11 fails', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     for (let index = 8; index > 0; index--) {
       const entry: Record<string, unknown> = {
         port: index,
@@ -186,6 +200,10 @@ describe('extends-errors — cycle and depth errors', () => {
   });
 
   it('max depth live reload: chain >10 via edit keeps config', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
 
     const { contexts, callback } = createDebugCollector();
@@ -221,6 +239,10 @@ describe('extends-errors — cycle and depth errors', () => {
   });
 
   it('extends to non-JSON file with no plugin → ENOPLUGIN', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
     const iniPath = path.resolve(projectDirectory, 'base.ini');

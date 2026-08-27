@@ -6,7 +6,7 @@ import {
   clearWatcherRegistry,
   createTemporaryEnvironment,
   writeConfig,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/test-helpers';
 
 import { loadConfig } from '@/index';
 

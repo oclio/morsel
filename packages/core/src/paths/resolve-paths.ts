@@ -5,7 +5,9 @@ import path from 'node:path';
 
 import type { FormatPlugin } from '@/plugins/types';
 
-const EMPTY_PLUGINS_MESSAGE = 'morsel: formatPlugins must not be empty';
+function throwEmptyPlugins(): never {
+  throw new TypeError('morsel: formatPlugins must not be empty');
+}
 
 /**
  * Resolved global and project config file paths.
@@ -118,7 +120,7 @@ export async function resolveProjectPath(
   formatPlugins: readonly FormatPlugin[],
 ): Promise<string | undefined> {
   if (formatPlugins.length === 0) {
-    throw new TypeError(EMPTY_PLUGINS_MESSAGE);
+    throwEmptyPlugins();
   }
 
   for (const candidate of candidateProjectPaths(options, formatPlugins)) {
@@ -143,7 +145,7 @@ export function resolveProjectPathSync(
   formatPlugins: readonly FormatPlugin[],
 ): string | undefined {
   if (formatPlugins.length === 0) {
-    throw new TypeError(EMPTY_PLUGINS_MESSAGE);
+    throwEmptyPlugins();
   }
 
   for (const candidate of candidateProjectPaths(options, formatPlugins)) {
@@ -165,7 +167,7 @@ export async function resolveGlobalPath(
   formatPlugins: readonly FormatPlugin[],
 ): Promise<string | undefined> {
   if (formatPlugins.length === 0) {
-    throw new TypeError(EMPTY_PLUGINS_MESSAGE);
+    throwEmptyPlugins();
   }
 
   for (const candidate of candidateGlobalPaths(options, formatPlugins)) {
@@ -190,7 +192,7 @@ export function resolveGlobalPathSync(
   formatPlugins: readonly FormatPlugin[],
 ): string | undefined {
   if (formatPlugins.length === 0) {
-    throw new TypeError(EMPTY_PLUGINS_MESSAGE);
+    throwEmptyPlugins();
   }
 
   for (const candidate of candidateGlobalPaths(options, formatPlugins)) {
@@ -215,7 +217,7 @@ export function resolvePaths(
   formatPlugins: readonly FormatPlugin[],
 ): ResolvedPaths {
   if (formatPlugins.length === 0) {
-    throw new TypeError(EMPTY_PLUGINS_MESSAGE);
+    throwEmptyPlugins();
   }
 
   const extensions = collectExtensions(formatPlugins);

@@ -1,45 +1,34 @@
 import { readFileSync } from 'node:fs';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
+  assertRemerge,
   clearWatcherRegistry,
-  createTemporaryEnvironment,
-  waitForRemerge,
+  setupTest,
+  suppressConsoleError,
   writeConfig,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/test-helpers';
 
 import { watchConfig } from '@/index';
 
 describe('hooks-watchable — LayerWatchableHook', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
+  suppressConsoleError();
 
-  beforeEach(async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   it('watchPaths directory watched at boot', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
+    });
     const hookDataPath = path.resolve(projectDirectory, 'hook-data.json');
 
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-    await writeFile(
-      hookDataPath,
-      JSON.stringify({ hookKey: 'initial' }),
-      'utf8',
-    );
+    await writeConfig(projectDirectory, 'hook-data.json', {
+      hookKey: 'initial',
+    });
 
     const hooks = [
       {
@@ -62,23 +51,22 @@ describe('hooks-watchable — LayerWatchableHook', () => {
 
     expect(store.config).toEqual({ hookKey: 'initial', port: 3000 });
 
-    await writeFile(
-      hookDataPath,
-      JSON.stringify({ hookKey: 'updated' }),
-      'utf8',
-    );
-    await waitForRemerge(store, (config) => config['hookKey'] === 'updated');
-
-    expect(store.config).toEqual({ hookKey: 'updated', port: 3000 });
+    await writeConfig(projectDirectory, 'hook-data.json', {
+      hookKey: 'updated',
+    });
+    await assertRemerge(store, { hookKey: 'updated', port: 3000 });
 
     await store.stop();
   });
 
   it('watchable live reload: modify file in watchPaths triggers re-merge', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
+    });
     const hookDataPath = path.resolve(projectDirectory, 'env.json');
 
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-    await writeFile(hookDataPath, JSON.stringify({ env: 'dev' }), 'utf8');
+    await writeConfig(projectDirectory, 'env.json', { env: 'dev' });
 
     const hooks = [
       {
@@ -101,21 +89,22 @@ describe('hooks-watchable — LayerWatchableHook', () => {
 
     expect(store.config).toEqual({ env: 'dev', port: 3000 });
 
-    await writeFile(hookDataPath, JSON.stringify({ env: 'prod' }), 'utf8');
-    await waitForRemerge(store, (config) => config['env'] === 'prod');
-
-    expect(store.config).toEqual({ env: 'prod', port: 3000 });
+    await writeConfig(projectDirectory, 'env.json', { env: 'prod' });
+    await assertRemerge(store, { env: 'prod', port: 3000 });
 
     await store.stop();
   });
 
   it('watchPaths directory deletion triggers retry', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      createGlobalDir: true,
+    });
     const watchedDirectory = path.resolve(projectDirectory, 'watched');
     const hookDataPath = path.resolve(watchedDirectory, 'data.json');
 
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
     await mkdir(watchedDirectory, { recursive: true });
-    await writeFile(hookDataPath, JSON.stringify({ key: 'initial' }), 'utf8');
+    await writeConfig(watchedDirectory, 'data.json', { key: 'initial' });
 
     const hooks = [
       {
@@ -146,15 +135,9 @@ describe('hooks-watchable — LayerWatchableHook', () => {
     await new Promise((resolve) => setTimeout(resolve, 300));
 
     await mkdir(watchedDirectory, { recursive: true });
-    await writeFile(hookDataPath, JSON.stringify({ key: 'recreated' }), 'utf8');
+    await writeConfig(watchedDirectory, 'data.json', { key: 'recreated' });
 
-    await waitForRemerge(
-      store,
-      (config) => config['key'] === 'recreated',
-      5000,
-    );
-
-    expect(store.config).toEqual({ key: 'recreated', port: 3000 });
+    await assertRemerge(store, { key: 'recreated', port: 3000 }, 5000);
 
     await store.stop();
   });

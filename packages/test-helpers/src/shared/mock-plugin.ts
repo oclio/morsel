@@ -10,6 +10,12 @@ interface FormatPlugin {
 /**
  * Create a mock format plugin for a custom extension (e.g. `.morsel`).
  * Used by multi-format e2e tests.
+ *
+ * @param name - Plugin name (e.g. `'mock'`).
+ * @param extensions - File extensions the plugin handles (e.g. `['.morsel']`).
+ * @param parse - Optional parse function; defaults to returning an empty object.
+ * @param serialize - Optional serialize function; defaults to `JSON.stringify`.
+ * @returns A `FormatPlugin` object ready to pass to `formatPlugins`.
  */
 export function mockPlugin(
   name: string,

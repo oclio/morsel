@@ -1,4 +1,4 @@
-import { registerMorselRuntime } from '@oclio/morsel-e2e-helpers';
+import { registerMorselRuntime } from '@oclio/test-helpers';
 
 import {
   clearRegistry,

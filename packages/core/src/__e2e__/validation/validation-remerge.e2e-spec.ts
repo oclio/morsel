@@ -1,41 +1,22 @@
-import { mkdir } from 'node:fs/promises';
-
 import {
+  assertRemerge,
   clearWatcherRegistry,
   createDebugCollector,
-  createTemporaryEnvironment,
   setupTest,
+  suppressConsoleError,
   waitForDebugContext,
-  waitForRemerge,
   writeConfig,
-} from '@oclio/morsel-e2e-helpers';
-
-import { watchConfig } from '@/index';
+} from '@oclio/test-helpers';
 
 describe('validation-remerge — watch re-merge', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
+  suppressConsoleError();
 
-  beforeEach(async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   it('remerge catch: validation fail on re-merge keeps config, onDebug notified', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
-    const debugContexts: Record<string, unknown>[] = [];
+    const { contexts: debugContexts, callback } = createDebugCollector();
 
     const validate = (config: Record<string, unknown>) => {
       if (typeof config['port'] !== 'number') {
@@ -44,19 +25,15 @@ describe('validation-remerge — watch re-merge', () => {
       return config;
     };
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
+      createGlobalDir: true,
       validationPlugins: [{ name: 'port-type', validate }],
-      onDebug: (_message: string, context?: Record<string, unknown>) => {
-        if (context) {
-          debugContexts.push(context);
-        }
-      },
-    });
+      onDebug: callback,
+    } as never);
 
-    expect(store.config).toEqual({ port: 3000 });
+    expect(store!.config).toEqual({ port: 3000 });
 
     await writeConfig(projectDirectory, 'myapp.config.json', {
       port: 'not-a-number',
@@ -67,18 +44,16 @@ describe('validation-remerge — watch re-merge', () => {
       (context) => context['code'] === 'EVALIDATE',
     );
 
-    expect(store.config).toEqual({ port: 3000 });
+    expect(store!.config).toEqual({ port: 3000 });
     expect(
       debugContexts.some((context) => context['code'] === 'EVALIDATE'),
     ).toBe(true);
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('remerge onDebug context has code: EVALIDATE', async () => {
-    await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
-
-    const debugContexts: Record<string, unknown>[] = [];
+    const { contexts: debugContexts, callback } = createDebugCollector();
 
     const validate = (config: Record<string, unknown>) => {
       if (config['port'] === 'invalid') {
@@ -87,17 +62,13 @@ describe('validation-remerge — watch re-merge', () => {
       return config;
     };
 
-    const store = await watchConfig({
-      name: 'myapp',
-      cwd: projectDirectory,
-      globalDir: globalDirectory,
+    const { store, projectDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+      watch: true,
+      createGlobalDir: true,
       validationPlugins: [{ name: 'port-type', validate }],
-      onDebug: (_message: string, context?: Record<string, unknown>) => {
-        if (context) {
-          debugContexts.push(context);
-        }
-      },
-    });
+      onDebug: callback,
+    } as never);
 
     await writeConfig(projectDirectory, 'myapp.config.json', {
       port: 'invalid',
@@ -115,7 +86,7 @@ describe('validation-remerge — watch re-merge', () => {
     expect(validationContext).toBeDefined();
     expect(validationContext?.['code']).toBe('EVALIDATE');
 
-    await store.stop();
+    await store!.stop();
   });
 
   it('remerge recovery: validation fail then fix → config updates', async () => {
@@ -152,12 +123,7 @@ describe('validation-remerge — watch re-merge', () => {
       port: 8080,
     });
 
-    await waitForRemerge(
-      store!,
-      (config) => (config as Record<string, unknown>)['port'] === 8080,
-    );
-
-    expect(store!.config).toEqual({ port: 8080 });
+    await assertRemerge(store!, { port: 8080 });
 
     await store!.stop();
   });

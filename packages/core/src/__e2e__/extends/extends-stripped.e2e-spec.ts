@@ -1,29 +1,21 @@
-import { mkdir } from 'node:fs/promises';
-
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
+  setupTest,
   writeConfig,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/test-helpers';
 
 import { loadConfig } from '@/index';
 
 describe('extends-stripped — extends key cleanup', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   it('extends does not appear in final config or layer.config', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     await writeConfig(projectDirectory, 'base.json', { port: 8080 });
     await writeConfig(projectDirectory, 'myapp.config.json', {
       extends: './base.json',
@@ -44,6 +36,10 @@ describe('extends-stripped — extends key cleanup', () => {
   });
 
   it('extends stripped from extends files themselves before merge', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     await writeConfig(projectDirectory, 'base.json', {
       extends: './deep.json',
       port: 8080,
@@ -69,6 +65,10 @@ describe('extends-stripped — extends key cleanup', () => {
   });
 
   it('extends and $env as business keys → stripping is unconditional', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     const previousNodeEnvironment = process.env['NODE_ENV'];
     process.env['NODE_ENV'] = 'ci';
 

@@ -2,28 +2,22 @@ import { mkdir } from 'node:fs/promises';
 
 import {
   clearWatcherRegistry,
-  createTemporaryEnvironment,
+  setupTest,
   writeConfig,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/test-helpers';
 
 import { loadConfig } from '@/index';
 
 describe('extends-basic — basic extends resolution', () => {
-  let directory: string;
-  let projectDirectory: string;
-  let globalDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    globalDirectory = `${directory}/global`;
-    await mkdir(projectDirectory, { recursive: true });
-    await mkdir(globalDirectory, { recursive: true });
   });
 
   it('A extends B → config = deepMerge(B, A), extendsPaths contains B', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     await writeConfig(projectDirectory, 'base.json', {
       port: 8080,
       host: '0.0.0.0',
@@ -48,6 +42,10 @@ describe('extends-basic — basic extends resolution', () => {
   });
 
   it('A extends B extends C → merge = deepMerge(C, B, A), extendsPaths = [C, B]', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     await writeConfig(projectDirectory, 'c.json', {
       port: 9000,
       host: '0.0.0.0',
@@ -79,6 +77,10 @@ describe('extends-basic — basic extends resolution', () => {
   });
 
   it('extends resolved from declaring file dir, not cwd', async () => {
+    const { directory, projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     const sharedDirectory = `${directory}/shared`;
     await mkdir(sharedDirectory, { recursive: true });
 
@@ -101,6 +103,10 @@ describe('extends-basic — basic extends resolution', () => {
   });
 
   it('extends with absolute path resolves as-is', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     const absoluteBase = `${projectDirectory}/base.json`;
     await writeConfig(projectDirectory, 'base.json', {
       port: 8080,
@@ -127,6 +133,10 @@ describe('extends-basic — basic extends resolution', () => {
   ])(
     'extends with non-string value (%s) silently ignored',
     async (_label, value) => {
+      const { projectDirectory, globalDirectory } = await setupTest({
+        projectConfig: { port: 3000 },
+      });
+
       await writeConfig(projectDirectory, 'myapp.config.json', {
         extends: value,
         port: 3000,
@@ -143,6 +153,10 @@ describe('extends-basic — basic extends resolution', () => {
   );
 
   it('extends array with non-string entries filtered out silently', async () => {
+    const { projectDirectory, globalDirectory } = await setupTest({
+      projectConfig: { port: 3000 },
+    });
+
     await writeConfig(projectDirectory, 'base.json', {
       port: 8080,
       host: '0.0.0.0',

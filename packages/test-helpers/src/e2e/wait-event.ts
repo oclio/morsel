@@ -1,3 +1,6 @@
+/**
+Minimal store interface that can emit events via `on()`.
+*/
 export interface EventObservable {
   on(
     key: string,
@@ -14,6 +17,12 @@ export interface EventObservable {
 /**
  * Wait for an event to fire on a store within a timeout.
  * Returns the payload received by the listener.
+ *
+ * @param store - The store to listen on.
+ * @param key - The dotted key path to listen for (e.g. `'port'`, `'server.host'`).
+ * @param timeoutMs - Maximum time to wait in milliseconds. Defaults to 5000.
+ * @returns The event payload `{ next, prev }` once the event fires.
+ * @throws If the event does not fire within `timeoutMs`.
  */
 export async function waitForEvent(
   store: EventObservable,

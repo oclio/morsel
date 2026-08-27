@@ -2,26 +2,21 @@ import { existsSync, readFileSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
-import {
-  clearWatcherRegistry,
-  createTemporaryEnvironment,
-} from '@oclio/morsel-e2e-helpers';
+import { clearWatcherRegistry, setupTest } from '@oclio/test-helpers';
 
 import { initConfig } from '@/index';
 
 describe('init-config-paths — path resolution', () => {
-  let directory: string;
-  let projectDirectory: string;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     clearWatcherRegistry();
-    const env = await createTemporaryEnvironment();
-    directory = env.directory;
-    projectDirectory = `${directory}/project`;
-    await mkdir(projectDirectory, { recursive: true });
   });
 
-  it('custom extension: first format plugin extension used', () => {
+  it('custom extension: first format plugin extension used', async () => {
+    const { projectDirectory } = await setupTest({
+      projectConfig: {},
+      projectFilename: '_setup-test.json',
+    });
+
     const morselPlugin = {
       name: 'morsel',
       extensions: ['.morsel'],
@@ -47,6 +42,11 @@ describe('init-config-paths — path resolution', () => {
   });
 
   it('.config/ directory convention: if .config/ exists → writes to .config/<name><ext>', async () => {
+    const { projectDirectory } = await setupTest({
+      projectConfig: {},
+      projectFilename: '_setup-test.json',
+    });
+
     const configDirectory = path.resolve(projectDirectory, '.config');
     await mkdir(configDirectory, { recursive: true });
 
@@ -70,6 +70,11 @@ describe('init-config-paths — path resolution', () => {
   });
 
   it('.config/ directory with custom plugin → path becomes .config/<name><extension>', async () => {
+    const { projectDirectory } = await setupTest({
+      projectConfig: {},
+      projectFilename: '_setup-test.json',
+    });
+
     const configDirectory = path.resolve(projectDirectory, '.config');
     await mkdir(configDirectory, { recursive: true });
 
@@ -93,7 +98,12 @@ describe('init-config-paths — path resolution', () => {
     expect(existsSync(result)).toBe(true);
   });
 
-  it('plugin extension fallback: plugin with no extensions → defaults to .json', () => {
+  it('plugin extension fallback: plugin with no extensions → defaults to .json', async () => {
+    const { projectDirectory } = await setupTest({
+      projectConfig: {},
+      projectFilename: '_setup-test.json',
+    });
+
     const noExtensionPlugin = {
       name: 'no-ext',
       extensions: [],
