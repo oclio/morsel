@@ -20,6 +20,11 @@ const SINGLE_REF_PATTERN = /^\{\{([^{}]+)\}\}$/;
  *   If the reference is not found, the placeholder is left as-is.
  * - Circular references (`a → b → a`) throw `MorselError` with code `ECYCLE`.
  *
+ * The input config is deep-cloned before interpolation — the original is
+ * not mutated. For callers that own the input (e.g. `processConfig` where
+ * the config is freshly merged), use {@link interpolateInPlace} to avoid
+ * the redundant clone.
+ *
  * @param config - The merged config to interpolate.
  * @param env - Optional environment record (defaults to `process.env`).
  * @returns A new config with all placeholders resolved.
@@ -30,6 +35,24 @@ export function interpolate(
 ): ConfigRecord {
   const root = deepClone(config);
   return resolveObject(root, root, env, new Set());
+}
+
+/**
+ * In-place variant of {@link interpolate} — mutates the input config directly.
+ *
+ * Use this when the caller owns the config object (e.g. it was just produced
+ * by `mergeLayers`) and there are no external references to it. Avoids the
+ * deep-clone that {@link interpolate} performs defensively.
+ *
+ * @param config - The merged config to interpolate (mutated in place).
+ * @param env - Optional environment record (defaults to `process.env`).
+ * @returns The same config object with all placeholders resolved.
+ */
+export function interpolateInPlace(
+  config: ConfigRecord,
+  env: Record<string, string | undefined> = process.env,
+): ConfigRecord {
+  return resolveObject(config, config, env, new Set());
 }
 
 function resolveObject(

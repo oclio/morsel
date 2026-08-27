@@ -1,4 +1,4 @@
-import { deepMerge } from '@/merge/deep-merge';
+import { deepMerge, deepMergeInPlace } from '@/merge/deep-merge';
 
 describe('deepMerge', () => {
   it('returns base when override is empty', () => {
@@ -312,5 +312,234 @@ describe('deepMerge — prototype pollution protection', () => {
 
     const items = result['items'] as unknown[];
     expect(items[0]).toEqual({});
+  });
+});
+
+describe('deepMergeInPlace', () => {
+  it('returns base when override is empty', () => {
+    const base = { foo: 'bar' };
+    const result = deepMergeInPlace(base, {}, 'replace');
+
+    expect(result).toEqual({ foo: 'bar' });
+  });
+
+  it('returns override values when base is empty', () => {
+    const result = deepMergeInPlace({}, { foo: 'bar' }, 'replace');
+
+    expect(result).toEqual({ foo: 'bar' });
+  });
+
+  it('override scalar wins over base scalar', () => {
+    const result = deepMergeInPlace({ foo: 'bar' }, { foo: 'baz' }, 'replace');
+
+    expect(result).toEqual({ foo: 'baz' });
+  });
+
+  it('null override overwrites base', () => {
+    const result = deepMergeInPlace({ foo: 'bar' }, { foo: null }, 'replace');
+
+    expect(result).toEqual({ foo: null });
+  });
+
+  it('undefined override is ignored', () => {
+    const result = deepMergeInPlace(
+      { foo: 'bar' },
+      { foo: undefined },
+      'replace',
+    );
+
+    expect(result).toEqual({ foo: 'bar' });
+  });
+
+  it('recursively merges nested plain objects in place', () => {
+    const base = { nested: { a: 1, b: 2 } };
+    const result = deepMergeInPlace(
+      base,
+      { nested: { b: 3, c: 4 } },
+      'replace',
+    );
+
+    expect(result).toEqual({ nested: { a: 1, b: 3, c: 4 } });
+  });
+
+  it('mutates base in place and returns the same reference', () => {
+    const base = { foo: 'bar', nested: { a: 1 } };
+    const result = deepMergeInPlace(
+      base,
+      { foo: 'baz', nested: { b: 2 } },
+      'replace',
+    );
+
+    expect(result).toBe(base);
+    expect(result).toEqual({ foo: 'baz', nested: { a: 1, b: 2 } });
+  });
+
+  it('does not mutate override', () => {
+    const base = { foo: 'bar' };
+    const override = { foo: 'baz', nested: { b: 2 } };
+
+    deepMergeInPlace(base, override, 'replace');
+
+    expect(override).toEqual({ foo: 'baz', nested: { b: 2 } });
+  });
+
+  it.each([
+    {
+      name: 'replace strategy replaces base array',
+      strategy: 'replace' as const,
+      base: { items: [1, 2, 3] },
+      override: { items: [4, 5] },
+      expected: { items: [4, 5] },
+    },
+    {
+      name: 'concat strategy concatenates arrays',
+      strategy: 'concat' as const,
+      base: { items: [1, 2, 3] },
+      override: { items: [4, 5] },
+      expected: { items: [1, 2, 3, 4, 5] },
+    },
+  ])('$name', ({ base, override, strategy, expected }) => {
+    const result = deepMergeInPlace(base, override, strategy);
+
+    expect(result).toEqual(expected);
+  });
+
+  it('override array replaces base non-array value', () => {
+    const result = deepMergeInPlace(
+      { items: 'string' },
+      { items: [1, 2] },
+      'replace',
+    );
+
+    expect(result).toEqual({ items: [1, 2] });
+  });
+
+  it('override object replaces base non-object value with deep-cloned object', () => {
+    const overrideConfig = { a: 1 };
+    const result = deepMergeInPlace(
+      { config: 'string' },
+      { config: overrideConfig },
+      'replace',
+    );
+
+    expect(result).toEqual({ config: { a: 1 } });
+    expect(result['config']).not.toBe(overrideConfig);
+  });
+
+  it('override scalar replaces base object', () => {
+    const result = deepMergeInPlace(
+      { config: { a: 1 } },
+      { config: 'string' },
+      'replace',
+    );
+
+    expect(result).toEqual({ config: 'string' });
+  });
+
+  it('override scalar replaces base array', () => {
+    const result = deepMergeInPlace(
+      { items: [1, 2] },
+      { items: 'string' },
+      'replace',
+    );
+
+    expect(result).toEqual({ items: 'string' });
+  });
+
+  it('override array replaces base object', () => {
+    const result = deepMergeInPlace(
+      { items: { a: 1 } },
+      { items: [1, 2] },
+      'replace',
+    );
+
+    expect(result).toEqual({ items: [1, 2] });
+  });
+
+  it('override object replaces base array', () => {
+    const result = deepMergeInPlace(
+      { items: [1, 2] },
+      { items: { a: 1 } },
+      'replace',
+    );
+
+    expect(result).toEqual({ items: { a: 1 } });
+  });
+
+  it('deep-clones object elements in override-only arrays', () => {
+    const item = { a: 1 };
+    const result = deepMergeInPlace({}, { items: [item] }, 'replace');
+    const items = result['items'] as unknown[];
+
+    expect(items).toEqual([{ a: 1 }]);
+    expect(items[0]).not.toBe(item);
+  });
+
+  it('deep-clones object elements when replacing arrays', () => {
+    const overrideItem = { b: 2 };
+    const result = deepMergeInPlace(
+      { items: [{ a: 1 }] },
+      { items: [overrideItem] },
+      'replace',
+    );
+    const items = result['items'] as unknown[];
+
+    expect(items).toEqual([{ b: 2 }]);
+    expect(items[0]).not.toBe(overrideItem);
+  });
+
+  it('deep-clones object elements from both arrays when concatenating', () => {
+    const baseItem = { a: 1 };
+    const overrideItem = { b: 2 };
+    const result = deepMergeInPlace(
+      { items: [baseItem] },
+      { items: [overrideItem] },
+      'concat',
+    );
+    const items = result['items'] as unknown[];
+
+    expect(items).toEqual([{ a: 1 }, { b: 2 }]);
+    expect(items[0]).not.toBe(baseItem);
+    expect(items[1]).not.toBe(overrideItem);
+  });
+
+  it('handles deeply nested objects in place', () => {
+    const base = { a: { b: { c: { d: 1 } } } };
+    const result = deepMergeInPlace(
+      base,
+      { a: { b: { c: { e: 2 } } } },
+      'replace',
+    );
+
+    expect(result).toEqual({ a: { b: { c: { d: 1, e: 2 } } } });
+  });
+
+  it('skips __proto__ key from override', () => {
+    const malicious = JSON.parse('{"__proto__":{"polluted":true}}');
+    const result = deepMergeInPlace({ foo: 'bar' }, malicious, 'replace');
+
+    expect(result).toEqual({ foo: 'bar' });
+    expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
+  });
+
+  it('skips constructor key from override', () => {
+    const result = deepMergeInPlace(
+      { foo: 'bar' },
+      { constructor: { prototype: { polluted: true } } } as Record<
+        string,
+        unknown
+      >,
+      'replace',
+    );
+
+    expect(result).toEqual({ foo: 'bar' });
+  });
+
+  it('skips __proto__ in nested objects during merge', () => {
+    const malicious = JSON.parse('{"nested":{"__proto__":{"polluted":true}}}');
+    const result = deepMergeInPlace({ nested: {} }, malicious, 'replace');
+
+    expect(result['nested'] as Record<string, unknown>).toEqual({});
+    expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
   });
 });

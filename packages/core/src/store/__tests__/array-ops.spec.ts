@@ -3,7 +3,7 @@ import { createMockStoreState, setupStoreMocks } from '@oclio/test-helpers';
 import { runWriteHooks } from '@/hooks/run-hooks';
 import { applyValidation } from '@/load/apply-validation';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
-import { interpolate } from '@/merge/interpolate';
+import { interpolateInPlace } from '@/merge/interpolate';
 import { parsePath } from '@/paths/parse-path';
 import { getPathValue, setPathValue } from '@/paths/path-access';
 import {
@@ -31,7 +31,7 @@ vi.mock('@/load/merge-layers', () => ({
   mergeLayers: vi.fn(),
 }));
 vi.mock('@/merge/interpolate', () => ({
-  interpolate: vi.fn(),
+  interpolateInPlace: vi.fn(),
 }));
 vi.mock('@/paths/parse-path', () => ({
   parsePath: vi.fn(),
@@ -82,7 +82,7 @@ describe('array-ops', () => {
       applyValidation,
       applyMutability,
       mergeLayers,
-      interpolate,
+      interpolateInPlace,
       toMorselLayer,
       deepClone,
       parsePath,

@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
@@ -210,6 +210,10 @@ export async function setupTest(
   const { directory } = await createTemporaryEnvironment();
   const projectDirectory = rootAsCwd ? directory : `${directory}/project`;
   const globalDirectory = customGlobalDirectory ?? `${directory}/global`;
+
+  if (customGlobalDirectory !== undefined) {
+    await rm(globalDirectory, { recursive: true, force: true });
+  }
 
   await prepareDirectories({
     projectDirectory,

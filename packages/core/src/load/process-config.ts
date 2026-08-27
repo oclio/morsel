@@ -3,7 +3,7 @@ import type { ConfigMutability } from '@/load/merge-layers';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
 import type { ResolvedLayer } from '@/load/resolve-layer';
 import type { ArrayMergeStrategy } from '@/merge/deep-merge';
-import { interpolate } from '@/merge/interpolate';
+import { interpolateInPlace } from '@/merge/interpolate';
 import type { ValidationPlugin } from '@/plugins/types';
 import { deepClone } from '@/utils/deep-clone';
 
@@ -46,7 +46,7 @@ export function processConfig<T extends ConfigRecord = ConfigRecord>(
   mutability: ConfigMutability,
 ): ProcessedConfig<T> {
   const merged = mergeLayers(layers, arrayMerge);
-  const interpolated = interpolate(merged);
+  const interpolated = interpolateInPlace(merged);
   const validated = applyValidation(interpolated, validationPlugins);
   const config = applyMutability(validated, mutability) as T;
   const lastConfig =

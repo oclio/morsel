@@ -1,6 +1,6 @@
 import type { ResolvedLayer } from '@/load/resolve-layer';
 import type { ArrayMergeStrategy } from '@/merge/deep-merge';
-import { deepMerge } from '@/merge/deep-merge';
+import { deepMergeInPlace } from '@/merge/deep-merge';
 
 type ConfigRecord = Record<string, unknown>;
 
@@ -49,7 +49,7 @@ export function mergeLayers(
   let result: ConfigRecord = {};
 
   for (const layer of layers) {
-    result = deepMerge(result, layer.config, arrayMerge);
+    result = deepMergeInPlace(result, layer.config, arrayMerge);
   }
 
   return result;

@@ -6,7 +6,7 @@ interface StoreMockFns {
   applyValidation?: unknown;
   applyMutability?: unknown;
   mergeLayers?: unknown;
-  interpolate?: unknown;
+  interpolateInPlace?: unknown;
   processConfig?: unknown;
   toMorselLayer?: unknown;
   deepClone?: unknown;
@@ -49,7 +49,9 @@ export function setupStoreMocks(fns: StoreMockFns): void {
     }
     return merged;
   });
-  asMock(fns.interpolate)?.mockImplementation((config: unknown) => config);
+  asMock(fns.interpolateInPlace)?.mockImplementation(
+    (config: unknown) => config,
+  );
   asMock(fns.processConfig)?.mockImplementation(
     (
       layers: unknown[],
