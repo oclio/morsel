@@ -1,5 +1,6 @@
 import {
   clearWatcherRegistry,
+  createEventCollector,
   setupTest,
   waitForRemerge,
   writeConfig,
@@ -17,10 +18,8 @@ describe('events-types — event type verification', () => {
       createGlobalDir: true,
     });
 
-    const events: { type: string; next: unknown; prev: unknown }[] = [];
-    store!.on('host', (event) => {
-      events.push({ type: event.type, next: event.next, prev: event.prev });
-    });
+    const { events, listener } = createEventCollector();
+    store!.on('host', listener);
 
     await writeConfig(projectDirectory, 'myapp.config.json', {
       port: 3000,
@@ -30,6 +29,7 @@ describe('events-types — event type verification', () => {
 
     expect(events).toHaveLength(1);
     expect(events[0]).toEqual({
+      keyPath: 'host',
       type: 'added',
       next: 'localhost',
       prev: undefined,
@@ -45,16 +45,15 @@ describe('events-types — event type verification', () => {
       createGlobalDir: true,
     });
 
-    const events: { type: string; next: unknown; prev: unknown }[] = [];
-    store!.on('port', (event) => {
-      events.push({ type: event.type, next: event.next, prev: event.prev });
-    });
+    const { events, listener } = createEventCollector();
+    store!.on('port', listener);
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
     await waitForRemerge(store!, (config) => config['port'] === 8080);
 
     expect(events).toHaveLength(1);
     expect(events[0]).toEqual({
+      keyPath: 'port',
       type: 'modified',
       next: 8080,
       prev: 3000,
@@ -70,16 +69,15 @@ describe('events-types — event type verification', () => {
       createGlobalDir: true,
     });
 
-    const events: { type: string; next: unknown; prev: unknown }[] = [];
-    store!.on('host', (event) => {
-      events.push({ type: event.type, next: event.next, prev: event.prev });
-    });
+    const { events, listener } = createEventCollector();
+    store!.on('host', listener);
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
     await waitForRemerge(store!, (config) => config['host'] === undefined);
 
     expect(events).toHaveLength(1);
     expect(events[0]).toEqual({
+      keyPath: 'host',
       type: 'removed',
       next: undefined,
       prev: 'localhost',
@@ -95,16 +93,10 @@ describe('events-types — event type verification', () => {
       createGlobalDir: true,
     });
 
-    const events: { type: string; keyPath: string }[] = [];
-    store!.on('tags', (event) => {
-      events.push({ type: event.type, keyPath: event.keyPath });
-    });
-    store!.on('tags.0', (event) => {
-      events.push({ type: event.type, keyPath: event.keyPath });
-    });
-    store!.on('tags.1', (event) => {
-      events.push({ type: event.type, keyPath: event.keyPath });
-    });
+    const { events, listener } = createEventCollector();
+    store!.on('tags', listener);
+    store!.on('tags.0', listener);
+    store!.on('tags.1', listener);
 
     await writeConfig(projectDirectory, 'myapp.config.json', {
       tags: ['x', 'y'],

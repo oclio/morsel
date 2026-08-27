@@ -1,5 +1,11 @@
 export type { DebugCallback, DebugCollector } from './debug-collector';
 export { createDebugCollector } from './debug-collector';
+export type {
+  EventCollector,
+  EventListener,
+  StoreEvent,
+} from './event-collector';
+export { createEventCollector } from './event-collector';
 export { clearWatcherRegistry } from './global-setup';
 export { mockPlugin } from './mock-plugin';
 export type { CustomFormatPlugin } from './morsel-plugin';

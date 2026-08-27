@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import {
   clearWatcherRegistry,
+  createEventCollector,
   setupTest,
   suppressConsoleError,
   waitForRemerge,
@@ -163,10 +164,8 @@ describe('mutations-unset — unset() API', () => {
       formatPlugins: [throwingPlugin],
     });
 
-    const events: { type: string; next: unknown; prev: unknown }[] = [];
-    store!.on('host', (event) => {
-      events.push({ type: event.type, next: event.next, prev: event.prev });
-    });
+    const { events, listener } = createEventCollector();
+    store!.on('host', listener);
 
     await expect(store!.unset('host')).rejects.toMatchObject({
       name: 'WriteError',
@@ -216,15 +215,14 @@ describe('mutations-unset — unset() API', () => {
       watch: true,
     });
 
-    const events: { type: string; next: unknown; prev: unknown }[] = [];
-    store!.on('host', (event) => {
-      events.push({ type: event.type, next: event.next, prev: event.prev });
-    });
+    const { events, listener } = createEventCollector();
+    store!.on('host', listener);
 
     await store!.unset('host');
 
     expect(events).toHaveLength(1);
     expect(events[0]).toEqual({
+      keyPath: 'host',
       type: 'removed',
       next: undefined,
       prev: 'localhost',

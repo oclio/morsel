@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import {
   clearWatcherRegistry,
+  createEventCollector,
   setupTest,
   suppressConsoleError,
 } from '@oclio/morsel-e2e-helpers';
@@ -103,15 +104,14 @@ describe('headless-mode — watch/proxy/queue flags', () => {
         watch: false,
       });
 
-      const events: { type: string; next: unknown; prev: unknown }[] = [];
-      store.on('port', (event) => {
-        events.push({ type: event.type, next: event.next, prev: event.prev });
-      });
+      const { events, listener } = createEventCollector();
+      store.on('port', listener);
 
       await store.set('port', 8080);
 
       expect(events).toHaveLength(1);
       expect(events[0]).toEqual({
+        keyPath: 'port',
         type: 'modified',
         next: 8080,
         prev: 3000,
@@ -370,15 +370,14 @@ describe('headless-mode — watch/proxy/queue flags', () => {
         queue: false,
       });
 
-      const events: { type: string; next: unknown; prev: unknown }[] = [];
-      store.on('port', (event) => {
-        events.push({ type: event.type, next: event.next, prev: event.prev });
-      });
+      const { events, listener } = createEventCollector();
+      store.on('port', listener);
 
       await store.set('port', 8080);
 
       expect(events).toHaveLength(1);
       expect(events[0]).toEqual({
+        keyPath: 'port',
         type: 'modified',
         next: 8080,
         prev: 3000,

@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import {
   clearWatcherRegistry,
+  createEventCollector,
   setupTest,
   suppressConsoleError,
   waitForRemerge,
@@ -75,17 +76,20 @@ describe('mutations-transaction — store.transaction()', () => {
       watch: true,
     });
 
-    const events: { type: string; keyPath: string }[] = [];
-    store!.on('port', (event) => {
-      events.push({ type: event.type, keyPath: event.keyPath });
-    });
+    const { events, listener } = createEventCollector();
+    store!.on('port', listener);
 
     await store!.transaction(async () => {
       await store!.set('port', 8080);
     });
 
     expect(events).toHaveLength(1);
-    expect(events[0]).toEqual({ type: 'modified', keyPath: 'port' });
+    expect(events[0]).toEqual({
+      keyPath: 'port',
+      type: 'modified',
+      next: 8080,
+      prev: 3000,
+    });
 
     await store!.stop();
   });
@@ -96,10 +100,8 @@ describe('mutations-transaction — store.transaction()', () => {
       watch: true,
     });
 
-    const events: { type: string; keyPath: string }[] = [];
-    store!.on('port', (event) => {
-      events.push({ type: event.type, keyPath: event.keyPath });
-    });
+    const { events, listener } = createEventCollector();
+    store!.on('port', listener);
 
     await expect(
       store!.transaction(async () => {
@@ -267,17 +269,20 @@ describe('mutations-transaction — store.transaction()', () => {
       queue: false,
     });
 
-    const events: { type: string; keyPath: string }[] = [];
-    store.on('port', (event) => {
-      events.push({ type: event.type, keyPath: event.keyPath });
-    });
+    const { events, listener } = createEventCollector();
+    store.on('port', listener);
 
     await store.transaction(async () => {
       await store.set('port', 8080);
     });
 
     expect(events).toHaveLength(1);
-    expect(events[0]).toEqual({ type: 'modified', keyPath: 'port' });
+    expect(events[0]).toEqual({
+      keyPath: 'port',
+      type: 'modified',
+      next: 8080,
+      prev: 3000,
+    });
 
     await store.stop();
   });
@@ -382,10 +387,8 @@ describe('mutations-transaction — store.transaction()', () => {
       watch: true,
     });
 
-    const events: { type: string; keyPath: string }[] = [];
-    store!.on('port', (event) => {
-      events.push({ type: event.type, keyPath: event.keyPath });
-    });
+    const { events, listener } = createEventCollector();
+    store!.on('port', listener);
 
     await store!.transaction(async () => {
       await store!.set('port', 8080);
@@ -486,10 +489,8 @@ describe('mutations-transaction — store.transaction()', () => {
       watch: true,
     });
 
-    const events: { type: string; keyPath: string }[] = [];
-    store!.on('port', (event) => {
-      events.push({ type: event.type, keyPath: event.keyPath });
-    });
+    const { events, listener } = createEventCollector();
+    store!.on('port', listener);
 
     await store!.transaction(async () => {
       await store!.set('port', 8080);

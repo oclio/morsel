@@ -4,6 +4,7 @@ import path from 'node:path';
 
 import {
   clearWatcherRegistry,
+  createEventCollector,
   setupTest,
   suppressConsoleError,
   waitForRemerge,
@@ -25,16 +26,19 @@ describe('mutations-set — set() API', () => {
       watch: true,
     });
 
-    const events: { type: string; next: unknown; prev: unknown }[] = [];
-    store!.on('port', (event) => {
-      events.push({ type: event.type, next: event.next, prev: event.prev });
-    });
+    const { events, listener } = createEventCollector();
+    store!.on('port', listener);
 
     await store!.set('port', 8080);
 
     expect(store!.config).toEqual({ port: 8080 });
     expect(events).toHaveLength(1);
-    expect(events[0]).toEqual({ type: 'modified', next: 8080, prev: 3000 });
+    expect(events[0]).toEqual({
+      keyPath: 'port',
+      type: 'modified',
+      next: 8080,
+      prev: 3000,
+    });
 
     const content = JSON.parse(
       await readFile(
@@ -96,15 +100,14 @@ describe('mutations-set — set() API', () => {
       watch: true,
     });
 
-    const events: { type: string; next: unknown; prev: unknown }[] = [];
-    store!.on('host', (event) => {
-      events.push({ type: event.type, next: event.next, prev: event.prev });
-    });
+    const { events, listener } = createEventCollector();
+    store!.on('host', listener);
 
     await store!.set('host', 'localhost');
 
     expect(events).toHaveLength(1);
     expect(events[0]).toEqual({
+      keyPath: 'host',
       type: 'added',
       next: 'localhost',
       prev: undefined,
@@ -164,10 +167,8 @@ describe('mutations-set — set() API', () => {
       formatPlugins: [throwingPlugin],
     });
 
-    const events: { type: string; next: unknown; prev: unknown }[] = [];
-    store!.on('port', (event) => {
-      events.push({ type: event.type, next: event.next, prev: event.prev });
-    });
+    const { events, listener } = createEventCollector();
+    store!.on('port', listener);
 
     await expect(store!.set('port', 8080)).rejects.toMatchObject({
       name: 'WriteError',
@@ -391,15 +392,18 @@ describe('mutations-set — set() API', () => {
       watch: true,
     });
 
-    const portEvents: { type: string; next: unknown; prev: unknown }[] = [];
-    store!.on('port', (event) => {
-      portEvents.push({ type: event.type, next: event.next, prev: event.prev });
-    });
+    const { events: portEvents, listener } = createEventCollector();
+    store!.on('port', listener);
 
     await store!.set('port', 8080);
 
     expect(portEvents).toHaveLength(1);
-    expect(portEvents[0]).toEqual({ type: 'modified', next: 8080, prev: 3000 });
+    expect(portEvents[0]).toEqual({
+      keyPath: 'port',
+      type: 'modified',
+      next: 8080,
+      prev: 3000,
+    });
 
     await store!.stop();
   });
@@ -451,10 +455,8 @@ describe('mutations-set — set() API', () => {
       formatPlugins: [throwingPlugin],
     });
 
-    const events: { type: string; next: unknown; prev: unknown }[] = [];
-    store!.on('port', (event) => {
-      events.push({ type: event.type, next: event.next, prev: event.prev });
-    });
+    const { events, listener } = createEventCollector();
+    store!.on('port', listener);
 
     await expect(store!.set('port', 8080)).rejects.toThrow();
 

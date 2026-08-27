@@ -1,5 +1,6 @@
 import {
   clearWatcherRegistry,
+  createEventCollector,
   setupTest,
   waitForRemerge,
   writeConfig,
@@ -122,10 +123,8 @@ describe('watch-lifecycle-watcher-update — watcher update on re-merge', () => 
       createGlobalDir: true,
     });
 
-    const events: { type: string; next: unknown; prev: unknown }[] = [];
-    store!.on('port', (event) => {
-      events.push({ type: event.type, next: event.next, prev: event.prev });
-    });
+    const { events, listener } = createEventCollector();
+    store!.on('port', listener);
 
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
     await waitForRemerge(
@@ -134,7 +133,12 @@ describe('watch-lifecycle-watcher-update — watcher update on re-merge', () => 
     );
 
     expect(events).toHaveLength(1);
-    expect(events[0]).toEqual({ type: 'modified', next: 8080, prev: 3000 });
+    expect(events[0]).toEqual({
+      keyPath: 'port',
+      type: 'modified',
+      next: 8080,
+      prev: 3000,
+    });
 
     await store!.stop();
   });
