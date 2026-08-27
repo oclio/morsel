@@ -3,19 +3,8 @@ import path from 'node:path';
 import type { LayerWatchableHook } from '@/hooks/types';
 import type { ResolvedLayer } from '@/load/resolve-layer';
 import type { StoreState } from '@/store/store-state';
+import { addWatchedFile } from '@/store/store-state';
 import { createWatcher, releaseWatcher } from '@/watch/watcher-registry';
-
-function addWatchedFile(map: Map<string, Set<string>>, filePath: string): void {
-  const resolved = path.resolve(filePath);
-  const directory = path.dirname(resolved);
-  const basename = path.basename(resolved);
-  let set = map.get(directory);
-  if (set === undefined) {
-    set = new Set();
-    map.set(directory, set);
-  }
-  set.add(basename);
-}
 
 function isWatchableHook(hook: {
   readonly name: string;
