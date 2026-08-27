@@ -1,5 +1,11 @@
 # @oclio/morsel
 
+## 0.9.2
+
+### Patch Changes
+
+- 5fcf7e2: Reduce redundant object and collection allocations across the merge, diff, and interpolation pipelines. Each re-merge now performs fewer Map/array clones, lowering GC pressure on hot paths without changing any public API.
+
 ## 0.9.1
 
 ### Patch Changes
