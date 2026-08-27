@@ -97,7 +97,7 @@ describe('read-ops-get — get() API', () => {
     await store!.stop();
   });
 
-  it('get on escaped dot (app\\.config.host)', async () => {
+  it('get on escaped dot in key name', async () => {
     const { store } = await setupTest({
       defaults: {
         'app.config': { host: 'example.com', port: 8443 },
@@ -106,8 +106,8 @@ describe('read-ops-get — get() API', () => {
       watch: true,
     });
 
-    expect(store!.get('app\\.config.host')).toBe('example.com');
-    expect(store!.get('app\\.config.port')).toBe(8443);
+    expect(store!.get(String.raw`app\.config.host`)).toBe('example.com');
+    expect(store!.get(String.raw`app\.config.port`)).toBe(8443);
 
     await store!.stop();
   });

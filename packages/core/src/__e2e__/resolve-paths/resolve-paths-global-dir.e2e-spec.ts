@@ -39,7 +39,7 @@ describe('resolve-paths-global-dir — globalDir resolution', () => {
   });
 
   it('Windows fallback: APPDATA/<name> on win32', () => {
-    vi.stubEnv('APPDATA', 'C:\\AppData');
+    vi.stubEnv('APPDATA', String.raw`C:\AppData`);
     Object.defineProperty(process, 'platform', {
       value: 'win32',
       configurable: true,
@@ -47,7 +47,7 @@ describe('resolve-paths-global-dir — globalDir resolution', () => {
 
     const result = resolveGlobalDirectory({ name: 'myapp' });
 
-    expect(result).toBe(path.resolve('C:\\AppData', 'myapp'));
+    expect(result).toBe(path.resolve(String.raw`C:\AppData`, 'myapp'));
   });
 
   it('default: ~/.config/<name>', () => {
