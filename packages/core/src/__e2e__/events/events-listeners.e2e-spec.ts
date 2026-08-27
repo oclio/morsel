@@ -114,12 +114,12 @@ describe('events-listeners — listener management', () => {
     unsub();
 
     await writeConfig(projectDirectory, 'myapp.config.json', {
-      server: { host: '1.1.1.1', port: 3000 },
+      server: { host: '127.0.0.2', port: 3000 },
     });
     await waitForRemerge(
       store!,
       (config) =>
-        (config['server'] as Record<string, unknown>)['host'] === '1.1.1.1',
+        (config['server'] as Record<string, unknown>)['host'] === '127.0.0.2',
     );
 
     expect(calls).toBe(1);
