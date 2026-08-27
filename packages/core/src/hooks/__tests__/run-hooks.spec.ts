@@ -124,6 +124,33 @@ describe('runHooksSync', () => {
     );
   });
 
+  it('applies $env resolution to hook result using context envName', () => {
+    const hooks = [
+      makeHook('env-hook', 'before:defaults', () => ({
+        $env: { test: { port: 8080 } },
+        port: 3000,
+      })),
+    ];
+
+    const layers = runHooksSync(hooks, 'before:defaults', context);
+
+    expect(layers[0]!.config).toEqual({ port: 8080 });
+  });
+
+  it('strips extends from hook result', () => {
+    const hooks = [
+      makeHook('extends-hook', 'before:defaults', () => ({
+        extends: './base.json',
+        port: 3000,
+      })),
+    ];
+
+    const layers = runHooksSync(hooks, 'before:defaults', context);
+
+    expect(layers[0]!.config).toEqual({ port: 3000 });
+    expect('extends' in layers[0]!.config).toBe(false);
+  });
+
   it('preserves the original error message as cause in EHOOK', () => {
     const original = new Error('kaboom');
     const hooks = [

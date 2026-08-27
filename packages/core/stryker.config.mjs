@@ -18,7 +18,7 @@ const config = {
   timeoutMS: 240_000,
   timeoutFactor: 3,
   coverageAnalysis: 'perTest',
-  ignoreStatic: true,
+  ignoreStatic: false,
   incremental: true,
   incrementalFile: '.stryker-tmp/incremental.json',
   concurrency: 4,

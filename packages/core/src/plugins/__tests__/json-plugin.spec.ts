@@ -1,4 +1,5 @@
 import { jsonPlugin } from '@/plugins/json-plugin';
+import { selectParser } from '@/plugins/select-parser';
 
 describe('jsonPlugin', () => {
   describe('metadata', () => {
@@ -8,6 +9,18 @@ describe('jsonPlugin', () => {
 
     it('supports .json extension only', () => {
       expect(jsonPlugin.extensions).toEqual(['.json']);
+    });
+
+    it('selectParser matches .json extension from jsonPlugin', () => {
+      const result = selectParser('/fake/config.json', [jsonPlugin]);
+
+      expect(result).toBe(jsonPlugin);
+    });
+
+    it('selectParser does not match empty extension', () => {
+      const result = selectParser('/fake/config', [jsonPlugin]);
+
+      expect(result).toBeUndefined();
     });
   });
 
