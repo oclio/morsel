@@ -56,18 +56,7 @@ export function resolveGlobalDirectory(options: ResolvePathsOptions): string {
  * Collect candidate extensions from format plugins, in order, deduplicated.
  */
 function collectExtensions(formatPlugins: readonly FormatPlugin[]): string[] {
-  const seen = new Set<string>();
-  const all = formatPlugins.flatMap((plugin) => plugin.extensions);
-  const extensions: string[] = [];
-  for (const extension of all) {
-    if (seen.has(extension)) {
-      continue;
-    }
-
-    seen.add(extension);
-    extensions.push(extension);
-  }
-  return extensions;
+  return [...new Set(formatPlugins.flatMap((plugin) => plugin.extensions))];
 }
 
 /**

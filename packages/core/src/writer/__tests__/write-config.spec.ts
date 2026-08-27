@@ -5,7 +5,16 @@ import path from 'node:path';
 import { MorselError } from '@/errors/error';
 import { jsonPlugin } from '@/plugins/json-plugin';
 import type { FormatPlugin } from '@/plugins/types';
+import { atomicWrite } from '@/writer/atomic-write';
 import { writeConfigFile } from '@/writer/write-config';
+
+vi.mock('@/writer/atomic-write', async () => {
+  const { atomicWrite: realAtomicWrite } =
+    await import('@/writer/atomic-write');
+  return {
+    atomicWrite: vi.fn(realAtomicWrite),
+  };
+});
 
 describe('writeConfigFile', () => {
   let temporaryDirectory: string;
@@ -209,18 +218,13 @@ describe('writeConfigFile', () => {
   });
 
   describe('atomic write', () => {
-    it('writes temp file with utf8 encoding', async () => {
+    it('delegates to atomicWrite', async () => {
       const filePath = path.join(temporaryDirectory, 'app.config.json');
-      const spy = vi.spyOn(fs, 'writeFile');
+      vi.mocked(atomicWrite).mockClear();
 
       await writeConfigFile(filePath, { path: 'a', value: 1 }, [jsonPlugin]);
 
-      expect(spy).toHaveBeenCalledWith(
-        expect.stringContaining('.tmp.'),
-        expect.any(String),
-        'utf8',
-      );
-      spy.mockRestore();
+      expect(atomicWrite).toHaveBeenCalledWith(filePath, expect.any(String));
     });
   });
 
@@ -232,14 +236,13 @@ describe('writeConfigFile', () => {
         JSON.stringify({ server: { port: 3000 } }),
         'utf8',
       );
-      const spy = vi.spyOn(fs, 'writeFile');
+      vi.mocked(atomicWrite).mockClear();
 
       await writeConfigFile(filePath, { path: 'server.port', value: 3000 }, [
         jsonPlugin,
       ]);
 
-      expect(spy).not.toHaveBeenCalled();
-      spy.mockRestore();
+      expect(atomicWrite).not.toHaveBeenCalled();
     });
 
     it('skips write when deleting a key that does not exist', async () => {
@@ -249,14 +252,13 @@ describe('writeConfigFile', () => {
         JSON.stringify({ server: { port: 3000 } }),
         'utf8',
       );
-      const spy = vi.spyOn(fs, 'writeFile');
+      vi.mocked(atomicWrite).mockClear();
 
       await writeConfigFile(filePath, { isDelete: true, path: 'server.host' }, [
         jsonPlugin,
       ]);
 
-      expect(spy).not.toHaveBeenCalled();
-      spy.mockRestore();
+      expect(atomicWrite).not.toHaveBeenCalled();
     });
 
     it('skips write when setting a key to the same nested object', async () => {
@@ -266,7 +268,7 @@ describe('writeConfigFile', () => {
         JSON.stringify({ server: { host: 'localhost', port: 3000 } }),
         'utf8',
       );
-      const spy = vi.spyOn(fs, 'writeFile');
+      vi.mocked(atomicWrite).mockClear();
 
       await writeConfigFile(
         filePath,
@@ -274,8 +276,7 @@ describe('writeConfigFile', () => {
         [jsonPlugin],
       );
 
-      expect(spy).not.toHaveBeenCalled();
-      spy.mockRestore();
+      expect(atomicWrite).not.toHaveBeenCalled();
     });
 
     it('skips write when setting a key to the same array', async () => {
@@ -285,7 +286,7 @@ describe('writeConfigFile', () => {
         JSON.stringify({ tags: ['a', 'b', 'c'] }),
         'utf8',
       );
-      const spy = vi.spyOn(fs, 'writeFile');
+      vi.mocked(atomicWrite).mockClear();
 
       await writeConfigFile(
         filePath,
@@ -293,8 +294,7 @@ describe('writeConfigFile', () => {
         [jsonPlugin],
       );
 
-      expect(spy).not.toHaveBeenCalled();
-      spy.mockRestore();
+      expect(atomicWrite).not.toHaveBeenCalled();
     });
 
     it('writes when setting a key to a different value', async () => {
@@ -304,14 +304,13 @@ describe('writeConfigFile', () => {
         JSON.stringify({ server: { port: 3000 } }),
         'utf8',
       );
-      const spy = vi.spyOn(fs, 'writeFile');
+      vi.mocked(atomicWrite).mockClear();
 
       await writeConfigFile(filePath, { path: 'server.port', value: 8080 }, [
         jsonPlugin,
       ]);
 
-      expect(spy).toHaveBeenCalled();
-      spy.mockRestore();
+      expect(atomicWrite).toHaveBeenCalled();
     });
 
     it('writes when deleting a key that exists', async () => {
@@ -321,14 +320,13 @@ describe('writeConfigFile', () => {
         JSON.stringify({ server: { port: 3000 } }),
         'utf8',
       );
-      const spy = vi.spyOn(fs, 'writeFile');
+      vi.mocked(atomicWrite).mockClear();
 
       await writeConfigFile(filePath, { isDelete: true, path: 'server.port' }, [
         jsonPlugin,
       ]);
 
-      expect(spy).toHaveBeenCalled();
-      spy.mockRestore();
+      expect(atomicWrite).toHaveBeenCalled();
     });
 
     it('writes when replacing null with an object', async () => {

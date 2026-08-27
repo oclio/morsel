@@ -1,17 +1,16 @@
 import { createHookContext } from '@/hooks/hook-context';
 import { runHooksSync } from '@/hooks/run-hooks';
-import { applyValidation } from '@/load/apply-validation';
 import { buildLayers } from '@/load/build-layers';
-import { applyMutability, mergeLayers } from '@/load/merge-layers';
+import { processConfig } from '@/load/process-config';
 import type { ResolvedLayer } from '@/load/resolve-layer';
 import { resolveLayerSync } from '@/load/resolve-layer-sync';
-import { interpolate } from '@/merge/interpolate';
 import {
   resolveGlobalPath,
   resolveGlobalPathSync,
   resolveProjectPath,
   resolveProjectPathSync,
 } from '@/paths/resolve-paths';
+import type { ResolvedOptions } from '@/store/boot/assert-name';
 import { noop, resolveOptions } from '@/store/boot/assert-name';
 import { toMorselLayer } from '@/store/layer';
 import type { ConfigRecord, ConfigResult, MorselOptions } from '@/store/types';
@@ -56,14 +55,60 @@ export function loadConfigSync<T extends ConfigRecord = ConfigRecord>(
     ...runHooksSync(hooks, 'after:overrides', context, onDebug),
   ];
 
-  const merged = mergeLayers(layers, resolved.arrayMerge);
-  const interpolated = interpolate(merged);
-  const validated = applyValidation(interpolated, resolved.validationPlugins);
-  const config = applyMutability(validated, resolved.configMutability) as T;
+  const { config } = processConfig<T>(
+    layers,
+    resolved.arrayMerge,
+    resolved.validationPlugins,
+    resolved.configMutability,
+  );
 
   return {
     config,
     layers: layers.map((layer) => toMorselLayer(layer)),
+  };
+}
+
+/**
+ * Shared async loading pipeline: resolve paths, build layers, process config.
+ *
+ * @param resolved - Fully resolved options.
+ * @param triggerRemerge - Optional callback passed to buildLayers for watch mode.
+ * @returns The merged config, resolved layers, morsel layers, and project path.
+ */
+export async function loadPipeline<T extends ConfigRecord = ConfigRecord>(
+  resolved: ResolvedOptions,
+  triggerRemerge: () => void = noop,
+): Promise<{
+  config: T;
+  layers: ResolvedLayer[];
+  morselLayers: ReturnType<typeof toMorselLayer>[];
+  projectPath: string | undefined;
+}> {
+  const globalPath = await resolveGlobalPath(resolved, resolved.formatPlugins);
+  const projectPath = await resolveProjectPath(
+    resolved,
+    resolved.formatPlugins,
+  );
+
+  const layers: ResolvedLayer[] = await buildLayers(
+    resolved,
+    globalPath,
+    projectPath,
+    triggerRemerge,
+  );
+
+  const { config } = processConfig<T>(
+    layers,
+    resolved.arrayMerge,
+    resolved.validationPlugins,
+    resolved.configMutability,
+  );
+
+  return {
+    config: config as T,
+    layers,
+    morselLayers: layers.map((layer) => toMorselLayer(layer)),
+    projectPath,
   };
 }
 
@@ -79,25 +124,6 @@ export async function loadConfig<T extends ConfigRecord = ConfigRecord>(
   options: MorselOptions<T>,
 ): Promise<ConfigResult<T>> {
   const resolved = resolveOptions(options);
-  const globalPath = await resolveGlobalPath(resolved, resolved.formatPlugins);
-  const projectPath = await resolveProjectPath(
-    resolved,
-    resolved.formatPlugins,
-  );
-
-  const layers: ResolvedLayer[] = await buildLayers(
-    resolved,
-    globalPath,
-    projectPath,
-  );
-
-  const merged = mergeLayers(layers, resolved.arrayMerge);
-  const interpolated = interpolate(merged);
-  const validated = applyValidation(interpolated, resolved.validationPlugins);
-  const config = applyMutability(validated, resolved.configMutability) as T;
-
-  return {
-    config,
-    layers: layers.map((layer) => toMorselLayer(layer)),
-  };
+  const { config, morselLayers } = await loadPipeline<T>(resolved);
+  return { config, layers: morselLayers };
 }

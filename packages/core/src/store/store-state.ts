@@ -85,7 +85,10 @@ export interface StoreState<T extends ConfigRecord = ConfigRecord> {
   transactionDirtyKeys: Map<string, Set<string>>;
 }
 
-function addWatchedFile(map: Map<string, Set<string>>, filePath: string): void {
+export function addWatchedFile(
+  map: Map<string, Set<string>>,
+  filePath: string,
+): void {
   const resolved = path.resolve(filePath);
   const directory = path.dirname(resolved);
   const basename = path.basename(resolved);

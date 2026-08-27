@@ -7,6 +7,7 @@ interface StoreMockFns {
   applyMutability?: unknown;
   mergeLayers?: unknown;
   interpolate?: unknown;
+  processConfig?: unknown;
   toMorselLayer?: unknown;
   deepClone?: unknown;
   parsePath?: unknown;
@@ -49,6 +50,27 @@ export function setupStoreMocks(fns: StoreMockFns): void {
     return merged;
   });
   asMock(fns.interpolate)?.mockImplementation((config: unknown) => config);
+  asMock(fns.processConfig)?.mockImplementation(
+    (
+      layers: unknown[],
+      _arrayMerge: unknown,
+      _plugins: unknown,
+      mutability: unknown,
+    ) => {
+      let merged: Record<string, unknown> = {};
+      for (const layer of layers) {
+        merged = {
+          ...merged,
+          ...(layer as { config: Record<string, unknown> }).config,
+        };
+      }
+      const validated = merged;
+      const config = validated;
+      const lastConfig =
+        mutability === 'mutable' ? structuredClone(validated) : validated;
+      return { config, validated, lastConfig };
+    },
+  );
   asMock(fns.toMorselLayer)?.mockImplementation((layer: unknown) => layer);
   asMock(fns.deepClone)?.mockImplementation(
     (config: unknown) => structuredClone(config) as Record<string, unknown>,

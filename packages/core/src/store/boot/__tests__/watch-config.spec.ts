@@ -2,7 +2,7 @@ import { createMockLayer, createMockStoreState } from '@oclio/test-helpers';
 
 import { MorselError } from '@/errors/error';
 import { buildLayers } from '@/load/build-layers';
-import { applyMutability, mergeLayers } from '@/load/merge-layers';
+import { processConfig } from '@/load/process-config';
 import { resolveGlobalPath, resolveProjectPath } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
 import { resolveOptions } from '@/store/boot/assert-name';
@@ -21,9 +21,8 @@ import { releaseWatcher } from '@/watch/watcher-registry';
 vi.mock('@/load/build-layers', () => ({
   buildLayers: vi.fn(),
 }));
-vi.mock('@/load/merge-layers', () => ({
-  applyMutability: vi.fn(),
-  mergeLayers: vi.fn(),
+vi.mock('@/load/process-config', () => ({
+  processConfig: vi.fn(),
 }));
 vi.mock('@/paths/resolve-paths', () => ({
   resolveGlobalPath: vi.fn(),
@@ -145,8 +144,11 @@ describe('watchConfig', () => {
 
     vi.mocked(buildLayers).mockResolvedValue(layers);
 
-    vi.mocked(mergeLayers).mockReturnValue({ merged: true });
-    vi.mocked(applyMutability).mockReturnValue({ frozen: true });
+    vi.mocked(processConfig).mockReturnValue({
+      config: { frozen: true },
+      merged: { frozen: true },
+      validated: { frozen: true },
+    } as never);
     vi.mocked(toMorselLayer).mockImplementation((layer) => ({
       source: layer.source,
       path: layer.path,
@@ -205,16 +207,15 @@ describe('watchConfig', () => {
       );
     });
 
-    it('merges layers with arrayMerge strategy', async () => {
+    it('processes config via processConfig with layers and options', async () => {
       await watchConfig({ name: 'myapp' });
 
-      expect(mergeLayers).toHaveBeenCalledWith(expect.any(Array), 'replace');
-    });
-
-    it('applies mutability to merged config', async () => {
-      await watchConfig({ name: 'myapp' });
-
-      expect(applyMutability).toHaveBeenCalledWith({ merged: true }, 'frozen');
+      expect(processConfig).toHaveBeenCalledWith(
+        expect.any(Array),
+        'replace',
+        expect.any(Array),
+        'frozen',
+      );
     });
 
     it('maps layers through toMorselLayer', async () => {

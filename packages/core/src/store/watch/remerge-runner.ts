@@ -1,9 +1,7 @@
 import { MorselError } from '@/errors/error';
-import { applyValidation } from '@/load/apply-validation';
 import { buildLayers } from '@/load/build-layers';
-import { applyMutability, mergeLayers } from '@/load/merge-layers';
+import { processConfig } from '@/load/process-config';
 import type { ResolvedLayer } from '@/load/resolve-layer';
-import { interpolate } from '@/merge/interpolate';
 import { resolveGlobalPath, resolveProjectPath } from '@/paths/resolve-paths';
 import { noop } from '@/store/boot/assert-name';
 import { toMorselLayer } from '@/store/layer';
@@ -13,7 +11,6 @@ import {
   updateWatchedFiles,
   updateWatchers,
 } from '@/store/watch/watcher-setup';
-import { deepClone } from '@/utils/deep-clone';
 
 type ConfigRecord = Record<string, unknown>;
 
@@ -115,22 +112,18 @@ export function createRemerge<T extends ConfigRecord>(): (
         return;
       }
 
-      const newConfig = mergeLayers(newLayers, options_.arrayMerge);
-      const interpolated = interpolate(newConfig);
-      const validated = applyValidation(
-        interpolated,
-        options_.validationPlugins,
-      );
       const oldConfig = store.lastConfig;
 
-      const newLastConfig =
-        options_.configMutability === 'mutable'
-          ? deepClone(validated)
-          : validated;
-      const newStoreConfig = applyMutability(
+      const {
+        config: newStoreConfig,
         validated,
+        lastConfig: newLastConfig,
+      } = processConfig<T>(
+        newLayers,
+        options_.arrayMerge,
+        options_.validationPlugins,
         options_.configMutability,
-      ) as T;
+      );
       const newMorselLayers = newLayers.map((layer) => toMorselLayer(layer));
 
       // Apply config state first — watchers update only after re-merge success (spec §2.2).

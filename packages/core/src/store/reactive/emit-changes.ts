@@ -30,31 +30,31 @@ export function emitChanges(
   listeners: Map<string, Set<Listener>>,
   wildcardListeners = new Map<string, Set<Listener>>(),
 ): void {
-  const changes = diffKeys(oldConfig, newConfig);
+  const changes = [...diffKeys(oldConfig, newConfig)].map(([key, change]) => ({
+    key,
+    change,
+    depth: key.split('.').length,
+  }));
 
-  const removed = [...changes]
-    .filter(([, change]) => change.category === 'removed')
-    .sort(([a], [b]) => {
-      const depthA = a.split('.').length;
-      const depthB = b.split('.').length;
-      if (depthA !== depthB) return depthB - depthA;
-      return compareDesc(a, b);
+  const removed = changes
+    .filter(({ change }) => change.category === 'removed')
+    .sort((a, b) => {
+      if (a.depth !== b.depth) return b.depth - a.depth;
+      return compareDesc(a.key, b.key);
     });
 
-  const addedOrModified = [...changes]
-    .filter(([, change]) => change.category !== 'removed')
-    .sort(([a], [b]) => {
-      const depthA = a.split('.').length;
-      const depthB = b.split('.').length;
-      if (depthA !== depthB) return depthA - depthB;
-      return compareAsc(a, b);
+  const addedOrModified = changes
+    .filter(({ change }) => change.category !== 'removed')
+    .sort((a, b) => {
+      if (a.depth !== b.depth) return a.depth - b.depth;
+      return compareAsc(a.key, b.key);
     });
 
-  for (const [key, change] of removed) {
+  for (const { key, change } of removed) {
     emitToListeners(key, change, listeners, wildcardListeners);
   }
 
-  for (const [key, change] of addedOrModified) {
+  for (const { key, change } of addedOrModified) {
     emitToListeners(key, change, listeners, wildcardListeners);
   }
 }

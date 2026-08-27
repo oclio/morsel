@@ -49,29 +49,16 @@ export function resolveKeyOrigin(
     };
   }
 
-  // Implicit target resolution: check closest layer with the key (project -> global)
-  if (
-    projectLayer !== undefined &&
-    getPathValue(projectLayer.config, path) !== undefined
-  ) {
-    return {
-      layer: projectLayer,
-      filePath: projectLayer.path,
-      isWritable: true,
-      exists: true,
-    };
-  }
-
-  if (
-    globalLayer !== undefined &&
-    getPathValue(globalLayer.config, path) !== undefined
-  ) {
-    return {
-      layer: globalLayer,
-      filePath: globalLayer.path,
-      isWritable: true,
-      exists: true,
-    };
+  // Implicit target resolution: first writable layer with the key wins
+  for (const layer of [projectLayer, globalLayer]) {
+    if (layer !== undefined && getPathValue(layer.config, path) !== undefined) {
+      return {
+        layer,
+        filePath: layer.path,
+        isWritable: true,
+        exists: true,
+      };
+    }
   }
 
   // Fallback to project layer (default closest file)

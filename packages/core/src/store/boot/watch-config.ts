@@ -1,13 +1,8 @@
 import { MorselError } from '@/errors/error';
 import { createHookContext } from '@/hooks/hook-context';
 import type { Hook, HookContext } from '@/hooks/types';
-import { applyValidation } from '@/load/apply-validation';
-import { buildLayers } from '@/load/build-layers';
-import { applyMutability, mergeLayers } from '@/load/merge-layers';
-import { interpolate } from '@/merge/interpolate';
-import { resolveGlobalPath, resolveProjectPath } from '@/paths/resolve-paths';
 import { resolveOptions } from '@/store/boot/assert-name';
-import { toMorselLayer } from '@/store/layer';
+import { loadPipeline } from '@/store/boot/load-config';
 import { createMorselStore } from '@/store/store';
 import type { StoreState } from '@/store/store-state';
 import { createStoreState } from '@/store/store-state';
@@ -71,11 +66,6 @@ export async function watchConfig<T extends ConfigRecord = ConfigRecord>(
   options: WatchOptions<T>,
 ): Promise<MorselStore<T>> {
   const resolved = resolveOptions(options);
-  const globalPath = await resolveGlobalPath(resolved, resolved.formatPlugins);
-  const projectPath = await resolveProjectPath(
-    resolved,
-    resolved.formatPlugins,
-  );
 
   const remerge = createRemerge<T>();
 
@@ -86,18 +76,10 @@ export async function watchConfig<T extends ConfigRecord = ConfigRecord>(
     }
   };
 
-  const layers = await buildLayers(
+  const { config, layers, morselLayers, projectPath } = await loadPipeline<T>(
     resolved,
-    globalPath,
-    projectPath,
     triggerRemerge,
   );
-
-  const merged = mergeLayers(layers, resolved.arrayMerge);
-  const interpolated = interpolate(merged);
-  const validated = applyValidation(interpolated, resolved.validationPlugins);
-  const config = applyMutability(validated, resolved.configMutability) as T;
-  const morselLayers = layers.map((layer) => toMorselLayer(layer));
 
   const debounceMs = options.watchDebounce ?? 300;
 

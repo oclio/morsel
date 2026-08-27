@@ -8,6 +8,7 @@ import { emitChanges } from '@/store/reactive/emit-changes';
 import type { StoreState } from '@/store/store-state';
 import { runTransaction, trackDirtyKey } from '@/store/store-transaction';
 import type { ConfigRecord, MorselLayer } from '@/store/types';
+import { atomicWrite } from '@/writer/atomic-write';
 
 vi.mock('node:fs', () => ({
   promises: {
@@ -31,6 +32,9 @@ vi.mock('@/plugins/select-parser', () => ({
 }));
 vi.mock('@/store/reactive/emit-changes', () => ({
   emitChanges: vi.fn(),
+}));
+vi.mock('@/writer/atomic-write', () => ({
+  atomicWrite: vi.fn(async () => {}),
 }));
 
 function createLayer(
@@ -162,16 +166,7 @@ describe('runTransaction', () => {
       '/project/config.json',
       '/project/config.json.bak',
     );
-    expect(fs.mkdir).toHaveBeenCalledWith('/dir', { recursive: true });
-    expect(fs.writeFile).toHaveBeenCalledWith(
-      expect.stringMatching(/^\/project\/config\.json\.tmp\.\d+$/),
-      '{}',
-      'utf8',
-    );
-    expect(fs.rename).toHaveBeenCalledWith(
-      expect.stringMatching(/^\/project\/config\.json\.tmp\.\d+$/),
-      '/project/config.json',
-    );
+    expect(atomicWrite).toHaveBeenCalledWith('/project/config.json', '{}');
     expect(fs.unlink).toHaveBeenCalledWith('/project/config.json.bak');
   });
 
@@ -196,7 +191,7 @@ describe('runTransaction', () => {
     const state = createState();
     const originalConfig = state._config;
     const originalLayers = state._layers;
-    vi.mocked(fs.writeFile).mockRejectedValueOnce(new Error('disk full'));
+    vi.mocked(atomicWrite).mockRejectedValueOnce(new Error('disk full'));
     await expect(
       runTransaction(state, 'frozen', async () => {
         state._config = { port: 9999 } as never;
@@ -253,7 +248,7 @@ describe('runTransaction', () => {
     await runTransaction(state, 'frozen', async () => {
       state.transactionDirtyKeys.set('/project/config.json', new Set(['port']));
     });
-    expect(fs.writeFile).toHaveBeenCalled();
+    expect(atomicWrite).toHaveBeenCalled();
     expect(state.inTransaction).toBe(false);
   });
 

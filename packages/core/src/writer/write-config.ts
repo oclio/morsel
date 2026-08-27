@@ -1,5 +1,4 @@
 import { promises as fs } from 'node:fs';
-import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 
 import { WriteError } from '@/errors/write-error';
@@ -11,6 +10,7 @@ import {
 import { jsonPlugin } from '@/plugins/json-plugin';
 import { selectParser } from '@/plugins/select-parser';
 import type { FormatPlugin } from '@/plugins/types';
+import { atomicWrite } from '@/writer/atomic-write';
 
 /**
  * Describes a mutation to apply to a configuration file.
@@ -100,10 +100,7 @@ export async function writeConfigFile(
 
       const serialized = plugin.serialize(data);
 
-      await fs.mkdir(path.dirname(filePath), { recursive: true });
-      const temporaryPath = `${filePath}.tmp.${Date.now()}`;
-      await fs.writeFile(temporaryPath, serialized, 'utf8');
-      await fs.rename(temporaryPath, filePath);
+      await atomicWrite(filePath, serialized);
     } catch (error) {
       throw new WriteError(
         filePath,
