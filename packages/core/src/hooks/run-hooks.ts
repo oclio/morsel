@@ -4,6 +4,8 @@ import type {
   Hook,
   HookContext,
   HookLifecycle,
+  LayerHook,
+  LayerWatchableHook,
   WriteEvent,
 } from '@/hooks/types';
 import { stripExtends } from '@/load/extends/extends-helpers';
@@ -51,6 +53,35 @@ function isPromise<T>(value: T | Promise<T>): value is Promise<T> {
 }
 
 /**
+ * Check if a hook should run for the given lifecycle point.
+ * Skips event hooks (after:write) and non-matching lifecycles.
+ * Acts as a type guard narrowing to non-EventHook variants.
+ */
+function shouldRunHook(
+  hook: Hook,
+  lifecycle: HookLifecycle,
+): hook is LayerHook | LayerWatchableHook {
+  return !isEventHook(hook) && hook.lifecycle === lifecycle;
+}
+
+/**
+ * Wrap a hook error in a MorselError with code EHOOK.
+ */
+function hookError(
+  error: unknown,
+  hookName: string,
+  lifecycle: HookLifecycle,
+): MorselError {
+  return new MorselError(
+    undefined,
+    'EHOOK',
+    new Error(
+      `hook "${hookName}" failed in ${lifecycle}: ${(error as Error).message}`,
+    ),
+  );
+}
+
+/**
  * Run all hooks matching a lifecycle point synchronously.
  *
  * Async hooks (returning a Promise) throw TypeError — use `runHooks` for async.
@@ -65,20 +96,13 @@ export function runHooksSync(
   const layers: ResolvedLayer[] = [];
 
   for (const hook of hooks) {
-    if (isEventHook(hook)) continue;
-    if (hook.lifecycle !== lifecycle) continue;
+    if (!shouldRunHook(hook, lifecycle)) continue;
 
     let result: Record<string, unknown> | Promise<Record<string, unknown>>;
     try {
       result = hook.load(context);
     } catch (error) {
-      throw new MorselError(
-        undefined,
-        'EHOOK',
-        new Error(
-          `hook "${hook.name}" failed in ${lifecycle}: ${(error as Error).message}`,
-        ),
-      );
+      throw hookError(error, hook.name, lifecycle);
     }
 
     if (isPromise(result)) {
@@ -109,33 +133,20 @@ export async function runHooks(
   const layers: ResolvedLayer[] = [];
 
   for (const hook of hooks) {
-    if (isEventHook(hook)) continue;
-    if (hook.lifecycle !== lifecycle) continue;
+    if (!shouldRunHook(hook, lifecycle)) continue;
 
     let result: Record<string, unknown> | Promise<Record<string, unknown>>;
     try {
       result = hook.load(context);
     } catch (error) {
-      throw new MorselError(
-        undefined,
-        'EHOOK',
-        new Error(
-          `hook "${hook.name}" failed in ${lifecycle}: ${(error as Error).message}`,
-        ),
-      );
+      throw hookError(error, hook.name, lifecycle);
     }
 
     let resolved: Record<string, unknown>;
     try {
       resolved = await result;
     } catch (error) {
-      throw new MorselError(
-        undefined,
-        'EHOOK',
-        new Error(
-          `hook "${hook.name}" failed in ${lifecycle}: ${(error as Error).message}`,
-        ),
-      );
+      throw hookError(error, hook.name, lifecycle);
     }
 
     layers.push(
