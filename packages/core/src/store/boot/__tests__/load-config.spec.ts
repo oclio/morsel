@@ -1,3 +1,5 @@
+import { createMockLayer } from '@oclio/test-helpers';
+
 import { runHooks, runHooksSync } from '@/hooks/run-hooks';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
 import type { ResolvedLayer } from '@/load/resolve-layer';
@@ -67,16 +69,14 @@ function createResolvedLayer(
   source: string,
   config: Record<string, unknown>,
 ): ResolvedLayer {
-  return {
+  return createMockLayer({
     source: source as ResolvedLayer['source'],
     path:
       source === 'defaults' || source === 'overrides'
         ? undefined
         : `/path/${source}`,
     config,
-    exists: true,
-    extendsPaths: [],
-  };
+  }) as ResolvedLayer;
 }
 
 describe('loadConfigSync', () => {

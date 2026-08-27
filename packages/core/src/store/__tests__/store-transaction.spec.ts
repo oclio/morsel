@@ -1,6 +1,6 @@
 import { promises as fs } from 'node:fs';
 
-import { createMockStoreState } from '@oclio/test-helpers';
+import { createMockLayer, createMockStoreState } from '@oclio/test-helpers';
 
 import { runWriteHooks } from '@/hooks/run-hooks';
 import { selectParser } from '@/plugins/select-parser';
@@ -38,13 +38,11 @@ function createLayer(
   filePath: string,
   config: ConfigRecord,
 ): MorselLayer {
-  return {
+  return createMockLayer({
     source,
     path: filePath,
     config,
-    exists: true,
-    extendsPaths: [],
-  };
+  }) as MorselLayer;
 }
 
 function createState<T extends ConfigRecord>(

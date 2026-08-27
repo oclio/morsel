@@ -1,3 +1,5 @@
+import { createMockLayer } from '@oclio/test-helpers';
+
 import { createHookContext } from '@/hooks/hook-context';
 import { runHooks } from '@/hooks/run-hooks';
 import { buildLayers } from '@/load/build-layers';
@@ -21,14 +23,11 @@ vi.mock('@/load/resolve-layer', () => ({
 function makeResolvedLayer(
   overrides: Partial<ResolvedLayer> = {},
 ): ResolvedLayer {
-  return {
+  return createMockLayer({
     source: 'defaults',
     path: undefined,
-    config: {},
-    exists: true,
-    extendsPaths: [],
     ...overrides,
-  };
+  }) as ResolvedLayer;
 }
 
 function makeResolvedOptions(

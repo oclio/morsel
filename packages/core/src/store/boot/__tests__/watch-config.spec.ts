@@ -1,4 +1,4 @@
-import { createMockStoreState } from '@oclio/test-helpers';
+import { createMockLayer, createMockStoreState } from '@oclio/test-helpers';
 
 import { MorselError } from '@/errors/error';
 import { buildLayers } from '@/load/build-layers';
@@ -64,14 +64,11 @@ import type { MorselStore } from '@/store/types';
 function makeResolvedLayer(
   overrides: Partial<ResolvedLayer> = {},
 ): ResolvedLayer {
-  return {
+  return createMockLayer({
     source: 'defaults',
     path: undefined,
-    config: {},
-    exists: true,
-    extendsPaths: [],
     ...overrides,
-  };
+  }) as ResolvedLayer;
 }
 
 function makeState(overrides: Partial<StoreState> = {}): StoreState {
