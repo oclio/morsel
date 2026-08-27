@@ -4,6 +4,7 @@ import {
   clearWatcherRegistry,
   createTemporaryEnvironment,
   setupTest,
+  suppressConsoleError,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
@@ -15,6 +16,8 @@ describe('env-debug — debug channels', () => {
   let globalDirectory: string;
   let previousNodeEnvironment: string | undefined;
 
+  suppressConsoleError();
+
   beforeEach(async () => {
     clearWatcherRegistry();
     const env = await createTemporaryEnvironment();
@@ -22,11 +25,9 @@ describe('env-debug — debug channels', () => {
     projectDirectory = `${directory}/project`;
     globalDirectory = `${directory}/global`;
     previousNodeEnvironment = process.env['NODE_ENV'];
-    vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
     if (previousNodeEnvironment === undefined) {
       delete process.env['NODE_ENV'];
     } else {

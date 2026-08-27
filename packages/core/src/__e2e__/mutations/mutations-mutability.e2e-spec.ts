@@ -3,6 +3,7 @@ import { mkdir } from 'node:fs/promises';
 import {
   clearWatcherRegistry,
   createTemporaryEnvironment,
+  suppressConsoleError,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
@@ -13,8 +14,9 @@ describe('mutations-mutability — interaction with configMutability', () => {
   let projectDirectory: string;
   let globalDirectory: string;
 
+  suppressConsoleError();
+
   beforeEach(async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
     clearWatcherRegistry();
     const env = await createTemporaryEnvironment();
     directory = env.directory;
@@ -22,10 +24,6 @@ describe('mutations-mutability — interaction with configMutability', () => {
     globalDirectory = `${directory}/global`;
     await mkdir(projectDirectory, { recursive: true });
     await mkdir(globalDirectory, { recursive: true });
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   it('set with configMutability: mutable — lastConfig is a clone', async () => {

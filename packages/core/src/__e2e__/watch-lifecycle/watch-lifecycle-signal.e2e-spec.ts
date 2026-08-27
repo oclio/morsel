@@ -3,19 +3,17 @@ import { mkdir } from 'node:fs/promises';
 import {
   clearWatcherRegistry,
   createTemporaryEnvironment,
+  suppressConsoleError,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
 import { watchConfig } from '@/index';
 
 describe('watch-lifecycle-signal — AbortSignal integration', () => {
-  beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    clearWatcherRegistry();
-  });
+  suppressConsoleError();
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  beforeEach(() => {
+    clearWatcherRegistry();
   });
 
   it('signal already aborted → stop() called immediately', async () => {

@@ -1,6 +1,7 @@
 import {
   clearWatcherRegistry,
   createTemporaryEnvironment,
+  suppressConsoleError,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
@@ -11,17 +12,14 @@ describe('boot-watch — watchConfig specifics', () => {
   let projectDirectory: string;
   let globalDirectory: string;
 
+  suppressConsoleError();
+
   beforeEach(async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
     clearWatcherRegistry();
     const env = await createTemporaryEnvironment();
     directory = env.directory;
     projectDirectory = `${directory}/project`;
     globalDirectory = `${directory}/global`;
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   it('watchConfig returns store with all methods', async () => {

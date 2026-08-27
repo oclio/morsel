@@ -4,6 +4,7 @@ import path from 'node:path';
 import {
   clearWatcherRegistry,
   createTemporaryEnvironment,
+  suppressConsoleError,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
@@ -14,8 +15,9 @@ describe('mutations-aliases — mutateKey/deleteKey aliases', () => {
   let projectDirectory: string;
   let globalDirectory: string;
 
+  suppressConsoleError();
+
   beforeEach(async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
     clearWatcherRegistry();
     const env = await createTemporaryEnvironment();
     directory = env.directory;
@@ -23,10 +25,6 @@ describe('mutations-aliases — mutateKey/deleteKey aliases', () => {
     globalDirectory = `${directory}/global`;
     await mkdir(projectDirectory, { recursive: true });
     await mkdir(globalDirectory, { recursive: true });
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   it('mutateKey: same behavior as set', async () => {

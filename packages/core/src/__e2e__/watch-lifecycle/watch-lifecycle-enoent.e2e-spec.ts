@@ -4,6 +4,7 @@ import path from 'node:path';
 import {
   clearWatcherRegistry,
   createTemporaryEnvironment,
+  suppressConsoleError,
   waitForDebugContext,
   waitForRemerge,
   writeConfig,
@@ -12,13 +13,10 @@ import {
 import { watchConfig } from '@/index';
 
 describe('watch-lifecycle-enoent — ENOENT during re-merge', () => {
-  beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    clearWatcherRegistry();
-  });
+  suppressConsoleError();
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  beforeEach(() => {
+    clearWatcherRegistry();
   });
 
   it('ENOENT during re-merge → short-circuited, config frozen', async () => {

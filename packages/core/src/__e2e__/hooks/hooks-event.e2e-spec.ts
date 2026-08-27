@@ -4,6 +4,7 @@ import {
   clearWatcherRegistry,
   createDebugCollector,
   createTemporaryEnvironment,
+  suppressConsoleError,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
@@ -15,8 +16,9 @@ describe('hooks-event — EventHook (after:write)', () => {
   let projectDirectory: string;
   let globalDirectory: string;
 
+  suppressConsoleError();
+
   beforeEach(async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
     clearWatcherRegistry();
     const env = await createTemporaryEnvironment();
     directory = env.directory;
@@ -24,10 +26,6 @@ describe('hooks-event — EventHook (after:write)', () => {
     globalDirectory = `${directory}/global`;
     await mkdir(projectDirectory, { recursive: true });
     await mkdir(globalDirectory, { recursive: true });
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   it('after:write called after successful mutation with WriteEvent', async () => {

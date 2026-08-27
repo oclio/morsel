@@ -4,6 +4,7 @@ import {
   clearWatcherRegistry,
   createTemporaryEnvironment,
   setupTest,
+  suppressConsoleError,
   waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
@@ -11,13 +12,10 @@ import {
 import { watchConfig } from '@/index';
 
 describe('watch-lifecycle-stop — boot & stop() behavior', () => {
-  beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    clearWatcherRegistry();
-  });
+  suppressConsoleError();
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  beforeEach(() => {
+    clearWatcherRegistry();
   });
 
   it('boot failure → watchConfig throws MorselError (no last valid state)', async () => {

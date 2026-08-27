@@ -1,6 +1,7 @@
 import {
   clearWatcherRegistry,
   createTemporaryEnvironment,
+  suppressConsoleError,
   waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
@@ -12,17 +13,14 @@ describe('events-once — once option', () => {
   let projectDirectory: string;
   let globalDirectory: string;
 
+  suppressConsoleError();
+
   beforeEach(async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
     clearWatcherRegistry();
     const env = await createTemporaryEnvironment();
     directory = env.directory;
     projectDirectory = `${directory}/project`;
     globalDirectory = `${directory}/global`;
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   it('once: true auto-unsubscribes after first event', async () => {

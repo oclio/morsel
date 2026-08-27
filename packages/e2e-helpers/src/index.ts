@@ -8,6 +8,7 @@ export type { MorselRuntime } from './runtime';
 export { getMorselRuntime, registerMorselRuntime } from './runtime';
 export type { SetupTestOptions, SetupTestResult } from './setup-test';
 export { setupTest } from './setup-test';
+export { suppressConsoleError } from './suppress-console';
 export type { TemporaryEnvironment } from './temporary-env';
 export { createTemporaryEnvironment } from './temporary-env';
 export { waitForDebugContext } from './wait-debug-context';

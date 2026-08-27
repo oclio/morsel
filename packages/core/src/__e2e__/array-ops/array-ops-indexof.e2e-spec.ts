@@ -1,6 +1,7 @@
 import {
   clearWatcherRegistry,
   createTemporaryEnvironment,
+  suppressConsoleError,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
@@ -11,17 +12,14 @@ describe('array-ops-indexof — indexOf/lastIndexOf (sync)', () => {
   let projectDirectory: string;
   let globalDirectory: string;
 
+  suppressConsoleError();
+
   beforeEach(async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
     clearWatcherRegistry();
     const env = await createTemporaryEnvironment();
     directory = env.directory;
     projectDirectory = `${directory}/project`;
     globalDirectory = `${directory}/global`;
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   it('indexOf finds first matching index, -1 if absent', async () => {

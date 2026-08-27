@@ -5,6 +5,7 @@ import {
   createDebugCollector,
   createTemporaryEnvironment,
   setupTest,
+  suppressConsoleError,
   waitForDebugContext,
   waitForRemerge,
   writeConfig,
@@ -13,13 +14,10 @@ import {
 import { watchConfig } from '@/index';
 
 describe('watch-lifecycle-recovery — directory deletion & reconnection', () => {
-  beforeEach(() => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    clearWatcherRegistry();
-  });
+  suppressConsoleError();
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  beforeEach(() => {
+    clearWatcherRegistry();
   });
 
   it('directory deleted → fs.watch crash, config stays frozen', async () => {

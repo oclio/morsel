@@ -4,6 +4,7 @@ import path from 'node:path';
 import {
   clearWatcherRegistry,
   createTemporaryEnvironment,
+  suppressConsoleError,
   waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
@@ -16,8 +17,9 @@ describe('mutations-unset — unset() API', () => {
   let projectDirectory: string;
   let globalDirectory: string;
 
+  suppressConsoleError();
+
   beforeEach(async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
     clearWatcherRegistry();
     const env = await createTemporaryEnvironment();
     directory = env.directory;
@@ -25,10 +27,6 @@ describe('mutations-unset — unset() API', () => {
     globalDirectory = `${directory}/global`;
     await mkdir(projectDirectory, { recursive: true });
     await mkdir(globalDirectory, { recursive: true });
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   it('unset default target (all): delete from all writable layers', async () => {

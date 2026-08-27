@@ -4,6 +4,7 @@ import path from 'node:path';
 import {
   clearWatcherRegistry,
   createTemporaryEnvironment,
+  suppressConsoleError,
   waitForRemerge,
   writeConfig,
 } from '@oclio/morsel-e2e-helpers';
@@ -16,8 +17,9 @@ describe('mutations-transaction — store.transaction()', () => {
   let projectDirectory: string;
   let globalDirectory: string;
 
+  suppressConsoleError();
+
   beforeEach(async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
     clearWatcherRegistry();
     const env = await createTemporaryEnvironment();
     directory = env.directory;
@@ -28,7 +30,6 @@ describe('mutations-transaction — store.transaction()', () => {
   });
 
   afterEach(async () => {
-    vi.restoreAllMocks();
     try {
       await rm(directory, { recursive: true, force: true });
     } catch {

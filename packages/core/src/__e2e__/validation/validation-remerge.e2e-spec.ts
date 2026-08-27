@@ -5,6 +5,7 @@ import {
   createDebugCollector,
   createTemporaryEnvironment,
   setupTest,
+  suppressConsoleError,
   waitForDebugContext,
   waitForRemerge,
   writeConfig,
@@ -17,8 +18,9 @@ describe('validation-remerge — watch re-merge', () => {
   let projectDirectory: string;
   let globalDirectory: string;
 
+  suppressConsoleError();
+
   beforeEach(async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
     clearWatcherRegistry();
     const env = await createTemporaryEnvironment();
     directory = env.directory;
@@ -26,10 +28,6 @@ describe('validation-remerge — watch re-merge', () => {
     globalDirectory = `${directory}/global`;
     await mkdir(projectDirectory, { recursive: true });
     await mkdir(globalDirectory, { recursive: true });
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   it('remerge catch: validation fail on re-merge keeps config, onDebug notified', async () => {
