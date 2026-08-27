@@ -1,4 +1,4 @@
-import { createMockStoreState } from '@oclio/test-helpers';
+import { createMockStoreState, setupStoreMocks } from '@oclio/test-helpers';
 
 import { applyValidation } from '@/load/apply-validation';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
@@ -50,21 +50,14 @@ function createState<T extends Record<string, unknown>>(
 
 describe('store-optimistic-update', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(applyValidation).mockImplementation((config) => config);
-    vi.mocked(applyMutability).mockImplementation((config) => config);
-    vi.mocked(mergeLayers).mockImplementation((layers) => {
-      let merged = {};
-      for (const layer of layers) {
-        merged = { ...merged, ...layer.config };
-      }
-      return merged;
+    setupStoreMocks({
+      applyValidation,
+      applyMutability,
+      mergeLayers,
+      interpolate,
+      deepClone,
+      emitChanges,
     });
-    vi.mocked(interpolate).mockImplementation((config) => config);
-    vi.mocked(deepClone).mockImplementation(
-      (config) => structuredClone(config) as Record<string, unknown>,
-    );
-    vi.mocked(emitChanges).mockImplementation(() => {});
   });
 
   describe('applyOptimisticUpdate', () => {

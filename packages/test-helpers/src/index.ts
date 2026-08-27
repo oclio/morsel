@@ -38,4 +38,5 @@ export {
 } from './unit/fuzz-arbitraries';
 export type { MockStoreState } from './unit/mock-store-state';
 export { createMockStoreState } from './unit/mock-store-state';
+export { setupStoreMocks } from './unit/setup-store-mocks';
 export { isUnsafeKey, UNSAFE_KEYS } from './unit/unsafe-keys';
