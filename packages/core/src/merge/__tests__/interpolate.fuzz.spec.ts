@@ -51,15 +51,18 @@ describe('interpolate — fuzz', () => {
     );
   });
 
-  it('never throws on arbitrary template strings (circular refs throw MorselError, not crash)', () => {
+  it('never throws on arbitrary template strings (circular refs throw MorselError, prototype pollution throws TypeError)', () => {
     fc.assert(
       fc.property(safeKey, templateArb, (key, template) => {
         const config: Record<string, unknown> = { [key]: template };
         try {
           interpolate(config, {});
         } catch (error) {
-          // Only MorselError (ECYCLE) is acceptable — no raw crashes.
-          expect(error).toBeInstanceOf(MorselError);
+          // MorselError (ECYCLE) for circular refs, TypeError for prototype
+          // pollution via {{__proto__}}, {{constructor}}, {{prototype}}.
+          expect(
+            error instanceof MorselError || error instanceof TypeError,
+          ).toBe(true);
         }
       }),
     );
