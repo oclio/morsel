@@ -2,7 +2,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { clearWatcherRegistry, setupTest } from '@oclio/morsel-e2e-helpers';
+import { clearWatcherRegistry, setupTest } from '@oclio/morsel-test-helpers';
 
 import type { Hook } from '@/index';
 import { loadConfigSync } from '@/index';

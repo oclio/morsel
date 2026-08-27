@@ -3,7 +3,7 @@ import {
   clearWatcherRegistry,
   setupTest,
   waitForRemerge,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/morsel-test-helpers';
 
 import type { HookContext } from '@/hooks/types';
 

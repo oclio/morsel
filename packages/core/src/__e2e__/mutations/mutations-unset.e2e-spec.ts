@@ -8,7 +8,7 @@ import {
   setupTest,
   suppressConsoleError,
   waitForRemerge,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/morsel-test-helpers';
 
 import type { WriteEvent } from '@/hooks/types';
 

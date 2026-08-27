@@ -2,7 +2,7 @@ import {
   clearWatcherRegistry,
   setupTest,
   suppressConsoleError,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/morsel-test-helpers';
 
 describe('array-ops-advanced — nested, target, stopped', () => {
   suppressConsoleError();

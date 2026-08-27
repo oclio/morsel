@@ -6,7 +6,7 @@ import {
   createThrowingPlugin,
   setupTest,
   suppressConsoleError,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/morsel-test-helpers';
 
 describe('plugin-write — serialize during mutations', () => {
   suppressConsoleError();

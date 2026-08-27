@@ -5,12 +5,15 @@ import {
   getMorselRuntime,
   type MinimalLayer,
   type RuntimeOptions,
-} from './runtime';
+} from '../shared/runtime';
 import { createTemporaryEnvironment } from './temporary-env';
 import { writeConfig } from './write-config';
 
 type ConfigRecord = Record<string, unknown>;
 
+/**
+Options accepted by {@link setupTest}.
+*/
 export interface SetupTestOptions {
   name?: string;
   cwd?: string;
@@ -75,6 +78,9 @@ export interface SetupTestOptions {
   [key: string]: unknown;
 }
 
+/**
+Minimal store interface returned by `setupTest` in watch mode.
+*/
 export interface MinimalStore {
   readonly config: Record<string, unknown>;
   readonly layers: readonly MinimalLayer[];
@@ -147,11 +153,17 @@ export interface MinimalStore {
   transaction(callback: () => Promise<void>): Promise<void>;
 }
 
+/**
+Minimal config result returned by `setupTest` in load mode.
+*/
 export interface MinimalConfigResult {
   readonly config: Record<string, unknown>;
   readonly layers: readonly MinimalLayer[];
 }
 
+/**
+Result returned by {@link setupTest}.
+*/
 export interface SetupTestResult<
   TStore = MinimalStore,
   TResult = MinimalConfigResult,
@@ -166,8 +178,14 @@ export interface SetupTestResult<
 /**
  * Setup a complete e2e test environment with optional project/global configs.
  * Creates a temp directory with `project/` and `global/` subdirectories.
- * If `watch` is true, returns a `store` from `watchConfig`.
- * Otherwise, returns a `result` from `loadConfig`.
+ *
+ * - If `watch` is `true`, returns a `store` from `watchConfig`.
+ * - Otherwise, returns a `result` from `loadConfig`.
+ *
+ * The temp directory is cleaned up automatically via `afterEach`.
+ *
+ * @param options - Configuration for the test environment. See {@link SetupTestOptions}.
+ * @returns The temp directories and either a `store` (watch mode) or `result` (load mode).
  */
 export async function setupTest(
   options: SetupTestOptions = {},

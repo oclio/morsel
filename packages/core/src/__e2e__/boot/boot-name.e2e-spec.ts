@@ -1,4 +1,4 @@
-import { clearWatcherRegistry } from '@oclio/morsel-e2e-helpers';
+import { clearWatcherRegistry } from '@oclio/morsel-test-helpers';
 
 import { loadConfig } from '@/index';
 

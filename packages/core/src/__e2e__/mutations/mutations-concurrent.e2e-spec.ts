@@ -7,7 +7,7 @@ import {
   suppressConsoleError,
   waitForRemerge,
   writeConfig,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/morsel-test-helpers';
 
 describe('mutations-concurrent — serialization', () => {
   suppressConsoleError();

@@ -1,5 +1,8 @@
 import type { CustomFormatPlugin } from './morsel-plugin';
 
+/**
+Options for {@link createThrowingPlugin}.
+*/
 export interface ThrowingPluginOptions {
   /**
    * Which method should throw. Defaults to 'serialize'.

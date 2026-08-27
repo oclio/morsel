@@ -5,7 +5,7 @@ import {
   clearWatcherRegistry,
   createThrowingPlugin,
   setupTest,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/morsel-test-helpers';
 
 import { initConfig } from '@/index';
 

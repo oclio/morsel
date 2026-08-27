@@ -61,7 +61,7 @@
     "@config/eslint": "workspace:*",
     "@config/typescript": "workspace:*",
     "@config/vitest": "workspace:*",
-    "@oclio/morsel-e2e-helpers": "workspace:*",
+    "@oclio/morsel-test-helpers": "workspace:*",
     "@size-limit/preset-small-lib": "^13.0.3",
     "@stryker-mutator/core": "^10.0.0",
     "@stryker-mutator/typescript-checker": "^10.0.0",

@@ -2,7 +2,7 @@ import {
   clearWatcherRegistry,
   setupTest,
   writeConfig,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/morsel-test-helpers';
 
 import type { Hook } from '@/index';
 import { loadConfig } from '@/index';

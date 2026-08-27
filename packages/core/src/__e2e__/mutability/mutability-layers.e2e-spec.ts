@@ -1,4 +1,4 @@
-import { clearWatcherRegistry, setupTest } from '@oclio/morsel-e2e-helpers';
+import { clearWatcherRegistry, setupTest } from '@oclio/morsel-test-helpers';
 
 describe('mutability-layers — layer audit trace', () => {
   beforeEach(() => {

@@ -3,7 +3,7 @@ import {
   setupTest,
   waitForRemerge,
   writeConfig,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/morsel-test-helpers';
 
 describe('mutability-mutable-watch — mutable + watch', () => {
   beforeEach(() => {

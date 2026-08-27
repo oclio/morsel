@@ -3,7 +3,7 @@ import {
   createDebugCollector,
   setupTest,
   suppressConsoleError,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/morsel-test-helpers';
 
 import type { WriteEvent } from '@/hooks/types';
 

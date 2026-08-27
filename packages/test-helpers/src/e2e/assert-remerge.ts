@@ -1,5 +1,3 @@
-import { expect } from 'vitest';
-
 import type { ReadableStore } from './wait-remerge';
 import { waitForRemerge } from './wait-remerge';
 

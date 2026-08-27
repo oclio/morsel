@@ -4,7 +4,7 @@ import {
   setupTest,
   waitForRemerge,
   writeConfig,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/morsel-test-helpers';
 
 describe('watch-lifecycle-debounce — debounce behavior', () => {
   beforeEach(() => {

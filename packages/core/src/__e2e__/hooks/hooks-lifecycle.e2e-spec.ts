@@ -4,7 +4,7 @@ import {
   setupTest,
   withEnvironmentVariable,
   writeConfig,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/morsel-test-helpers';
 
 import type { HookContext } from '@/hooks/types';
 import { loadConfigSync } from '@/index';

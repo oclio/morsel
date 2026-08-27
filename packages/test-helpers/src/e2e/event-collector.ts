@@ -1,3 +1,6 @@
+/**
+Event emitted by a store `on()` listener.
+*/
 export interface StoreEvent {
   readonly keyPath: string;
   readonly type: string;
@@ -7,6 +10,9 @@ export interface StoreEvent {
 
 export type EventListener = (event: StoreEvent) => void;
 
+/**
+Return value of {@link createEventCollector}.
+*/
 export interface EventCollector {
   readonly events: StoreEvent[];
   readonly listener: EventListener;

@@ -1,4 +1,4 @@
-import { clearWatcherRegistry, setupTest } from '@oclio/morsel-e2e-helpers';
+import { clearWatcherRegistry, setupTest } from '@oclio/morsel-test-helpers';
 
 describe('boot-discovery — path resolution', () => {
   beforeEach(() => {

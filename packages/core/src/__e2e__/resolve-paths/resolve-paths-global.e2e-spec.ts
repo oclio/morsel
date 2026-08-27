@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { clearWatcherRegistry, setupTest } from '@oclio/morsel-e2e-helpers';
+import { clearWatcherRegistry, setupTest } from '@oclio/morsel-test-helpers';
 
 import { resolveGlobalPath } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';

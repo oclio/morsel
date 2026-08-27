@@ -5,7 +5,7 @@ import {
   suppressConsoleError,
   waitForRemerge,
   writeConfig,
-} from '@oclio/morsel-e2e-helpers';
+} from '@oclio/morsel-test-helpers';
 
 describe('watch-lifecycle-stop — boot & stop() behavior', () => {
   suppressConsoleError();

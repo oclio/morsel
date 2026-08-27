@@ -1,8 +1,14 @@
+/**
+Callback signature for the `onDebug` option.
+*/
 export type DebugCallback = (
   message: string,
   context?: Record<string, unknown>,
 ) => void;
 
+/**
+Return value of {@link createDebugCollector}.
+*/
 export interface DebugCollector {
   readonly messages: string[];
   readonly contexts: Record<string, unknown>[];
