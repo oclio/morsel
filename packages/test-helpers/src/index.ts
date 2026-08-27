@@ -38,6 +38,8 @@ export {
 } from './unit/fuzz-arbitraries';
 export type { MockLayer } from './unit/mock-layer';
 export { createMockLayer } from './unit/mock-layer';
+export type { MockResolvedOptions } from './unit/mock-resolved-options';
+export { createMockResolvedOptions } from './unit/mock-resolved-options';
 export type { MockStoreState } from './unit/mock-store-state';
 export { createMockStoreState } from './unit/mock-store-state';
 export { setupStoreMocks } from './unit/setup-store-mocks';

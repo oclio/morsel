@@ -1,4 +1,7 @@
-import { createMockLayer } from '@oclio/test-helpers';
+import {
+  createMockLayer,
+  createMockResolvedOptions,
+} from '@oclio/test-helpers';
 
 import { runHooks, runHooksSync } from '@/hooks/run-hooks';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
@@ -12,6 +15,7 @@ import {
   resolveProjectPathSync,
 } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
+import type { ResolvedOptions } from '@/store/boot/assert-name';
 import { resolveOptions } from '@/store/boot/assert-name';
 import { loadConfig, loadConfigSync } from '@/store/boot/load-config';
 import { toMorselLayer } from '@/store/layer';
@@ -44,25 +48,13 @@ vi.mock('@/hooks/run-hooks', () => ({
   runHooks: vi.fn().mockResolvedValue([]),
 }));
 
-function createResolvedOptions() {
-  return {
-    name: 'myapp',
-    cwd: '/project',
+function createResolvedOptions(): ResolvedOptions {
+  return createMockResolvedOptions({
     defaults: { a: 1 },
     overrides: { b: 2 },
     globalDir: '/global/dir',
-    arrayMerge: 'replace' as const,
-    envName: 'test',
-    configMutability: 'frozen' as const,
-    verbose: false,
-    onDebug: (): void => {},
     formatPlugins: [jsonPlugin],
-    validationPlugins: [],
-    hooks: [],
-    watch: true,
-    proxy: true,
-    queue: true,
-  };
+  }) as ResolvedOptions;
 }
 
 function createResolvedLayer(
