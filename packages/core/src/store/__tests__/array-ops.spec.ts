@@ -1,3 +1,5 @@
+import { createMockStoreState } from '@oclio/test-helpers';
+
 import { runWriteHooks } from '@/hooks/run-hooks';
 import { applyValidation } from '@/load/apply-validation';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
@@ -59,10 +61,8 @@ function createState<T extends Record<string, unknown>>(
   overrides: Partial<StoreState<T>> = {},
 ): StoreState<T> {
   const projectPath = overrides.projectPath ?? '/project/config.json';
-  return {
+  return createMockStoreState<T>({
     _config: { foo: 'bar' } as unknown as T,
-    _proxy: undefined,
-    _stoppedConfig: undefined,
     _layers: [
       {
         source: 'project',
@@ -71,28 +71,10 @@ function createState<T extends Record<string, unknown>>(
         exists: true,
         extendsPaths: [],
       },
-    ] as never,
-    listeners: new Map(),
-    wildcardListeners: new Map(),
-    stopped: false,
-    watchers: new Set(),
-    watchedFiles: new Map(),
+    ],
     projectPath,
-    options: {} as never,
-    lastConfig: {},
-    remergeInProgress: false,
-    remergeDone: undefined,
-    pendingRemerge: false,
-    debounceTimers: new Map(),
-    debounceMs: 300,
-    remerge: vi.fn(),
-    enoentLogged: new Set(),
-    writeQueue: Promise.resolve(),
-    queueEnabled: true,
-    inTransaction: false,
-    transactionDirtyKeys: new Map(),
     ...overrides,
-  } as StoreState<T>;
+  }) as unknown as StoreState<T>;
 }
 
 describe('array-ops', () => {

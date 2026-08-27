@@ -1,5 +1,7 @@
 import { promises as fs } from 'node:fs';
 
+import { createMockStoreState } from '@oclio/test-helpers';
+
 import { runWriteHooks } from '@/hooks/run-hooks';
 import { selectParser } from '@/plugins/select-parser';
 import { emitChanges } from '@/store/reactive/emit-changes';
@@ -49,38 +51,18 @@ function createState<T extends ConfigRecord>(
   overrides: Partial<StoreState<T>> = {},
 ): StoreState<T> {
   const projectPath = '/project/config.json';
-  return {
+  return createMockStoreState<T>({
     _config: { port: 3000 } as unknown as T,
-    _proxy: undefined,
-    _stoppedConfig: undefined,
-    _layers: [
-      createLayer('project', projectPath, { port: 3000 }),
-    ] as MorselLayer[],
-    listeners: new Map(),
-    wildcardListeners: new Map(),
-    stopped: false,
-    watchers: new Set(),
-    watchedFiles: new Map(),
+    _layers: [createLayer('project', projectPath, { port: 3000 })],
     projectPath,
     options: {
       formatPlugins: [],
       hooks: [],
       onDebug: vi.fn(),
-    } as never,
+    },
     lastConfig: { port: 3000 },
-    remergeInProgress: false,
-    remergeDone: undefined,
-    pendingRemerge: false,
-    debounceTimers: new Map(),
-    debounceMs: 300,
-    remerge: vi.fn(),
-    enoentLogged: new Set(),
-    writeQueue: Promise.resolve(),
-    queueEnabled: true,
-    inTransaction: false,
-    transactionDirtyKeys: new Map(),
     ...overrides,
-  } as StoreState<T>;
+  }) as unknown as StoreState<T>;
 }
 
 describe('runTransaction', () => {

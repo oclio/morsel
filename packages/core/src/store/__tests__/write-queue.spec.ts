@@ -1,33 +1,13 @@
+import { createMockStoreState } from '@oclio/test-helpers';
+
 import type { StoreState } from '@/store/store-state';
 import { chainMutation } from '@/store/write-queue';
 
 function createState(overrides: Partial<StoreState> = {}): StoreState {
-  return {
-    _config: {},
-    _proxy: undefined,
-    _stoppedConfig: undefined,
-    _layers: [],
-    listeners: new Map(),
-    wildcardListeners: new Map(),
-    stopped: false,
-    watchers: new Set(),
-    watchedFiles: new Map(),
+  return createMockStoreState({
     projectPath: undefined,
-    options: {} as never,
-    lastConfig: {},
-    remergeInProgress: false,
-    remergeDone: undefined,
-    pendingRemerge: false,
-    debounceTimers: new Map(),
-    debounceMs: 300,
-    remerge: vi.fn(),
-    enoentLogged: new Set(),
-    writeQueue: Promise.resolve(),
-    queueEnabled: true,
-    inTransaction: false,
-    transactionDirtyKeys: new Map(),
     ...overrides,
-  } as StoreState;
+  }) as StoreState;
 }
 
 describe('write-queue', () => {

@@ -36,4 +36,6 @@ export {
   safeStringArb,
   templateStringArb,
 } from './unit/fuzz-arbitraries';
+export type { MockStoreState } from './unit/mock-store-state';
+export { createMockStoreState } from './unit/mock-store-state';
 export { isUnsafeKey, UNSAFE_KEYS } from './unit/unsafe-keys';

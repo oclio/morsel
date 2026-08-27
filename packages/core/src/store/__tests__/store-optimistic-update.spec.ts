@@ -1,3 +1,5 @@
+import { createMockStoreState } from '@oclio/test-helpers';
+
 import { applyValidation } from '@/load/apply-validation';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
 import { interpolate } from '@/merge/interpolate';
@@ -31,10 +33,8 @@ vi.mock('@/utils/deep-clone', () => ({
 function createState<T extends Record<string, unknown>>(
   overrides: Partial<StoreState<T>> = {},
 ): StoreState<T> {
-  return {
+  return createMockStoreState<T>({
     _config: { foo: 'bar' } as unknown as T,
-    _proxy: undefined,
-    _stoppedConfig: undefined,
     _layers: [
       {
         source: 'project',
@@ -43,28 +43,9 @@ function createState<T extends Record<string, unknown>>(
         exists: true,
         extendsPaths: [],
       },
-    ] as never,
-    listeners: new Map(),
-    wildcardListeners: new Map(),
-    stopped: false,
-    watchers: new Set(),
-    watchedFiles: new Map(),
-    projectPath: '/project/config.json',
-    options: {} as never,
-    lastConfig: {},
-    remergeInProgress: false,
-    remergeDone: undefined,
-    pendingRemerge: false,
-    debounceTimers: new Map(),
-    debounceMs: 300,
-    remerge: vi.fn(),
-    enoentLogged: new Set(),
-    writeQueue: Promise.resolve(),
-    queueEnabled: true,
-    inTransaction: false,
-    transactionDirtyKeys: new Map(),
+    ],
     ...overrides,
-  } as StoreState<T>;
+  }) as unknown as StoreState<T>;
 }
 
 describe('store-optimistic-update', () => {

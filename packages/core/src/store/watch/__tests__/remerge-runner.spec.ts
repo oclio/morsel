@@ -1,3 +1,5 @@
+import { createMockStoreState } from '@oclio/test-helpers';
+
 import { MorselError } from '@/errors/error';
 import { buildLayers } from '@/load/build-layers';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
@@ -58,17 +60,7 @@ function makeResolvedLayer(
 }
 
 function makeState(overrides: Partial<StoreState> = {}): StoreState {
-  return {
-    _config: {},
-    _proxy: undefined,
-    _stoppedConfig: undefined,
-    _layers: [],
-    listeners: new Map(),
-    wildcardListeners: new Map(),
-    stopped: false,
-    watchers: new Set(),
-    watchedFiles: new Map(),
-    projectPath: '/project/config.json',
+  return createMockStoreState({
     options: {
       name: 'myapp',
       cwd: '/project',
@@ -86,21 +78,9 @@ function makeState(overrides: Partial<StoreState> = {}): StoreState {
       watch: true,
       proxy: true,
       queue: true,
-    } as never,
-    lastConfig: {},
-    remergeInProgress: false,
-    remergeDone: undefined,
-    pendingRemerge: false,
-    debounceTimers: new Map(),
-    debounceMs: 300,
-    remerge: vi.fn(),
-    enoentLogged: new Set(),
-    writeQueue: Promise.resolve(),
-    queueEnabled: true,
-    inTransaction: false,
-    transactionDirtyKeys: new Map(),
+    },
     ...overrides,
-  } as StoreState;
+  }) as StoreState;
 }
 
 describe('createRemerge', () => {
