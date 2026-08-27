@@ -1,5 +1,4 @@
 import { promises as fs } from 'node:fs';
-import path from 'node:path';
 
 import { runWriteHooks } from '@/hooks/run-hooks';
 import type { WriteEvent } from '@/hooks/types';
@@ -7,6 +6,7 @@ import { selectParser } from '@/plugins/select-parser';
 import { emitChanges } from '@/store/reactive/emit-changes';
 import type { StoreState } from '@/store/store-state';
 import type { ConfigRecord, MorselLayer } from '@/store/types';
+import { atomicWrite } from '@/writer/atomic-write';
 
 /**
  * Snapshot of store state taken at the start of a transaction.
@@ -68,10 +68,7 @@ async function writeLayer(
     throw new Error(`No format plugin found for file "${filePath}"`);
   }
   const serialized = plugin.serialize(config);
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
-  const temporaryPath = `${filePath}.tmp.${Date.now()}`;
-  await fs.writeFile(temporaryPath, serialized, 'utf8');
-  await fs.rename(temporaryPath, filePath);
+  await atomicWrite(filePath, serialized);
 }
 
 interface BackupEntry {
