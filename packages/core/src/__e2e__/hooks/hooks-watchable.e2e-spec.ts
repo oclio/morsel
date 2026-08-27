@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
@@ -7,6 +7,7 @@ import {
   setupTest,
   suppressConsoleError,
   waitForRemerge,
+  writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
 import { watchConfig } from '@/index';
@@ -25,11 +26,9 @@ describe('hooks-watchable — LayerWatchableHook', () => {
     });
     const hookDataPath = path.resolve(projectDirectory, 'hook-data.json');
 
-    await writeFile(
-      hookDataPath,
-      JSON.stringify({ hookKey: 'initial' }),
-      'utf8',
-    );
+    await writeConfig(projectDirectory, 'hook-data.json', {
+      hookKey: 'initial',
+    });
 
     const hooks = [
       {
@@ -52,11 +51,9 @@ describe('hooks-watchable — LayerWatchableHook', () => {
 
     expect(store.config).toEqual({ hookKey: 'initial', port: 3000 });
 
-    await writeFile(
-      hookDataPath,
-      JSON.stringify({ hookKey: 'updated' }),
-      'utf8',
-    );
+    await writeConfig(projectDirectory, 'hook-data.json', {
+      hookKey: 'updated',
+    });
     await waitForRemerge(store, (config) => config['hookKey'] === 'updated');
 
     expect(store.config).toEqual({ hookKey: 'updated', port: 3000 });
@@ -71,7 +68,7 @@ describe('hooks-watchable — LayerWatchableHook', () => {
     });
     const hookDataPath = path.resolve(projectDirectory, 'env.json');
 
-    await writeFile(hookDataPath, JSON.stringify({ env: 'dev' }), 'utf8');
+    await writeConfig(projectDirectory, 'env.json', { env: 'dev' });
 
     const hooks = [
       {
@@ -94,7 +91,7 @@ describe('hooks-watchable — LayerWatchableHook', () => {
 
     expect(store.config).toEqual({ env: 'dev', port: 3000 });
 
-    await writeFile(hookDataPath, JSON.stringify({ env: 'prod' }), 'utf8');
+    await writeConfig(projectDirectory, 'env.json', { env: 'prod' });
     await waitForRemerge(store, (config) => config['env'] === 'prod');
 
     expect(store.config).toEqual({ env: 'prod', port: 3000 });
@@ -111,7 +108,7 @@ describe('hooks-watchable — LayerWatchableHook', () => {
     const hookDataPath = path.resolve(watchedDirectory, 'data.json');
 
     await mkdir(watchedDirectory, { recursive: true });
-    await writeFile(hookDataPath, JSON.stringify({ key: 'initial' }), 'utf8');
+    await writeConfig(watchedDirectory, 'data.json', { key: 'initial' });
 
     const hooks = [
       {
@@ -142,7 +139,7 @@ describe('hooks-watchable — LayerWatchableHook', () => {
     await new Promise((resolve) => setTimeout(resolve, 300));
 
     await mkdir(watchedDirectory, { recursive: true });
-    await writeFile(hookDataPath, JSON.stringify({ key: 'recreated' }), 'utf8');
+    await writeConfig(watchedDirectory, 'data.json', { key: 'recreated' });
 
     await waitForRemerge(
       store,

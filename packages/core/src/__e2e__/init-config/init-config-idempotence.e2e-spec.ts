@@ -73,11 +73,10 @@ describe('init-config-idempotence — existing file handling', () => {
     const configDirectory = path.resolve(projectDirectory, '.config');
     await mkdir(configDirectory, { recursive: true });
     const configPath = path.resolve(configDirectory, 'myapp.json');
-    await writeFile(
-      configPath,
-      JSON.stringify({ port: 9999, configDir: true }),
-      'utf8',
-    );
+    await writeConfig(configDirectory, 'myapp.json', {
+      port: 9999,
+      configDir: true,
+    });
 
     const result = initConfig({
       name: 'myapp',

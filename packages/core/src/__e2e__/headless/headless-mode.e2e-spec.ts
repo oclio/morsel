@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
@@ -6,6 +6,7 @@ import {
   createEventCollector,
   setupTest,
   suppressConsoleError,
+  writeConfig,
 } from '@oclio/morsel-e2e-helpers';
 
 import { watchConfig } from '@/index';
@@ -77,10 +78,9 @@ describe('headless-mode — watch/proxy/queue flags', () => {
       });
 
       // Modify file on disk after boot
-      await writeFile(
-        path.resolve(projectDirectory, 'myapp.config.json'),
-        JSON.stringify({ port: 9999 }),
-      );
+      await writeConfig(projectDirectory, 'myapp.config.json', {
+        port: 9999,
+      });
 
       // Wait a bit to ensure no re-merge fires
       await new Promise((resolve) => setTimeout(resolve, 500));
