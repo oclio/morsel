@@ -4,6 +4,7 @@ import path from 'node:path';
 import {
   clearWatcherRegistry,
   createEventCollector,
+  createThrowingPlugin,
   setupTest,
   suppressConsoleError,
   waitForRemerge,
@@ -148,15 +149,7 @@ describe('mutations-unset — unset() API', () => {
   });
 
   it('unset rollback on write failure: revert events, MorselError thrown', async () => {
-    const throwingPlugin = {
-      name: 'throwing',
-      extensions: ['.json'],
-      parse: (content: string) =>
-        JSON.parse(content) as Record<string, unknown>,
-      serialize: () => {
-        throw new Error('serialize failed');
-      },
-    };
+    const throwingPlugin = createThrowingPlugin();
 
     const { store } = await setupTest({
       projectConfig: { port: 3000, host: 'localhost' },
@@ -303,20 +296,10 @@ describe('mutations-unset — unset() API', () => {
   });
 
   it('unset rollback on partial write failure', async () => {
-    let serializeCallCount = 0;
-    const throwingPlugin = {
-      name: 'throwing',
-      extensions: ['.json'],
-      parse: (content: string) =>
-        JSON.parse(content) as Record<string, unknown>,
-      serialize: () => {
-        serializeCallCount++;
-        if (serializeCallCount >= 2) {
-          throw new Error('serialize failed on second file');
-        }
-        return '{}';
-      },
-    };
+    const throwingPlugin = createThrowingPlugin({
+      failAfter: 1,
+      errorMessage: 'serialize failed on second file',
+    });
 
     const { store } = await setupTest({
       projectConfig: { host: 'a' },
@@ -334,20 +317,10 @@ describe('mutations-unset — unset() API', () => {
   });
 
   it('unset already-written files NOT reverted on failure — eventual consistency restored on next re-merge', async () => {
-    let serializeCallCount = 0;
-    const throwingPlugin = {
-      name: 'throwing',
-      extensions: ['.json'],
-      parse: (content: string) =>
-        JSON.parse(content) as Record<string, unknown>,
-      serialize: (data: Record<string, unknown>) => {
-        serializeCallCount++;
-        if (serializeCallCount >= 2) {
-          throw new Error('serialize failed on second file');
-        }
-        return `${JSON.stringify(data, undefined, 2)}\n`;
-      },
-    };
+    const throwingPlugin = createThrowingPlugin({
+      failAfter: 1,
+      errorMessage: 'serialize failed on second file',
+    });
 
     const { store, globalDirectory } = await setupTest({
       projectConfig: { host: 'a' },

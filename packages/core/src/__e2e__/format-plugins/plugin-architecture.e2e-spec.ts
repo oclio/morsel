@@ -1,6 +1,10 @@
 import path from 'node:path';
 
-import { clearWatcherRegistry, setupTest } from '@oclio/morsel-e2e-helpers';
+import {
+  clearWatcherRegistry,
+  createThrowingPlugin,
+  setupTest,
+} from '@oclio/morsel-e2e-helpers';
 
 describe('plugin-architecture — core/plugin separation', () => {
   beforeEach(() => {
@@ -53,14 +57,10 @@ describe('plugin-architecture — core/plugin separation', () => {
   });
 
   it('plugin parse error wrapped in MorselError(EPARSE)', async () => {
-    const throwingPlugin = {
-      name: 'throwing',
-      extensions: ['.json'],
-      parse: () => {
-        throw new Error('unexpected token');
-      },
-      serialize: () => '',
-    };
+    const throwingPlugin = createThrowingPlugin({
+      throwOn: 'parse',
+      errorMessage: 'unexpected token',
+    });
 
     await expect(
       setupTest({
@@ -75,14 +75,10 @@ describe('plugin-architecture — core/plugin separation', () => {
   });
 
   it('plugin parse error message preserved in MorselError', async () => {
-    const throwingPlugin = {
-      name: 'throwing',
-      extensions: ['.json'],
-      parse: () => {
-        throw new Error('custom parse failure message');
-      },
-      serialize: () => '',
-    };
+    const throwingPlugin = createThrowingPlugin({
+      throwOn: 'parse',
+      errorMessage: 'custom parse failure message',
+    });
 
     try {
       await setupTest({

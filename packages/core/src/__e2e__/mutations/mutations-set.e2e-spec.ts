@@ -5,6 +5,7 @@ import path from 'node:path';
 import {
   clearWatcherRegistry,
   createEventCollector,
+  createThrowingPlugin,
   setupTest,
   suppressConsoleError,
   waitForRemerge,
@@ -151,15 +152,7 @@ describe('mutations-set — set() API', () => {
   });
 
   it('set rollback on write failure: revert events emitted, MorselError(EWRITE) thrown', async () => {
-    const throwingPlugin = {
-      name: 'throwing',
-      extensions: ['.json'],
-      parse: (content: string) =>
-        JSON.parse(content) as Record<string, unknown>,
-      serialize: () => {
-        throw new Error('serialize failed');
-      },
-    };
+    const throwingPlugin = createThrowingPlugin();
 
     const { store } = await setupTest({
       projectConfig: { port: 3000 },
@@ -409,15 +402,7 @@ describe('mutations-set — set() API', () => {
   });
 
   it('set rollback skips if concurrent re-merge changed config', async () => {
-    const throwingPlugin = {
-      name: 'throwing',
-      extensions: ['.json'],
-      parse: (content: string) =>
-        JSON.parse(content) as Record<string, unknown>,
-      serialize: () => {
-        throw new Error('serialize failed');
-      },
-    };
+    const throwingPlugin = createThrowingPlugin();
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
@@ -439,15 +424,7 @@ describe('mutations-set — set() API', () => {
   });
 
   it('set rollback emits revert events', async () => {
-    const throwingPlugin = {
-      name: 'throwing',
-      extensions: ['.json'],
-      parse: (content: string) =>
-        JSON.parse(content) as Record<string, unknown>,
-      serialize: () => {
-        throw new Error('serialize failed');
-      },
-    };
+    const throwingPlugin = createThrowingPlugin();
 
     const { store } = await setupTest({
       projectConfig: { port: 3000 },

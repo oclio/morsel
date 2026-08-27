@@ -1,7 +1,11 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { clearWatcherRegistry, setupTest } from '@oclio/morsel-e2e-helpers';
+import {
+  clearWatcherRegistry,
+  createThrowingPlugin,
+  setupTest,
+} from '@oclio/morsel-e2e-helpers';
 
 import { initConfig } from '@/index';
 
@@ -16,15 +20,7 @@ describe('init-config-errors — error handling', () => {
       projectFilename: '_setup-test.json',
     });
 
-    const throwingPlugin = {
-      name: 'throwing',
-      extensions: ['.json'],
-      parse: (content: string) =>
-        JSON.parse(content) as Record<string, unknown>,
-      serialize: () => {
-        throw new Error('serialize failed');
-      },
-    };
+    const throwingPlugin = createThrowingPlugin();
 
     expect(() =>
       initConfig({

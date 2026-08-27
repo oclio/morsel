@@ -17,6 +17,8 @@ export { setupTest } from './setup-test';
 export { suppressConsoleError } from './suppress-console';
 export type { TemporaryEnvironment } from './temporary-env';
 export { createTemporaryEnvironment } from './temporary-env';
+export type { ThrowingPluginOptions } from './throwing-plugin';
+export { createThrowingPlugin } from './throwing-plugin';
 export { waitForDebugContext } from './wait-debug-context';
 export type { EventObservable } from './wait-event';
 export { waitForEvent } from './wait-event';

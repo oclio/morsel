@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import {
   clearWatcherRegistry,
+  createThrowingPlugin,
   setupTest,
   suppressConsoleError,
 } from '@oclio/morsel-e2e-helpers';
@@ -74,15 +75,7 @@ describe('plugin-write — serialize during mutations', () => {
   });
 
   it('serialize failure → WriteError(EWRITE)', async () => {
-    const throwingPlugin = {
-      name: 'throwing-serialize',
-      extensions: ['.json'],
-      parse: (content: string) =>
-        JSON.parse(content) as Record<string, unknown>,
-      serialize: () => {
-        throw new Error('serialize failed');
-      },
-    };
+    const throwingPlugin = createThrowingPlugin({ name: 'throwing-serialize' });
 
     const { store } = await setupTest({
       rawFiles: [{ filename: 'myapp.config.json', content: '{"port": 3000}' }],
