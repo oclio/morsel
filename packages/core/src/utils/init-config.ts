@@ -1,11 +1,10 @@
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { MorselError } from '@/errors/error';
 import { resolveProjectPathSync } from '@/paths/resolve-paths';
 import { resolveOptions } from '@/store/boot/assert-name';
 import type { ConfigRecord, MorselOptions } from '@/store/types';
-import { atomicWriteSync } from '@/writer/atomic-write';
 
 /**
  * Bootstrap a project config file if it doesn't exist.
@@ -60,7 +59,10 @@ export function initConfig<T extends ConfigRecord = ConfigRecord>(
   }
 
   try {
-    atomicWriteSync(projectPath, serialized);
+    mkdirSync(path.dirname(projectPath), { recursive: true });
+    const temporaryPath = `${projectPath}.tmp.${Date.now()}`;
+    writeFileSync(temporaryPath, serialized, 'utf8');
+    renameSync(temporaryPath, projectPath);
     return projectPath;
   } catch (error) {
     const cause = error as NodeJS.ErrnoException;
