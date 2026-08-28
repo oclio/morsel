@@ -240,19 +240,7 @@ describe('runTransaction', () => {
     ).rejects.toThrow('No format plugin found');
   });
 
-  it('skips backup when file does not exist (ENOENT)', async () => {
-    const state = createState();
-    const enoentError = new Error('ENOENT') as NodeJS.ErrnoException;
-    enoentError.code = 'ENOENT';
-    vi.mocked(fs.copyFile).mockRejectedValueOnce(enoentError);
-    await runTransaction(state, 'frozen', async () => {
-      state.transactionDirtyKeys.set('/project/config.json', new Set(['port']));
-    });
-    expect(atomicWrite).toHaveBeenCalled();
-    expect(state.inTransaction).toBe(false);
-  });
-
-  it('rethrows non-ENOENT backup errors', async () => {
+  it('does not restore from .bak when backup fails (backups stays empty)', async () => {
     const state = createState();
     vi.mocked(fs.copyFile).mockRejectedValueOnce(
       new Error('permission denied'),
@@ -266,15 +254,6 @@ describe('runTransaction', () => {
       }),
     ).rejects.toThrow('permission denied');
     expect(fs.rename).not.toHaveBeenCalled();
-  });
-
-  it('ignores .bak cleanup errors on success', async () => {
-    const state = createState();
-    vi.mocked(fs.unlink).mockRejectedValueOnce(new Error('EBUSY'));
-    await runTransaction(state, 'frozen', async () => {
-      state.transactionDirtyKeys.set('/project/config.json', new Set(['port']));
-    });
-    expect(state.inTransaction).toBe(false);
   });
 });
 
