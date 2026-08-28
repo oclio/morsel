@@ -191,6 +191,13 @@ export interface MorselStore<
   getProvenance(
     path: string | readonly (string | number)[],
   ): Provenance | undefined;
+  /**
+   * Run a transaction: mutations inside the callback are applied in-memory
+   * only and committed atomically to disk when the callback completes.
+   * If the callback throws, all mutations are rolled back. Events are
+   * emitted after a successful commit. See §4.4 for semantics.
+   */
+  transaction(callback: () => Promise<void>): Promise<void>;
   stop(): Promise<void>;
 }
 
@@ -406,6 +413,9 @@ export interface ResolvedOptions {
   readonly formatPlugins: readonly FormatPlugin[];
   readonly validationPlugins: readonly ValidationPlugin[];
   readonly hooks: readonly Hook[];
+  readonly watch: boolean;
+  readonly proxy: boolean;
+  readonly queue: boolean;
 }
 
 /**
@@ -433,6 +443,8 @@ export interface StoreState<T extends ConfigRecord = ConfigRecord> {
   enoentLogged: Set<string>;
   writeQueue: Promise<void>;
   queueEnabled: boolean;
+  inTransaction: boolean;
+  transactionDirtyKeys: Map<string, Set<string>>;
 }
 
 /**
@@ -609,7 +621,7 @@ export function clearRegistry(): void;
 2. If no: `mkdirSync(dirname, { recursive: true })` — creates the parent directory if needed.
 3. Writes `content` (or `fallbackContent`, or `{}`) via the first format plugin's `serialize` method via atomic write: `writeFileSync` to `<path>.tmp.<timestamp>` then `renameSync` to `<path>` (avoids partial reads in case of crash).
 4. Returns the created path.
-5. On serialize failure (`plugin.serialize` throws): throws `WriteError` (`EWRITE`) with the project path and original error as cause — the content is not written and no fallback is applied.
+5. On serialize failure (`plugin.serialize` throws): throws `MorselError` (`EWRITE`) with the project path and original error as cause — the content is not written and no fallback is applied.
 6. On write failure (`writeFileSync` or `renameSync` throws): throws `MorselError` (`EIO`) with the project path and original error as cause.
 
 #### `stop()`
@@ -664,6 +676,22 @@ When `unset` or `deleteKey` is called with `target: 'all'` (the default), the de
 **After `stop()`:**
 
 - `getProvenance` remains callable after `stop()` — it reads from `state._layers` and `state._config` which remain at the last known state. Same behavior as `store.get` and `store.layers`.
+
+#### `transaction`
+
+`transaction(callback)` batches mutations into an atomic, all-or-nothing commit across multiple files.
+
+1. **Preconditions**: throws `Error('morsel: store is stopped')` if `state.stopped` is `true`. Throws `Error('morsel: nested transactions are not supported')` if `state.inTransaction` is already `true`.
+2. **Snapshot**: before the callback, captures `{ config, layers, lastConfig }` from `state`. Sets `state.inTransaction = true` and resets `state.transactionDirtyKeys`.
+3. **In-memory mutations**: during the callback, `mutateKey` and `deleteKey` bypass the `writeQueue` and execute `doMutateKey` / `doDeleteKey` directly. Writes to disk are skipped — only the in-memory layer configs and merged config are updated (via `applyOptimisticUpdateSilent`). Dirty keys are tracked per layer path in `state.transactionDirtyKeys`.
+4. **Callback error**: if the callback throws, the snapshot is restored (`state._config`, `state._layers`, `state.lastConfig`), `state.inTransaction` is set to `false`, and the error is rethrown. No events are emitted, no files are written.
+5. **Commit**: on successful callback return, dirty layer files are backed up to `<path>.bak`, then written atomically via `atomicWrite`. After all writes succeed, `.bak` files are cleaned up.
+6. **Commit error**: if any write fails, `.bak` files are restored to their original paths, the snapshot is restored, and the error is rethrown. `state.inTransaction` is set to `false`.
+7. **Events**: after a successful commit, `emitChanges` is called with the snapshot config and the new validated config. `state.inTransaction` is set to `false`.
+8. **`after:write` hooks**: triggered once per dirty file after successful commit, with a `WriteEvent` per file.
+9. **`stop()` interaction**: `stop()` awaits `state.writeQueue` but does not await an in-progress transaction. The caller must `await` the transaction before calling `stop()`.
+
+**Non-goals**: no nested transactions, no partial commit, no isolation from concurrent re-merges (a re-merge during a transaction is deferred via `remergeInProgress` / `pendingRemerge`).
 
 #### `writeQueue` — Mutation Serialization
 

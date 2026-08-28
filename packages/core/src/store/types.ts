@@ -271,7 +271,7 @@ export interface MorselStore<
     target?: StoreTarget,
   ): Promise<number>;
   /**
-  Unshift a value onto the beginning of an array key. Returns 0.
+  Unshift a value onto the beginning of an array key. Returns the new array length.
   */
   unshift(
     path: string | readonly (string | number)[],
