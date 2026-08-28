@@ -19,11 +19,7 @@ export { diffKeys } from '@/merge/diff-keys';
 export { interpolate } from '@/merge/interpolate';
 export type { PathSegment } from '@/paths/parse-path';
 export { parsePath, validatePath } from '@/paths/parse-path';
-export {
-  getPathValue,
-  hasRemovedPathValue,
-  setPathValue,
-} from '@/paths/path-access';
+export { getPathValue } from '@/paths/path-access';
 export type { ResolvedPaths, ResolvePathsOptions } from '@/paths/resolve-paths';
 export { resolvePaths } from '@/paths/resolve-paths';
 export { jsonPlugin } from '@/plugins/json-plugin';

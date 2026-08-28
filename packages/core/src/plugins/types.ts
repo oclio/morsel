@@ -22,8 +22,9 @@ export interface FormatPlugin {
    */
   parse(content: string, filePath: string): Record<string, unknown>;
   /**
-   * Serialize a config record back to string format for file writing.
-   * Format plugins only handle structure-to-string transformation.
+   * Serialize a config record back to string format.
+   * Used by `initConfig` to write the initial config file.
+   * Also available for consumers who need to serialize config themselves.
    */
   serialize(data: Record<string, unknown>): string;
 }

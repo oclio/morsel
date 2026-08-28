@@ -29,7 +29,6 @@ export interface MockResolvedOptions {
   hooks: readonly unknown[];
   watch: boolean;
   proxy: boolean;
-  queue: boolean;
 }
 
 /**
@@ -66,7 +65,6 @@ export function createMockResolvedOptions(
     hooks: [],
     watch: true,
     proxy: true,
-    queue: true,
     ...overrides,
   };
 }

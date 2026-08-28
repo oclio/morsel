@@ -17,7 +17,6 @@ function createState<T extends Record<string, unknown>>(
       hooks: [],
       watch: true,
       proxy: true,
-      queue: true,
       onDebug: vi.fn(),
     },
     ...overrides,
@@ -142,26 +141,6 @@ describe('stop-store', () => {
     await stopStore(state);
 
     expect(dispose).toHaveBeenCalledTimes(1);
-  });
-
-  it('skips dispose for EventHook (after:write)', async () => {
-    const dispose = vi.fn();
-    const state = createState({
-      options: {
-        hooks: [
-          {
-            name: 'audit',
-            lifecycle: 'after:write',
-            onWrite: vi.fn(),
-            dispose,
-          },
-        ],
-      } as never,
-    });
-
-    await stopStore(state);
-
-    expect(dispose).not.toHaveBeenCalled();
   });
 
   it('skips dispose when not defined on hook', async () => {

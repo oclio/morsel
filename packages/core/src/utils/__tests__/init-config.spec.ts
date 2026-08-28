@@ -247,7 +247,7 @@ describe('initConfig', () => {
     expect(caught?.code).toBe('EIO');
   });
 
-  it('throws MorselError with EWRITE when plugin.serialize throws', () => {
+  it('throws MorselError with EIO when plugin.serialize throws', () => {
     mockResolved();
     vi.mocked(resolveProjectPathSync).mockReturnValue(undefined);
 
@@ -262,7 +262,7 @@ describe('initConfig', () => {
     }
 
     expect(caught).toBeInstanceOf(MorselError);
-    expect(caught?.code).toBe('EWRITE');
+    expect(caught?.code).toBe('EIO');
     expect(writeFileSync).not.toHaveBeenCalled();
   });
 
@@ -286,7 +286,7 @@ describe('initConfig', () => {
     }
 
     expect(caught).toBeInstanceOf(MorselError);
-    expect(caught?.code).toBe('EWRITE');
+    expect(caught?.code).toBe('EIO');
     expect(caught?.cause).toBeInstanceOf(Error);
     expect((caught?.cause as Error).message).toBe('string error');
   });

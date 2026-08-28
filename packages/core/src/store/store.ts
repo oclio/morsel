@@ -4,6 +4,7 @@ import { getPathValue } from '@/paths/path-access';
 import { stopStore } from '@/store/boot/stop-store';
 import { isWildcardPattern } from '@/store/reactive/match-wildcard';
 import { createStableProxy } from '@/store/reactive/stable-proxy';
+import { createArrayMethods } from '@/store/store-array-methods';
 import { resolveProvenance } from '@/store/store-provenance';
 import type { StoreState } from '@/store/store-state';
 import type {
@@ -30,6 +31,8 @@ export function createMorselStore<T extends ConfigRecord>(
     ? createStableProxy(state, mutability)
     : undefined;
   state._proxy = proxy;
+
+  const arrayMethods = createArrayMethods(state);
 
   const store: MorselStore<T> = {
     get config(): T {
@@ -104,6 +107,8 @@ export function createMorselStore<T extends ConfigRecord>(
     ): Provenance | undefined {
       return resolveProvenance(state._layers, pathInput);
     },
+    indexOf: arrayMethods.indexOf,
+    lastIndexOf: arrayMethods.lastIndexOf,
   };
 
   return store;
