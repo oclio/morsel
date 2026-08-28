@@ -56,9 +56,7 @@ export function createMockResolvedOptions(
     configMutability: 'frozen',
     verbose: false,
     onDebug: () => {
-      /**
-      noop debug callback
-      */
+      // noop debug callback
     },
     formatPlugins: [],
     validationPlugins: [],

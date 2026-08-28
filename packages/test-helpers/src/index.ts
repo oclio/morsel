@@ -6,6 +6,7 @@ export type {
 } from './e2e/event-collector';
 export { createEventCollector } from './e2e/event-collector';
 export { clearWatcherRegistry } from './e2e/global-setup';
+export { pollUntil } from './e2e/poll-until';
 export type { SetupTestOptions, SetupTestResult } from './e2e/setup-test';
 export { setupTest } from './e2e/setup-test';
 export type { TemporaryEnvironment } from './e2e/temporary-env';
@@ -42,5 +43,4 @@ export type { MockResolvedOptions } from './unit/mock-resolved-options';
 export { createMockResolvedOptions } from './unit/mock-resolved-options';
 export type { MockStoreState } from './unit/mock-store-state';
 export { createMockStoreState } from './unit/mock-store-state';
-export { setupStoreMocks } from './unit/setup-store-mocks';
 export { isUnsafeKey, UNSAFE_KEYS } from './unit/unsafe-keys';
