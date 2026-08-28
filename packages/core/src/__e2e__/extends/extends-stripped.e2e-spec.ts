@@ -13,6 +13,7 @@ describe('extends-stripped — extends key cleanup', () => {
 
   it('extends does not appear in final config or layer.config', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -37,6 +38,7 @@ describe('extends-stripped — extends key cleanup', () => {
 
   it('extends stripped from extends files themselves before merge', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -66,6 +68,7 @@ describe('extends-stripped — extends key cleanup', () => {
 
   it('extends and $env as business keys → stripping is unconditional', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 

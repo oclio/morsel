@@ -1,11 +1,11 @@
 import { clearWatcherRegistry, setupTest } from '@oclio/test-helpers';
 
 import {
+  createReactiveStore,
   defineConfig,
   loadConfig,
   loadConfigSync,
   mergeConfig,
-  watchConfig,
 } from '@/index';
 
 describe('helpers-merge-config-pipeline — mergeConfig + pipeline integration', () => {
@@ -15,6 +15,7 @@ describe('helpers-merge-config-pipeline — mergeConfig + pipeline integration',
 
   it('mergeConfig + loadConfig → merged defaults applied', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 8080 },
       createGlobalDir: true,
     });
@@ -40,6 +41,7 @@ describe('helpers-merge-config-pipeline — mergeConfig + pipeline integration',
 
   it('mergeConfig + loadConfigSync → merged defaults applied in sync mode', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 8080 },
       createGlobalDir: true,
     });
@@ -63,8 +65,9 @@ describe('helpers-merge-config-pipeline — mergeConfig + pipeline integration',
     });
   });
 
-  it('mergeConfig + watchConfig → merged defaults applied in watch mode', async () => {
+  it('mergeConfig + createReactiveStore → merged defaults applied in watch mode', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 8080 },
       createGlobalDir: true,
     });
@@ -80,7 +83,7 @@ describe('helpers-merge-config-pipeline — mergeConfig + pipeline integration',
       defaults: { host: 'production.example.com' },
     });
 
-    const store = await watchConfig(merged);
+    const store = await createReactiveStore(merged);
 
     expect(store.config).toEqual({
       port: 8080,
@@ -92,6 +95,7 @@ describe('helpers-merge-config-pipeline — mergeConfig + pipeline integration',
 
   it('mergeConfig + loadConfig with arrayMerge concat → arrays concatenated in pipeline', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { items: [9, 10] },
       createGlobalDir: true,
     });

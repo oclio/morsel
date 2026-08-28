@@ -16,12 +16,12 @@
 
 1. **Pluggable architecture**: parsing is provided by format plugins (`FormatPlugin`). The core provides `jsonPlugin` by default. No format is hardcoded in the core — `JSON.parse` lives in `jsonPlugin`, not in `loadFile`. Pipeline extensibility is provided by hooks (`LayerHook`) that insert at specific lifecycle points.
 2. **Zero runtime dependencies**: `node:fs`, `node:path`, `node:os` only. No external packages.
-3. **Watch resilience, one-shot throw**: `loadConfig`/`loadConfigSync` throw `MorselError` on fs or parse errors. `watchConfig` throws `MorselError` if the initial load (first pass) fails — there is no "last valid state" at boot. For subsequent re-merges (fs.watch fire), `watchConfig` catches internally, keeps the last valid state, logs the error to `stderr`, and routes to `onDebug` (noop by default). Programming errors (`name` missing, `name` invalid, `on()` after `stop()`) throw in both modes.
+3. **Watch resilience, one-shot throw**: `loadConfig`/`loadConfigSync` throw `MorselError` on fs or parse errors. `createReactiveStore` throws `MorselError` if the initial load (first pass) fails — there is no "last valid state" at boot. For subsequent re-merges (fs.watch fire), `createReactiveStore` catches internally, keeps the last valid state, logs the error to `stderr`, and routes to `onDebug` (noop by default). Programming errors (`name` missing, `name` invalid, `on()` after `stop()`) throw in both modes.
 4. **Reserved keyword cleanup**: `extends` and `$env` are **absolute reserved keywords** of the engine — they cannot be used as business keys in the final config. They are stripped from each layer before inter-layer merge. Never present in the final `config`. If an application needs a key named `$env` or `extends` for business purposes, it must be renamed (`$envConfig`, `extendsList`, etc.).
-5. **Sync-first & distinct async**: `loadConfigSync` is synchronous, `loadConfig` and `watchConfig` are async. The chosen function determines the behavior. `watchConfig` accepts optional `watch` and `proxy` flags (default `true`) to disable reactive features for one-shot use cases (CI, scripts, CLI) — see §4.4 Headless Mode. Async `loadConfig` avoids blocking the event loop during reads — useful for apps that load multiple configs in parallel with `Promise.all`. `watchConfig` is async because boot performs reads (`readFile`) before setting up watchers.
+5. **Sync-first & distinct async**: `loadConfigSync` is synchronous, `loadConfig`, `createStore`, and `createReactiveStore` are async. The chosen function determines the behavior. `createStore` returns a static `MorselStore` (no watchers, no events, no proxy) for one-shot use cases (CI, scripts, CLI). `createReactiveStore` returns a `MorselReactiveStore` that extends `MorselStore` with `on`, `off`, `triggerRemerge`, watchers, and re-merge. Async `loadConfig` avoids blocking the event loop during reads — useful for apps that load multiple configs in parallel with `Promise.all`. `createReactiveStore` is async because boot performs reads (`readFile`) before setting up watchers.
 6. **Watch ref-counting**: a single `fs.watch` per directory, shared across all stores. Closed when the last store calls `stop()`. Includes directories of `extends` files and `watchPaths` of watchable hooks — a change in an inherited file triggers a re-merge.
 7. **Parsing / semantics separation**: the plugin parses raw content → `Record<string, unknown>`. Semantic concepts (`extends`, `$env`, cleanup) are core. The plugin knows nothing about `extends` or `$env`.
-8. **Lifecycle hooks**: layer hooks (`LayerHook`) insert at 8 pipeline points (before/after for each layer). A layer hook produces a `Record` that becomes a layer in the cascade. The `load` method is stateless — the core calls it on each merge, no state is kept between merges. Optional `init`/`dispose` lifecycle methods allow stateful hooks to manage external connections (pollers, WebSocket, etcd watch) — `init` is called once after the store is created in `watchConfig`, `dispose` is called once when the store is stopped via `stop()`. Neither is called in `loadConfig`/`loadConfigSync` (one-shot, no lifecycle). The `HookContext` provides `triggerRemerge()` so a hook can request a re-merge of the configuration (e.g. when a remote config source changes). In `loadConfig`/`loadConfigSync`, `triggerRemerge` is a noop.
+8. **Lifecycle hooks**: layer hooks (`LayerHook`) insert at 8 pipeline points (before/after for each layer). A layer hook produces a `Record` that becomes a layer in the cascade. The `load` method is stateless — the core calls it on each merge, no state is kept between merges. Optional `init`/`dispose` lifecycle methods allow stateful hooks to manage external connections (pollers, WebSocket, etcd watch) — `init` is called once after the store is created in `createReactiveStore`, `dispose` is called once when the store is stopped via `stop()`. Neither is called in `loadConfig`/`loadConfigSync` (one-shot, no lifecycle). The `HookContext` provides `triggerRemerge()` so a hook can request a re-merge of the configuration (e.g. when a remote config source changes). In `loadConfig`/`loadConfigSync`, `triggerRemerge` is a noop.
 9. **Native path parsing & prototype protection**: the core provides robust path parsing supporting dot notation (`a.b.c`), indexed arrays (`users[0].name`, `users.0.name`), and escaped dots (`app\.config.host`). Any attempt to access or mutate `__proto__`, `constructor`, or `prototype` is rejected (`TypeError`).
 10. **Read-only store**: the store is strictly read-only. The filesystem is the single source of truth. Changes to config files on disk are detected by `fs.watch` and trigger a re-merge, which emits key-level change events to listeners. The store does not provide mutation methods (`set`, `unset`, `push`, etc.) — applications that need to modify configuration write directly to the files, and the store reacts automatically.
 
@@ -109,13 +109,15 @@ export interface MorselOptions<
   readonly onDebug?: DebugCallback;
 }
 
-export interface WatchOptions<
+export type StoreOptions<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> = MorselOptions<T>;
+
+export interface ReactiveStoreOptions<
   T extends Record<string, unknown> = Record<string, unknown>,
 > extends MorselOptions<T> {
   readonly watchDebounce?: number;
   readonly signal?: AbortSignal;
-  readonly watch?: boolean;
-  readonly proxy?: boolean;
 }
 
 export interface MorselStore<
@@ -123,12 +125,6 @@ export interface MorselStore<
 > {
   readonly config: T;
   readonly layers: readonly MorselLayer[];
-  /**
-   * Listen to key changes. Supports wildcard patterns:
-   * `foo.*` matches one segment, `**` matches any depth.
-   * See §4.5 for wildcard semantics and two-phase ordering.
-   */
-  on(key: string, listener: Listener, options?: ListenerOptions): () => void;
   get<V = unknown>(
     path: string | readonly (string | number)[],
     defaultValue?: V,
@@ -157,6 +153,19 @@ export interface MorselStore<
     value: unknown,
   ): number;
   stop(): Promise<void>;
+}
+
+export interface MorselReactiveStore<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> extends MorselStore<T> {
+  /**
+   * Listen to key changes. Supports wildcard patterns:
+   * `foo.*` matches one segment, `**` matches any depth.
+   * See §4.5 for wildcard semantics and two-phase ordering.
+   */
+  on(key: string, listener: Listener, options?: ListenerOptions): () => void;
+  off(key: string, listener: Listener): void;
+  triggerRemerge(): void;
 }
 
 /**
@@ -353,8 +362,6 @@ export interface ResolvedOptions {
   readonly formatPlugins: readonly FormatPlugin[];
   readonly validationPlugins: readonly ValidationPlugin[];
   readonly hooks: readonly Hook[];
-  readonly watch: boolean;
-  readonly proxy: boolean;
 }
 
 /**
@@ -408,9 +415,13 @@ export function loadConfigSync<
   T extends Record<string, unknown> = Record<string, unknown>,
 >(options: MorselOptions<T>): ConfigResult<T>;
 
-export function watchConfig<
+export function createStore<
   T extends Record<string, unknown> = Record<string, unknown>,
->(options: WatchOptions<T>): Promise<MorselStore<T>>;
+>(options: StoreOptions<T>): Promise<MorselStore<T>>;
+
+export function createReactiveStore<
+  T extends Record<string, unknown> = Record<string, unknown>,
+>(options: ReactiveStoreOptions<T>): Promise<MorselReactiveStore<T>>;
 
 export function resolvePaths(
   options: ResolvePathsOptions,
@@ -521,7 +532,7 @@ export function clearRegistry(): void;
 
 #### `signal` — AbortSignal
 
-If `WatchOptions.signal` is provided, it is checked **after** hook `init` completes and the store is fully bootstrapped. If the signal is already aborted at that point, `store.stop()` is called immediately. Otherwise, an `abort` listener is registered to call `store.stop()` when the signal fires. This ordering ensures that hooks are initialized before the store can be stopped.
+If `ReactiveStoreOptions.signal` is provided, it is checked **after** hook `init` completes and the store is fully bootstrapped. If the signal is already aborted at that point, `store.stop()` is called immediately. Otherwise, an `abort` listener is registered to call `store.stop()` when the signal fires. This ordering ensures that hooks are initialized before the store can be stopped.
 
 #### `getProvenance`
 
@@ -551,37 +562,21 @@ If `WatchOptions.signal` is provided, it is checked **after** hook `init` comple
 
 - `getProvenance` remains callable after `stop()` — it reads from `state._layers` and `state._config` which remain at the last known state. Same behavior as `store.get` and `store.layers`.
 
-#### Headless Mode — `watch`, `proxy` flags
+#### Static vs Reactive Stores
 
-`watchConfig` accepts two orthogonal flags on `WatchOptions`, both defaulting to `true`. When set to `false`, the corresponding feature is disabled for the lifetime of the store. This enables one-shot use cases (CI, scripts, CLI commands) to avoid the overhead of reactive features they don't use.
+The package exposes two store constructors:
 
-**`watch: false`** — Skip watcher setup.
+- **`createStore(options: StoreOptions): Promise<MorselStore>`** — static store. Loads and merges all layers once, returns a `MorselStore` with `get`, `has`, `all`, `dotify`, `getProvenance`, `indexOf`, `lastIndexOf`, and `stop`. No watchers, no events, no proxy, no re-merge. The `config` getter returns `state._config` directly. `stop()` is a noop (no watchers to release). Use for CI, scripts, CLI commands, and one-shot tools.
 
-- `collectWatchedFiles` and `setupWatchers` are not called. `state.watchers` remains empty.
-- `stop()` works normally — `releaseAllWatchers` is a no-op on an empty set.
-- `triggerRemerge` is defined but never invoked (no watcher to fire it).
-- `signal` (AbortSignal) is still handled independently of watchers.
+- **`createReactiveStore(options: ReactiveStoreOptions): Promise<MorselReactiveStore>`** — reactive store. Extends `MorselStore` with `on(key, listener, options?)`, `off(key, listener)`, and `triggerRemerge()`. Sets up `fs.watch` watchers, a stable proxy on `config`, and re-merge on file changes. `stop()` releases all watchers and cleans up listeners. Use for long-running apps that need live-reload and key-level events.
 
-**`proxy: false`** — Skip proxy construction.
+**`MorselStore`** (base): `config`, `layers`, `get`, `has`, `all`, `dotify`, `getProvenance`, `indexOf`, `lastIndexOf`, `stop`.
 
-- `createStableProxy` is not called. `state._proxy` remains `undefined`.
-- The `config` getter returns `state._config` directly (or the stopped config clone after `stop()`).
-- `store.get()`, `store.has()`, `store.all()`, `store.dotify()`, `store.getProvenance()`, `store.indexOf()`, and `store.lastIndexOf()` are unaffected — they read `state._config` directly, not the proxy.
-- `store.on()` and change events are unaffected — `emitChanges` is called by the re-merge independently of the proxy.
-- With `configMutability: 'frozen'`, `state._config` is already frozen by `applyMutability` — `Object.isFrozen(store.config)` is `true`.
-- With `configMutability: 'mutable'`, `store.config.key = value` modifies `_config` in memory but does **not** persist to disk.
+**`MorselReactiveStore`** (extends `MorselStore`): adds `on`, `off`, `triggerRemerge`.
 
-**Flag combinations:**
+**`StoreOptions`** = `MorselOptions` (name, cwd, defaults, overrides, globalDir, arrayMerge, envName, configMutability, verbose, onDebug, formatPlugins, validationPlugins, hooks).
 
-| `watch` | `proxy` | Use case                         |
-| ------- | ------- | -------------------------------- |
-| `true`  | `true`  | Default — long-running, reactive |
-| `false` | `true`  | CI with `store.config` access    |
-| `false` | `false` | CI with `store.get()` only       |
-
-All combinations are valid. Flags are orthogonal and permanent for the lifetime of the store.
-
-**Non-goals**: no lazy watchers (watch on demand), no lazy proxy. Flags are fixed at boot.
+**`ReactiveStoreOptions`** extends `StoreOptions` with `watchDebounce` (default 300ms) and `signal` (AbortSignal — when aborted, `store.stop()` is called automatically).
 
 ---
 
@@ -627,7 +622,7 @@ Wildcard listeners are emitted after exact-match listeners for each key, within 
 - **`validation` (validation fail)** — One-shot: throws `ValidationError` (`EVALIDATE`). Watch boot: throws. Re-merge: caught, keeps previous config, `onDebug`/stderr.
 - **`cycle` (circular `extends`, `visited` Set + `MAX_DEPTH = 10`)** — One-shot: throws `MorselError` (`ECYCLE`). Watch boot: throws. Re-merge: caught, keeps previous config, `onDebug`/stderr.
 - **`hook` (hook throws in `load()`)** — One-shot: throws `MorselError` (`EHOOK`). Watch boot: throws. Re-merge: caught, keeps previous config, `onDebug`/stderr.
-- **`hook async` (hook returns a Promise in `loadConfigSync`)** — Throws `TypeError('morsel: hook "<name>" is async — use loadConfig or watchConfig')`. Programming error.
+- **`hook async` (hook returns a Promise in `loadConfigSync`)** — Throws `TypeError('morsel: hook "<name>" is async — use loadConfig or createReactiveStore')`. Programming error.
 - **`env` (`$env` present but `envName` undefined)** — Warns via `onDebug` (or stderr if `onDebug` is not provided), `$env` ignored. Same in one-shot and watch.
 - **`env` (`$env` present but not a plain object)** — Warns via `onDebug` (or stderr if `onDebug` is not provided), `$env` ignored. Same in one-shot and watch.
 - **`program` (`name` missing, `name` invalid, `on()` after `stop()`)** — Throws `TypeError`/`Error`. Same in one-shot and watch.

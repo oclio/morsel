@@ -29,7 +29,6 @@ describe('hooks-trigger-remerge — triggerRemerge', () => {
 
     const { store } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       hooks,
     } as never);
@@ -60,6 +59,7 @@ describe('hooks-trigger-remerge — triggerRemerge', () => {
     ];
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       hooks,
@@ -86,7 +86,6 @@ describe('hooks-trigger-remerge — triggerRemerge', () => {
 
     const { store } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       watchDebounce: 100,
       hooks,

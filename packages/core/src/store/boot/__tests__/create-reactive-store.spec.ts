@@ -7,15 +7,15 @@ import { resolveGlobalPath, resolveProjectPath } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
 import { resolveOptions } from '@/store/boot/assert-name';
 import { noop } from '@/store/boot/assert-name';
-import { watchConfig } from '@/store/boot/watch-config';
+import { createReactiveStore } from '@/store/boot/create-reactive-store';
 import { toMorselLayer } from '@/store/layer';
-import { createMorselStore } from '@/store/store';
-import { createStoreState } from '@/store/store-state';
-import { createRemerge } from '@/store/watch/remerge-runner';
+import { createRemerge } from '@/store/reactive/remerge-runner';
 import {
   collectWatchedFiles,
   setupWatchers,
-} from '@/store/watch/watcher-setup';
+} from '@/store/reactive/watcher-setup';
+import { createReactiveMorselStore } from '@/store/store';
+import { createStoreState } from '@/store/store-state';
 import { releaseWatcher } from '@/watch/watcher-registry';
 
 vi.mock('@/load/build-layers', () => ({
@@ -39,16 +39,16 @@ vi.mock('@/store/boot/assert-name', async (importOriginal) => {
 vi.mock('@/store/layer', () => ({
   toMorselLayer: vi.fn(),
 }));
-vi.mock('@/store/watch/remerge-runner', () => ({
+vi.mock('@/store/reactive/remerge-runner', () => ({
   createRemerge: vi.fn(),
 }));
 vi.mock('@/store/store', () => ({
-  createMorselStore: vi.fn(),
+  createReactiveMorselStore: vi.fn(),
 }));
 vi.mock('@/store/store-state', () => ({
   createStoreState: vi.fn(),
 }));
-vi.mock('@/store/watch/watcher-setup', () => ({
+vi.mock('@/store/reactive/watcher-setup', () => ({
   collectWatchedFiles: vi.fn(),
   setupWatchers: vi.fn(),
 }));
@@ -58,7 +58,7 @@ vi.mock('@/watch/watcher-registry', () => ({
 
 import type { ResolvedLayer } from '@/load/resolve-layer';
 import type { StoreState } from '@/store/store-state';
-import type { MorselStore } from '@/store/types';
+import type { MorselReactiveStore } from '@/store/types';
 
 function makeResolvedLayer(
   overrides: Partial<ResolvedLayer> = {},
@@ -86,16 +86,14 @@ function makeState(overrides: Partial<StoreState> = {}): StoreState {
       formatPlugins: [jsonPlugin],
       validationPlugins: [],
       hooks: [],
-      watch: true,
-      proxy: true,
     },
     ...overrides,
   }) as StoreState;
 }
 
-describe('watchConfig', () => {
+describe('createReactiveStore', () => {
   let mockState: StoreState;
-  let mockStore: MorselStore<Record<string, unknown>>;
+  let mockStore: MorselReactiveStore<Record<string, unknown>>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -116,8 +114,6 @@ describe('watchConfig', () => {
       formatPlugins: [jsonPlugin],
       validationPlugins: [],
       hooks: [],
-      watch: true,
-      proxy: true,
     } as never);
 
     vi.mocked(resolveGlobalPath).mockResolvedValue('/global/myapp.config.json');
@@ -162,21 +158,23 @@ describe('watchConfig', () => {
       config: {},
       layers: [],
       on: vi.fn(),
+      off: vi.fn(),
+      triggerRemerge: vi.fn(),
       stop: vi.fn(),
     } as never;
-    vi.mocked(createMorselStore).mockReturnValue(mockStore);
+    vi.mocked(createReactiveMorselStore).mockReturnValue(mockStore);
   });
 
   describe('boot — initial load', () => {
     it('calls resolveOptions with provided options', async () => {
       const options = { name: 'myapp' };
-      await watchConfig(options);
+      await createReactiveStore(options);
 
       expect(resolveOptions).toHaveBeenCalledWith(options);
     });
 
     it('resolves global path from globalDir and name', async () => {
-      await watchConfig({ name: 'myapp' });
+      await createReactiveStore({ name: 'myapp' });
 
       expect(resolveGlobalPath).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'myapp' }),
@@ -185,7 +183,7 @@ describe('watchConfig', () => {
     });
 
     it('resolves project path via resolveProjectPath', async () => {
-      await watchConfig({ name: 'myapp' });
+      await createReactiveStore({ name: 'myapp' });
 
       expect(resolveProjectPath).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'myapp' }),
@@ -194,7 +192,7 @@ describe('watchConfig', () => {
     });
 
     it('builds layers via buildLayers with resolved options and paths', async () => {
-      await watchConfig({ name: 'myapp' });
+      await createReactiveStore({ name: 'myapp' });
 
       expect(buildLayers).toHaveBeenCalledTimes(1);
       expect(buildLayers).toHaveBeenCalledWith(
@@ -206,7 +204,7 @@ describe('watchConfig', () => {
     });
 
     it('processes config via processConfig with layers and options', async () => {
-      await watchConfig({ name: 'myapp' });
+      await createReactiveStore({ name: 'myapp' });
 
       expect(processConfig).toHaveBeenCalledWith(
         expect.any(Array),
@@ -217,13 +215,13 @@ describe('watchConfig', () => {
     });
 
     it('maps layers through toMorselLayer', async () => {
-      await watchConfig({ name: 'myapp' });
+      await createReactiveStore({ name: 'myapp' });
 
       expect(toMorselLayer).toHaveBeenCalledTimes(4);
     });
 
     it('creates store state with config, layers, and project path', async () => {
-      await watchConfig({ name: 'myapp' });
+      await createReactiveStore({ name: 'myapp' });
 
       expect(createStoreState).toHaveBeenCalledWith(
         { frozen: true },
@@ -236,7 +234,7 @@ describe('watchConfig', () => {
     });
 
     it('collects watched files from layers', async () => {
-      await watchConfig({ name: 'myapp' });
+      await createReactiveStore({ name: 'myapp' });
 
       expect(collectWatchedFiles).toHaveBeenCalledWith(
         mockState,
@@ -245,15 +243,19 @@ describe('watchConfig', () => {
     });
 
     it('sets up watchers with state and layers', async () => {
-      await watchConfig({ name: 'myapp' });
+      await createReactiveStore({ name: 'myapp' });
 
       expect(setupWatchers).toHaveBeenCalledWith(mockState, expect.any(Array));
     });
 
-    it('returns morsel store from createMorselStore', async () => {
-      const result = await watchConfig({ name: 'myapp' });
+    it('returns morsel store from createReactiveMorselStore', async () => {
+      const result = await createReactiveStore({ name: 'myapp' });
 
-      expect(createMorselStore).toHaveBeenCalledWith(mockState, 'frozen');
+      expect(createReactiveMorselStore).toHaveBeenCalledWith(
+        mockState,
+        'frozen',
+        expect.any(Function),
+      );
       expect(result).toBe(mockStore);
     });
   });
@@ -266,7 +268,7 @@ describe('watchConfig', () => {
       });
       mockState.watchers = new Set(['/dir1', '/dir2']);
 
-      await expect(watchConfig({ name: 'myapp' })).rejects.toThrow(
+      await expect(createReactiveStore({ name: 'myapp' })).rejects.toThrow(
         'watcher setup failed',
       );
 
@@ -300,11 +302,9 @@ describe('watchConfig', () => {
         formatPlugins: [jsonPlugin],
         validationPlugins: [],
         hooks: [hook],
-        watch: true,
-        proxy: true,
       } as never);
 
-      await watchConfig({ name: 'myapp' });
+      await createReactiveStore({ name: 'myapp' });
 
       expect(init).toHaveBeenCalledTimes(1);
       expect(init).toHaveBeenCalledWith(
@@ -336,11 +336,11 @@ describe('watchConfig', () => {
         formatPlugins: [jsonPlugin],
         validationPlugins: [],
         hooks: [hook],
-        watch: true,
-        proxy: true,
       } as never);
 
-      await expect(watchConfig({ name: 'myapp' })).resolves.toBeDefined();
+      await expect(
+        createReactiveStore({ name: 'myapp' }),
+      ).resolves.toBeDefined();
     });
 
     it('throws MorselError with EHOOK when init throws', async () => {
@@ -366,12 +366,10 @@ describe('watchConfig', () => {
         formatPlugins: [jsonPlugin],
         validationPlugins: [],
         hooks: [hook],
-        watch: true,
-        proxy: true,
       } as never);
       mockState.watchers = new Set(['/dir1', '/dir2']);
 
-      await expect(watchConfig({ name: 'myapp' })).rejects.toThrow(
+      await expect(createReactiveStore({ name: 'myapp' })).rejects.toThrow(
         'hook "failing-hook" failed in init: connection refused',
       );
 
@@ -381,7 +379,7 @@ describe('watchConfig', () => {
       expect(mockState.watchers.size).toBe(0);
 
       try {
-        await watchConfig({ name: 'myapp' });
+        await createReactiveStore({ name: 'myapp' });
       } catch (error) {
         expect((error as MorselError).code).toBe('EHOOK');
       }
@@ -393,7 +391,7 @@ describe('watchConfig', () => {
       const mockRemerge = vi.fn();
       vi.mocked(createRemerge).mockReturnValue(mockRemerge);
 
-      await watchConfig({ name: 'myapp' });
+      await createReactiveStore({ name: 'myapp' });
 
       const triggerRemerge = vi.mocked(buildLayers).mock
         .calls[0]![3] as () => void;
@@ -417,7 +415,7 @@ describe('watchConfig', () => {
         },
       );
 
-      await watchConfig({ name: 'myapp' });
+      await createReactiveStore({ name: 'myapp' });
 
       expect(mockRemerge).not.toHaveBeenCalled();
       // After boot, trigger should work
@@ -449,11 +447,9 @@ describe('watchConfig', () => {
         formatPlugins: [jsonPlugin],
         validationPlugins: [],
         hooks: [hook],
-        watch: true,
-        proxy: true,
       } as never);
 
-      await watchConfig({ name: 'myapp' });
+      await createReactiveStore({ name: 'myapp' });
 
       const initContext = init.mock.calls[0]![0];
       initContext.triggerRemerge();
@@ -466,7 +462,7 @@ describe('watchConfig', () => {
       const controller = new AbortController();
       controller.abort();
 
-      await watchConfig({ name: 'myapp', signal: controller.signal });
+      await createReactiveStore({ name: 'myapp', signal: controller.signal });
 
       expect(mockStore.stop).toHaveBeenCalledTimes(1);
     });
@@ -474,7 +470,7 @@ describe('watchConfig', () => {
     it('calls store.stop() when signal aborts after boot', async () => {
       const controller = new AbortController();
 
-      await watchConfig({ name: 'myapp', signal: controller.signal });
+      await createReactiveStore({ name: 'myapp', signal: controller.signal });
 
       expect(mockStore.stop).not.toHaveBeenCalled();
 
@@ -484,66 +480,9 @@ describe('watchConfig', () => {
     });
 
     it('does not call store.stop() when no signal is provided', async () => {
-      await watchConfig({ name: 'myapp' });
+      await createReactiveStore({ name: 'myapp' });
 
       expect(mockStore.stop).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('headless mode — watch: false', () => {
-    it('skips collectWatchedFiles when watch is false', async () => {
-      vi.mocked(resolveOptions).mockReturnValue({
-        name: 'myapp',
-        cwd: '/project',
-        defaults: {},
-        overrides: {},
-        globalDir: '/global',
-        arrayMerge: 'replace',
-        envName: 'test',
-        onDebug: noop,
-        configMutability: 'frozen',
-        verbose: false,
-        formatPlugins: [jsonPlugin],
-        validationPlugins: [],
-        hooks: [],
-        watch: false,
-        proxy: true,
-      } as never);
-
-      await watchConfig({ name: 'myapp', watch: false });
-
-      expect(collectWatchedFiles).not.toHaveBeenCalled();
-    });
-
-    it('skips setupWatchers when watch is false', async () => {
-      vi.mocked(resolveOptions).mockReturnValue({
-        name: 'myapp',
-        cwd: '/project',
-        defaults: {},
-        overrides: {},
-        globalDir: '/global',
-        arrayMerge: 'replace',
-        envName: 'test',
-        onDebug: noop,
-        configMutability: 'frozen',
-        verbose: false,
-        formatPlugins: [jsonPlugin],
-        validationPlugins: [],
-        hooks: [],
-        watch: false,
-        proxy: true,
-      } as never);
-
-      await watchConfig({ name: 'myapp', watch: false });
-
-      expect(setupWatchers).not.toHaveBeenCalled();
-    });
-
-    it('still calls collectWatchedFiles and setupWatchers when watch is true', async () => {
-      await watchConfig({ name: 'myapp' });
-
-      expect(collectWatchedFiles).toHaveBeenCalledTimes(1);
-      expect(setupWatchers).toHaveBeenCalledTimes(1);
     });
   });
 });

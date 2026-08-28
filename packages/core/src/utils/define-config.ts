@@ -5,7 +5,7 @@ import type { ConfigRecord, MorselOptions } from '@/store/types';
  * Type helper — infers `T` from `defaults`.
  *
  * The consumer doesn't need to declare the interface explicitly.
- * Pass the result to `loadConfig`, `loadConfigSync`, or `watchConfig`.
+ * Pass the result to `loadConfig`, `loadConfigSync`, or `createReactiveStore`.
  *
  * @param config - The config options with typed defaults/overrides.
  * @returns The same config options (identity — type inference only).

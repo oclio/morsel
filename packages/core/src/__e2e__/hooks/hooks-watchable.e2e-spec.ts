@@ -10,7 +10,7 @@ import {
   writeConfig,
 } from '@oclio/test-helpers';
 
-import { watchConfig } from '@/index';
+import { createReactiveStore } from '@/index';
 
 describe('hooks-watchable — LayerWatchableHook', () => {
   suppressConsoleError();
@@ -42,7 +42,7 @@ describe('hooks-watchable — LayerWatchableHook', () => {
       },
     ];
 
-    const store = await watchConfig({
+    const store = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,
@@ -80,7 +80,7 @@ describe('hooks-watchable — LayerWatchableHook', () => {
       },
     ];
 
-    const store = await watchConfig({
+    const store = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,
@@ -122,7 +122,7 @@ describe('hooks-watchable — LayerWatchableHook', () => {
       },
     ];
 
-    const store = await watchConfig({
+    const store = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,

@@ -5,7 +5,7 @@ import {
   writeConfig,
 } from '@oclio/test-helpers';
 
-import { watchConfig } from '@/index';
+import { createReactiveStore } from '@/index';
 
 describe('events-once — once option', () => {
   let directory: string;
@@ -30,7 +30,7 @@ describe('events-once — once option', () => {
       port: 3000,
     });
 
-    const store = await watchConfig({
+    const store = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,
@@ -63,7 +63,7 @@ describe('events-once — once option', () => {
       server: { host: 'localhost', port: 3000 },
     });
 
-    const store = await watchConfig({
+    const store = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,

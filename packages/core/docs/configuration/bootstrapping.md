@@ -67,7 +67,7 @@ initConfig({
 
 ## Seamless Watcher Integration
 
-If your application has already initialized a watcher via `watchConfig`, calling `initConfig` writes the file to disk atomically.
+If your application has already initialized a watcher via `createReactiveStore`, calling `initConfig` writes the file to disk atomically.
 
 The active directory watcher will immediately capture the file creation, trigger a live re-merge, and dispatch granular key updates to all registered listeners without requiring any custom synchronization code.
 

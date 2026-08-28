@@ -17,6 +17,7 @@ describe('boot-layers — layer resolution + $env + hooks', () => {
 
   it('defaults and overrides deep-merge when no globalDir and no files on disk', async () => {
     const { result } = await setupTest({
+      reactive: false,
       rootAsCwd: true,
       skipGlobalDirectory: true,
       defaults: { port: 3000, host: 'localhost' },
@@ -85,6 +86,7 @@ describe('boot-layers — layer resolution + $env + hooks', () => {
 
   it('deep-merges all layers by increasing priority', async () => {
     const { result } = await setupTest({
+      reactive: false,
       globalConfig: {
         port: 8080,
         host: '0.0.0.0',
@@ -124,6 +126,7 @@ describe('boot-layers — layer resolution + $env + hooks', () => {
 
   it('defaults: $env resolved per envName, extends stripped, no file on disk', async () => {
     const { result } = await setupTest({
+      reactive: false,
       rootAsCwd: true,
       envName: 'production',
       defaults: {
@@ -166,6 +169,7 @@ describe('boot-layers — layer resolution + $env + hooks', () => {
 
   it('overrides: $env resolved per envName, extends stripped, deep-merged over defaults', async () => {
     const { result } = await setupTest({
+      reactive: false,
       rootAsCwd: true,
       envName: 'production',
       defaults: { port: 3000, host: 'localhost', features: { cache: true } },
@@ -212,6 +216,7 @@ describe('boot-layers — layer resolution + $env + hooks', () => {
 
   it('defaults + overrides both with $env resolved independently per layer', async () => {
     const { result } = await setupTest({
+      reactive: false,
       rootAsCwd: true,
       envName: 'production',
       defaults: {
@@ -246,6 +251,7 @@ describe('boot-layers — layer resolution + $env + hooks', () => {
     const { messages: debugMessages, callback } = createDebugCollector();
 
     const { result } = await setupTest({
+      reactive: false,
       rootAsCwd: true,
       envName: 'production',
       defaults: {
@@ -263,6 +269,7 @@ describe('boot-layers — layer resolution + $env + hooks', () => {
     const { messages: debugMessages, callback } = createDebugCollector();
 
     const { result } = await setupTest({
+      reactive: false,
       rootAsCwd: true,
       envName: 'production',
       defaults: {
@@ -282,6 +289,7 @@ describe('boot-layers — layer resolution + $env + hooks', () => {
     const order: string[] = [];
 
     const { result } = await setupTest({
+      reactive: false,
       rootAsCwd: true,
       projectConfig: { port: 3000 },
       hooks: [

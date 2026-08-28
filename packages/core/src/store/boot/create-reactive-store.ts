@@ -3,15 +3,19 @@ import { createHookContext } from '@/hooks/hook-context';
 import type { Hook, HookContext } from '@/hooks/types';
 import { resolveOptions } from '@/store/boot/assert-name';
 import { loadPipeline } from '@/store/boot/load-config';
-import { createMorselStore } from '@/store/store';
-import type { StoreState } from '@/store/store-state';
-import { createStoreState } from '@/store/store-state';
-import type { ConfigRecord, MorselStore, WatchOptions } from '@/store/types';
-import { createRemerge } from '@/store/watch/remerge-runner';
+import { createRemerge } from '@/store/reactive/remerge-runner';
 import {
   collectWatchedFiles,
   setupWatchers,
-} from '@/store/watch/watcher-setup';
+} from '@/store/reactive/watcher-setup';
+import { createReactiveMorselStore } from '@/store/store';
+import type { StoreState } from '@/store/store-state';
+import { createStoreState } from '@/store/store-state';
+import type {
+  ConfigRecord,
+  MorselReactiveStore,
+  ReactiveStoreOptions,
+} from '@/store/types';
 import { releaseWatcher } from '@/watch/watcher-registry';
 
 function releaseAllWatchers<T extends ConfigRecord>(
@@ -50,7 +54,7 @@ async function initHooks<T extends ConfigRecord>(
 }
 
 /**
- * Load config, watch files, and emit key-level events on change.
+ * Create a reactive configuration store with watchers, events, and re-merge.
  *
  * At boot: loads and merges all layers. Throws `MorselError` if the initial
  * load fails (no valid state to fall back on).
@@ -59,19 +63,21 @@ async function initHooks<T extends ConfigRecord>(
  * and routed to `onDebug`/stderr — the last valid config is preserved.
  *
  * @param options - Configuration options.
- * @returns A reactive store with `config`, `layers`, `on()`, `stop()`.
+ * @returns A reactive store with `config`, `layers`, `on`, `off`, `triggerRemerge`, `stop`.
  */
-export async function watchConfig<T extends ConfigRecord = ConfigRecord>(
-  options: WatchOptions<T>,
-): Promise<MorselStore<T>> {
+export async function createReactiveStore<
+  T extends ConfigRecord = ConfigRecord,
+>(options: ReactiveStoreOptions<T>): Promise<MorselReactiveStore<T>> {
   const resolved = resolveOptions(options);
 
   const remerge = createRemerge<T>();
 
-  let stateReference: StoreState<T> | undefined;
+  const stateReference_: { current: StoreState<T> | undefined } = {
+    current: undefined,
+  };
   const triggerRemerge = () => {
-    if (stateReference !== undefined) {
-      void remerge(stateReference);
+    if (stateReference_.current !== undefined) {
+      void remerge(stateReference_.current);
     }
   };
 
@@ -90,27 +96,29 @@ export async function watchConfig<T extends ConfigRecord = ConfigRecord>(
     debounceMs,
     remerge,
   );
-  stateReference = state;
+  stateReference_.current = state;
 
-  if (resolved.watch !== false) {
-    collectWatchedFiles(state, layers);
+  collectWatchedFiles(state, layers);
 
-    /**
-     * Defensive try/catch: if setupWatchers throws, release all watchers
-     * already created and rethrow. Not testable in e2e because
-     * setupWatchers catches fs.watch errors internally via startRecovery
-     * and never throws in real conditions. Covered by unit test in
-     * watch-config.spec.ts \> "releases all watchers and rethrows".
-     */
-    try {
-      setupWatchers(state, layers);
-    } catch (error) {
-      releaseAllWatchers(state);
-      throw error;
-    }
+  /**
+   * Defensive try/catch: if setupWatchers throws, release all watchers
+   * already created and rethrow. Not testable in e2e because
+   * setupWatchers catches fs.watch errors internally via startRecovery
+   * and never throws in real conditions. Covered by unit test in
+   * create-reactive-store.spec.ts \> "releases all watchers and rethrows".
+   */
+  try {
+    setupWatchers(state, layers);
+  } catch (error) {
+    releaseAllWatchers(state);
+    throw error;
   }
 
-  const store = createMorselStore(state, resolved.configMutability);
+  const store = createReactiveMorselStore(
+    state,
+    resolved.configMutability,
+    triggerRemerge,
+  );
 
   const initContext = createHookContext(resolved, triggerRemerge);
   await initHooks(state, resolved.hooks, initContext);

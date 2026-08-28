@@ -17,7 +17,6 @@ describe('watch-lifecycle-file-ops — file create/delete/recreate', () => {
 
   it('create project file: triggers re-merge, layer exists:true', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       createGlobalDir: true,
       defaults: { port: 3000 },
     });
@@ -41,7 +40,6 @@ describe('watch-lifecycle-file-ops — file create/delete/recreate', () => {
 
   it('create global file: triggers re-merge', async () => {
     const { store, globalDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -58,7 +56,6 @@ describe('watch-lifecycle-file-ops — file create/delete/recreate', () => {
 
   it('delete project file: keeps last valid config frozen', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000, host: 'localhost' },
       createGlobalDir: true,
       defaults: { port: 4000 },
@@ -78,7 +75,6 @@ describe('watch-lifecycle-file-ops — file create/delete/recreate', () => {
 
   it('delete global file: keeps last valid config frozen', async () => {
     const { store, globalDirectory } = await setupTest({
-      watch: true,
       globalConfig: { host: '0.0.0.0', retries: 3 },
       projectConfig: { port: 3000 },
       onDebug: () => {},
@@ -106,7 +102,6 @@ describe('watch-lifecycle-file-ops — file create/delete/recreate', () => {
 
   it('recreate project file: delete keeps config, recreate updates', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       defaults: { port: 4000 },
@@ -128,7 +123,6 @@ describe('watch-lifecycle-file-ops — file create/delete/recreate', () => {
 
   it('simultaneous global and project: both changes in single re-merge', async () => {
     const { store, projectDirectory, globalDirectory } = await setupTest({
-      watch: true,
       globalConfig: { host: '0.0.0.0' },
       projectConfig: { port: 3000 },
     });
@@ -156,7 +150,6 @@ describe('watch-lifecycle-file-ops — file create/delete/recreate', () => {
       skipGlobalDirectory: true,
       defaults: { port: 3000, host: 'localhost' },
       onDebug: () => {},
-      watch: true,
     });
 
     expect(store!.config).toEqual({ port: 3000, host: 'localhost' });

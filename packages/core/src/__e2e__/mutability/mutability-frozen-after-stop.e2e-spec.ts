@@ -8,7 +8,6 @@ describe('mutability-frozen-after-stop — frozen after stop', () => {
   it('frozen after stop: config frozen at last state, readable', async () => {
     const { store } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
     });
 

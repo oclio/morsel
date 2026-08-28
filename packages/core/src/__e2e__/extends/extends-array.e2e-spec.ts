@@ -13,6 +13,7 @@ describe('extends-array — array extends', () => {
 
   it('extends [B, C] → merge in array order', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -40,6 +41,7 @@ describe('extends-array — array extends', () => {
 
   it('extends [B, C] → extendsPaths contains both resolved paths', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -65,6 +67,7 @@ describe('extends-array — array extends', () => {
 
   it('extends [B, missing] → B merged, missing = exists:false', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -90,6 +93,7 @@ describe('extends-array — array extends', () => {
 
   it('extends array with duplicate paths → extendsPaths deduplicated via Set', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -114,6 +118,7 @@ describe('extends-array — array extends', () => {
 
   it('extends array with same file in two branches → not a cycle (visited is per-branch)', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -142,6 +147,7 @@ describe('extends-array — array extends', () => {
 
   it('extends array with key conflicts between parents → last parent wins for shared keys', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 

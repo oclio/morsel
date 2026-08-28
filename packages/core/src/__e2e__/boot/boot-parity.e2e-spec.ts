@@ -9,6 +9,7 @@ describe('boot-parity — sync/async + concurrent', () => {
 
   it('loadConfig and loadConfigSync produce identical config and layers for same input', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       globalConfig: { host: '0.0.0.0', features: { cache: true } },
       projectConfig: { port: 3000, features: { auth: true } },
     });
@@ -50,6 +51,7 @@ describe('boot-parity — sync/async + concurrent', () => {
 
   it('concurrent loadConfig via Promise.all loads multiple configs in parallel', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 

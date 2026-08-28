@@ -14,7 +14,6 @@ describe('watch-lifecycle-extends — extends directory watching', () => {
     const { store, projectDirectory } = await setupTest({
       projectConfig: { extends: './base.json', host: 'localhost' },
       extraConfigs: [{ filename: 'base.json', content: { port: 4000 } }],
-      watch: true,
       createGlobalDir: true,
     });
 
@@ -29,7 +28,6 @@ describe('watch-lifecycle-extends — extends directory watching', () => {
   it('extends new directory: re-merge adds extends in new dir', async () => {
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
     });
     const subdirectory = `${projectDirectory}/sub`;
@@ -53,7 +51,6 @@ describe('watch-lifecycle-extends — extends directory watching', () => {
     const { store, projectDirectory } = await setupTest({
       projectConfig: { extends: './base.json' },
       extraConfigs: [{ filename: 'base.json', content: { port: 4000 } }],
-      watch: true,
       createGlobalDir: true,
     });
 

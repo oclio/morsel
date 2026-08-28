@@ -13,6 +13,7 @@ describe('init-config-paths — path resolution', () => {
 
   it('custom extension: first format plugin extension used', async () => {
     const { projectDirectory } = await setupTest({
+      reactive: false,
       projectConfig: {},
       projectFilename: '_setup-test.json',
     });
@@ -43,6 +44,7 @@ describe('init-config-paths — path resolution', () => {
 
   it('.config/ directory convention: if .config/ exists → writes to .config/<name><ext>', async () => {
     const { projectDirectory } = await setupTest({
+      reactive: false,
       projectConfig: {},
       projectFilename: '_setup-test.json',
     });
@@ -71,6 +73,7 @@ describe('init-config-paths — path resolution', () => {
 
   it('.config/ directory with custom plugin → path becomes .config/<name><extension>', async () => {
     const { projectDirectory } = await setupTest({
+      reactive: false,
       projectConfig: {},
       projectFilename: '_setup-test.json',
     });
@@ -100,6 +103,7 @@ describe('init-config-paths — path resolution', () => {
 
   it('plugin extension fallback: plugin with no extensions → defaults to .json', async () => {
     const { projectDirectory } = await setupTest({
+      reactive: false,
       projectConfig: {},
       projectFilename: '_setup-test.json',
     });

@@ -73,7 +73,7 @@ describe('runHooksSync', () => {
     ];
 
     expect(() => runHooksSync(hooks, 'before:defaults', context)).toThrow(
-      'morsel: hook "async" is async — use loadConfig or watchConfig',
+      'morsel: hook "async" is async — use loadConfig or createReactiveStore',
     );
   });
 

@@ -18,6 +18,7 @@ describe('init-config-idempotence — existing file handling', () => {
 
   it('existing .json file → return path, no overwrite', async () => {
     const { projectDirectory } = await setupTest({
+      reactive: false,
       projectConfig: {},
       projectFilename: '_setup-test.json',
     });
@@ -44,6 +45,7 @@ describe('init-config-idempotence — existing file handling', () => {
 
   it('existing .morsel file → return path, no overwrite', async () => {
     const { projectDirectory } = await setupTest({
+      reactive: false,
       projectConfig: {},
       projectFilename: '_setup-test.json',
     });
@@ -66,6 +68,7 @@ describe('init-config-idempotence — existing file handling', () => {
 
   it('existing file in .config/ directory → return path, no write', async () => {
     const { projectDirectory } = await setupTest({
+      reactive: false,
       projectConfig: {},
       projectFilename: '_setup-test.json',
     });

@@ -14,7 +14,7 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
     clearWatcherRegistry();
   });
 
-  it('boot failure → watchConfig throws MorselError (no last valid state)', async () => {
+  it('boot failure → createReactiveStore throws MorselError (no last valid state)', async () => {
     const validate = (config: Record<string, unknown>) => {
       if (typeof config['port'] !== 'number') {
         throw new TypeError('port must be a number');
@@ -24,7 +24,6 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
 
     await expect(
       setupTest({
-        watch: true,
         projectConfig: { port: 'not-a-number' },
         validationPlugins: [{ name: 'port-type', validate }],
       }),
@@ -45,7 +44,6 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
 
     await expect(
       setupTest({
-        watch: true,
         projectConfig: { port: 3000 },
         hooks,
       }),
@@ -54,7 +52,6 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
 
   it('basic: stop() closes watchers and removes listeners', async () => {
     const { store } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -67,7 +64,6 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
 
   it('idempotent: second stop() resolves without error', async () => {
     const { store } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -78,7 +74,6 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
 
   it('config readable: config frozen at last state after stop', async () => {
     const { store } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000, host: 'localhost' },
       createGlobalDir: true,
     });
@@ -92,7 +87,6 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
 
   it('layers readable: layers trace readable after stop', async () => {
     const { store } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -107,7 +101,6 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
 
   it('clears debounce timers: no re-merge fires after stop', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -127,7 +120,6 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
 
   it('during remerge: stop() completes after merge finishes', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -157,7 +149,6 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
     ];
 
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       hooks,
@@ -175,7 +166,6 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
 
   it('on after stop throws: calling on() after stop() throws', async () => {
     const { store } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -187,7 +177,6 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
 
   it('stopped synchronous: stopped=true before any await', async () => {
     const { store } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -214,7 +203,6 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
     ];
 
     const { store } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       hooks,
@@ -240,7 +228,6 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
     ];
 
     const { store } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       hooks,
@@ -254,7 +241,6 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
 
   it('stop() clears wildcardListeners', async () => {
     const { store } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });

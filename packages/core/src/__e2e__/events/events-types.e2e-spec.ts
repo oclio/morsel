@@ -13,7 +13,6 @@ describe('events-types — event type verification', () => {
 
   it('scalar added: event.type = added, next = value, prev = undefined', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -40,7 +39,6 @@ describe('events-types — event type verification', () => {
 
   it('scalar modified: event.type = modified, next = newValue, prev = oldValue', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -64,7 +62,6 @@ describe('events-types — event type verification', () => {
 
   it('scalar removed: event.type = removed, next = undefined, prev = oldValue', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000, host: 'localhost' },
       createGlobalDir: true,
     });
@@ -88,7 +85,6 @@ describe('events-types — event type verification', () => {
 
   it('array modified: event.type = modified, atomic replacement, no per-index diff', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { tags: ['a', 'b'] },
       createGlobalDir: true,
     });

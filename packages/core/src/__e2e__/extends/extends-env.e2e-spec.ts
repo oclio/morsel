@@ -13,6 +13,7 @@ describe('extends-env — extends + $env interaction', () => {
 
   it('per file env: each file applies $env before merge', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -48,6 +49,7 @@ describe('extends-env — extends + $env interaction', () => {
 
   it('$env can override extends key itself (resolveEnv called before reading extends)', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -81,6 +83,7 @@ describe('extends-env — extends + $env interaction', () => {
 
   it('deep chain with $env at every level (3+ levels)', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 

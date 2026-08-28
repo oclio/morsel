@@ -38,7 +38,7 @@ export interface ListenerOptions {
 export type Listener = (event: ChangeEvent) => void;
 
 /**
- * User-facing options for `loadConfig` and `watchConfig`.
+ * User-facing options for `loadConfig` and `createReactiveStore`.
  */
 export interface MorselOptions<
   T extends Record<string, unknown> = Record<string, unknown>,
@@ -106,9 +106,17 @@ export interface MorselOptions<
 }
 
 /**
- * Options for `watchConfig` — extends {@link MorselOptions} with watch-specific settings.
+ * Options for `createStore` — same as {@link MorselOptions}.
+ * The store is static: no watchers, no events, no re-merge.
  */
-export interface WatchOptions<
+export type StoreOptions<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> = MorselOptions<T>;
+
+/**
+ * Options for `createReactiveStore` — extends {@link MorselOptions} with reactive settings.
+ */
+export interface ReactiveStoreOptions<
   T extends Record<string, unknown> = Record<string, unknown>,
 > extends MorselOptions<T> {
   /**
@@ -119,16 +127,6 @@ export interface WatchOptions<
   AbortSignal to stop watching. When aborted, `store.stop()` is called automatically.
   */
   readonly signal?: AbortSignal;
-  /**
-  Default: true. If false, no fs.watch watchers are set up.
-  Use in CI, scripts, and one-shot tools.
-  */
-  readonly watch?: boolean;
-  /**
-  Default: true. If false, store.config returns state._config directly
-  instead of a stable proxy. Use when accessing config via store.get() only.
-  */
-  readonly proxy?: boolean;
 }
 
 /**
@@ -184,19 +182,14 @@ export interface ConfigResult<
 }
 
 /**
- * Live configuration store returned by `watchConfig`.
+ * Configuration store returned by `createStore`.
+ * Static: no watchers, no events, no re-merge.
  */
 export interface MorselStore<
   T extends Record<string, unknown> = Record<string, unknown>,
 > {
   readonly config: T;
   readonly layers: readonly MorselLayer[];
-  /**
-  Listen to a flat key (dotted notation). Supports wildcard patterns:
-  `foo.*` matches any direct child of `foo`, `**` matches any key.
-  Returns unsubscribe.
-  */
-  on(key: string, listener: Listener, options?: ListenerOptions): () => void;
   /**
   Read a value by dot or bracket path, returning defaultValue if undefined.
   */
@@ -217,7 +210,7 @@ export interface MorselStore<
   */
   dotify(): Record<string, unknown>;
   /**
-  Stop watching, clean up listeners. Async.
+  Stop the store. On a static store, this is a noop (no watchers to release).
   */
   stop(): Promise<void>;
   /**
@@ -229,17 +222,39 @@ export interface MorselStore<
   ): Provenance | undefined;
   /**
   Return the first index of `value` in the array at `path`, or -1.
-  Read-only — does not mutate the config or the filesystem.
   @throws MorselError(EVALIDATE) if the value at `path` is not an array.
   */
   indexOf(path: string | readonly (string | number)[], value: unknown): number;
   /**
   Return the last index of `value` in the array at `path`, or -1.
-  Read-only — does not mutate the config or the filesystem.
   @throws MorselError(EVALIDATE) if the value at `path` is not an array.
   */
   lastIndexOf(
     path: string | readonly (string | number)[],
     value: unknown,
   ): number;
+}
+
+/**
+ * Reactive configuration store returned by `createReactiveStore`.
+ * Extends {@link MorselStore} with watchers, events, and re-merge.
+ */
+export interface MorselReactiveStore<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> extends MorselStore<T> {
+  /**
+  Listen to a flat key (dotted notation). Supports wildcard patterns:
+  `foo.*` matches any direct child of `foo`, `**` matches any key.
+  Returns unsubscribe.
+  */
+  on(key: string, listener: Listener, options?: ListenerOptions): () => void;
+  /**
+  Remove a listener previously registered with `on()`.
+  */
+  off(key: string, listener: Listener): void;
+  /**
+  Force a re-merge of the configuration (re-read all layers).
+  Useful when an external source has changed and fs.watch did not fire.
+  */
+  triggerRemerge(): void;
 }

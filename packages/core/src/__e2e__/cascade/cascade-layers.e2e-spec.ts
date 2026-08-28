@@ -14,6 +14,7 @@ describe('cascade-layers — layer trace', () => {
 
   it('layers[] has 4 entries in order with coherent source/path/exists', async () => {
     const { result } = await setupTest({
+      reactive: false,
       globalConfig: { port: 8080 },
       projectConfig: { port: 3000 },
       defaults: { port: 4000 },
@@ -71,6 +72,7 @@ describe('cascade-layers — layer trace', () => {
     ];
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       defaults: { port: 4000 },
       overrides: { debug: true },
@@ -101,6 +103,7 @@ describe('cascade-layers — layer trace', () => {
 
   it('layer with non-empty extendsPaths when extending a file', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000, extends: './base.json' },
     });
 
@@ -128,6 +131,7 @@ describe('cascade-layers — layer trace', () => {
     ];
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       hooks,
     });

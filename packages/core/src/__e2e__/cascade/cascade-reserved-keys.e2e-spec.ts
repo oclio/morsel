@@ -18,6 +18,7 @@ describe('cascade-reserved-keys — reserved keys stripped', () => {
 
     try {
       const { result } = await setupTest({
+        reactive: false,
         projectConfig: {
           port: 3000,
           $env: {
@@ -63,6 +64,7 @@ describe('cascade-reserved-keys — reserved keys stripped', () => {
     ];
 
     const { result } = await setupTest({
+      reactive: false,
       hooks,
       envName: 'development',
     });
@@ -132,6 +134,7 @@ describe('cascade-reserved-keys — reserved keys stripped', () => {
     ];
 
     const { result } = await setupTest({
+      reactive: false,
       hooks,
       envName: 'production',
     });
@@ -149,6 +152,7 @@ describe('cascade-reserved-keys — reserved keys stripped', () => {
 
   it('$env stripped from all 4 layers simultaneously', async () => {
     const { result } = await setupTest({
+      reactive: false,
       globalConfig: {
         port: 8080,
         $env: { production: { port: 9090 } },
@@ -173,6 +177,7 @@ describe('cascade-reserved-keys — reserved keys stripped', () => {
 
   it('extends stripped from all 4 layers simultaneously', async () => {
     const { result } = await setupTest({
+      reactive: false,
       globalConfig: {
         port: 8080,
         extends: './global-base.json',
@@ -200,6 +205,7 @@ describe('cascade-reserved-keys — reserved keys stripped', () => {
 
     try {
       const { result } = await setupTest({
+        reactive: false,
         projectConfig: {
           port: 3000,
           $env: { ci: { port: 8080 } },

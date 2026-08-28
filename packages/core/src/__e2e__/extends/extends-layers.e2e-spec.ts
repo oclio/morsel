@@ -13,6 +13,7 @@ describe('extends-layers — extends in non-project layers', () => {
 
   it('extends in defaults → silently stripped (no throw, no warn)', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -34,6 +35,7 @@ describe('extends-layers — extends in non-project layers', () => {
 
   it('extends in overrides → silently stripped', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -55,6 +57,7 @@ describe('extends-layers — extends in non-project layers', () => {
 
   it('extends in global file → resolveExtends + cleanup applied', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -78,6 +81,7 @@ describe('extends-layers — extends in non-project layers', () => {
 
   it('extends in hook output → silently stripped', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });

@@ -17,6 +17,7 @@ describe('plugin-discovery — plugin selection and discovery', () => {
 
   it('no formatPlugins → jsonPlugin by default reads .json files', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -52,6 +53,7 @@ describe('plugin-discovery — plugin selection and discovery', () => {
     };
 
     const { result } = await setupTest({
+      reactive: false,
       rawFiles: [
         { filename: 'myapp.config.ini', content: 'port=3000\ndebug=true' },
       ],
@@ -64,6 +66,7 @@ describe('plugin-discovery — plugin selection and discovery', () => {
 
   it('multi extension discovery: 2 plugins, extension-based discovery', async () => {
     const { projectDirectory, globalDirectory, result } = await setupTest({
+      reactive: false,
       rawFiles: [{ filename: 'myapp.config.morsel', content: 'port=3000' }],
       createGlobalDir: true,
       formatPlugins: [morselPlugin, jsonPlugin],
@@ -99,6 +102,7 @@ describe('plugin-discovery — plugin selection and discovery', () => {
     };
 
     const { result } = await setupTest({
+      reactive: false,
       rawFiles: [{ filename: 'myapp.config.json', content: '{"port": 3000}' }],
       createGlobalDir: true,
       formatPlugins: [pluginA, pluginB],
@@ -125,6 +129,7 @@ describe('plugin-discovery — plugin selection and discovery', () => {
     };
 
     const { projectDirectory, globalDirectory, result } = await setupTest({
+      reactive: false,
       rawFiles: [{ filename: 'myapp.config.yaml', content: 'port: 3000' }],
       createGlobalDir: true,
       formatPlugins: [yamlPlugin],
@@ -165,6 +170,7 @@ describe('plugin-discovery — plugin selection and discovery', () => {
 
   it('plugin discovery for global file with custom plugin', async () => {
     const { result } = await setupTest({
+      reactive: false,
       rawFiles: [
         {
           filename: 'myapp.config.morsel',
@@ -181,6 +187,7 @@ describe('plugin-discovery — plugin selection and discovery', () => {
 
   it('plugin discovery for .config/ directory with custom plugin', async () => {
     const { result } = await setupTest({
+      reactive: false,
       rawFiles: [{ filename: '.config/myapp.morsel', content: 'port=3000' }],
       createGlobalDir: true,
       formatPlugins: [morselPlugin, jsonPlugin],

@@ -12,7 +12,6 @@ describe('read-ops-dotify — dotify() API', () => {
         host: 'localhost',
       },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.dotify()).toEqual({
@@ -33,7 +32,6 @@ describe('read-ops-dotify — dotify() API', () => {
         },
       },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.dotify()).toEqual({
@@ -53,7 +51,6 @@ describe('read-ops-dotify — dotify() API', () => {
         users: [{ name: 'Alice' }, { name: 'Bob' }],
       },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.dotify()).toEqual({
@@ -73,7 +70,6 @@ describe('read-ops-dotify — dotify() API', () => {
         'app.config': { host: 'example.com', port: 8443 },
       },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.dotify()).toEqual({
@@ -93,7 +89,6 @@ describe('read-ops-dotify — dotify() API', () => {
         empty: '',
       },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.dotify()).toEqual({
@@ -109,7 +104,6 @@ describe('read-ops-dotify — dotify() API', () => {
   it('dotify on empty config: returns {}', async () => {
     const { store } = await setupTest({
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.dotify()).toEqual({});
@@ -124,7 +118,6 @@ describe('read-ops-dotify — dotify() API', () => {
         server: { host: 'localhost' },
       },
       createGlobalDir: true,
-      watch: true,
     });
 
     await store!.stop();

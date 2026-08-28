@@ -23,7 +23,6 @@ describe('watch-lifecycle-enoent — ENOENT during re-merge', () => {
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       onDebug: callback,
     });
@@ -46,7 +45,6 @@ describe('watch-lifecycle-enoent — ENOENT during re-merge', () => {
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       onDebug: callback,
     });
@@ -72,7 +70,6 @@ describe('watch-lifecycle-enoent — ENOENT during re-merge', () => {
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       onDebug: callback,
     });
@@ -97,7 +94,6 @@ describe('watch-lifecycle-enoent — ENOENT during re-merge', () => {
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       onDebug: callback,
     });

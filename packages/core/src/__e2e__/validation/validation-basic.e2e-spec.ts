@@ -36,6 +36,7 @@ describe('validation-basic — plugin behavior', () => {
     };
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       validationPlugins: [validationPlugin],
@@ -61,6 +62,7 @@ describe('validation-basic — plugin behavior', () => {
     };
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: '3000', debug: 'true' },
       createGlobalDir: true,
       validationPlugins: [{ name: 'coerce', validate }],
@@ -85,6 +87,7 @@ describe('validation-basic — plugin behavior', () => {
     };
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: '3000' },
       createGlobalDir: true,
       validationPlugins: [
@@ -98,6 +101,7 @@ describe('validation-basic — plugin behavior', () => {
 
   it('empty plugins: no plugins → config passes through', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000, host: 'localhost' },
       createGlobalDir: true,
     });
@@ -133,6 +137,7 @@ describe('validation-basic — plugin behavior', () => {
     };
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000, secret: 'should-be-stripped' },
       createGlobalDir: true,
       validationPlugins: [{ name: 'strip-secret', validate }],
@@ -146,6 +151,7 @@ describe('validation-basic — plugin behavior', () => {
     const validate = (config: Record<string, unknown>) => config;
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       validationPlugins: [{ name: 'passthrough', validate }],
@@ -159,6 +165,7 @@ describe('validation-basic — plugin behavior', () => {
       ({ ...config, async: true }) as Record<string, unknown>;
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       validationPlugins: [{ name: 'sync-only', validate }],

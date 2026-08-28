@@ -6,7 +6,7 @@ import {
   writeConfig,
 } from '@oclio/test-helpers';
 
-import { watchConfig } from '@/index';
+import { createReactiveStore } from '@/index';
 
 describe('read-ops-provenance — getProvenance() API', () => {
   let directory: string;
@@ -24,7 +24,7 @@ describe('read-ops-provenance — getProvenance() API', () => {
   });
 
   it('getProvenance(path): returns value, source, and file for a key from defaults', async () => {
-    const store = await watchConfig({
+    const store = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,
@@ -43,7 +43,7 @@ describe('read-ops-provenance — getProvenance() API', () => {
   });
 
   it('getProvenance(path) on missing key: returns undefined', async () => {
-    const store = await watchConfig({
+    const store = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,
@@ -62,7 +62,7 @@ describe('read-ops-provenance — getProvenance() API', () => {
       host: '0.0.0.0',
     });
 
-    const store = await watchConfig({
+    const store = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,
@@ -85,7 +85,7 @@ describe('read-ops-provenance — getProvenance() API', () => {
     await writeConfig(globalDirectory, 'myapp.config.json', { port: 5000 });
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 8080 });
 
-    const store = await watchConfig({
+    const store = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,
@@ -115,7 +115,7 @@ describe('read-ops-provenance — getProvenance() API', () => {
   });
 
   it('getProvenance: hook layer populates hookName', async () => {
-    const store = await watchConfig({
+    const store = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,
@@ -141,7 +141,7 @@ describe('read-ops-provenance — getProvenance() API', () => {
   });
 
   it('getProvenance on object key: returns full object, no recursive descent', async () => {
-    const store = await watchConfig({
+    const store = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,
@@ -165,7 +165,7 @@ describe('read-ops-provenance — getProvenance() API', () => {
       tags: ['prod', 'eu-west'],
     });
 
-    const store = await watchConfig({
+    const store = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,

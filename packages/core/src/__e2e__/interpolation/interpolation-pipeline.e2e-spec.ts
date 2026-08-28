@@ -26,6 +26,7 @@ describe('interpolation-pipeline — integration with pipeline', () => {
       };
 
       const { result } = await setupTest({
+        reactive: false,
         projectConfig: { port: '${MORSEL_PORT}' },
         createGlobalDir: true,
         validationPlugins: [validationPlugin],
@@ -35,11 +36,10 @@ describe('interpolation-pipeline — integration with pipeline', () => {
     });
   });
 
-  it('interpolation in watchConfig boot', async () => {
+  it('interpolation in createReactiveStore boot', async () => {
     await withEnvironmentVariable('MORSEL_HOST', 'localhost', async () => {
       const { store } = await setupTest({
         projectConfig: { host: '${MORSEL_HOST}' },
-        watch: true,
         createGlobalDir: true,
       });
 
@@ -53,7 +53,6 @@ describe('interpolation-pipeline — integration with pipeline', () => {
     await withEnvironmentVariable('MORSEL_HOST', 'localhost', async () => {
       const { store, projectDirectory } = await setupTest({
         projectConfig: { host: '${MORSEL_HOST}' },
-        watch: true,
         createGlobalDir: true,
       });
 

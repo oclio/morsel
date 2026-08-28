@@ -7,6 +7,7 @@ describe('mutability-mutable — mutable mode', () => {
 
   it('mutable: config not frozen, can be modified', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       configMutability: 'mutable',
@@ -21,6 +22,7 @@ describe('mutability-mutable — mutable mode', () => {
 
   it('mutable no Proxy: plain object, not a Proxy', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       configMutability: 'mutable',
@@ -31,6 +33,7 @@ describe('mutability-mutable — mutable mode', () => {
 
   it('mutable nested not frozen: nested objects are mutable', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { database: { host: 'localhost' } },
       createGlobalDir: true,
       configMutability: 'mutable',

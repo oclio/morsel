@@ -35,7 +35,7 @@ export interface SetupTestOptions {
     readonly layer?: 'project' | 'global';
   }[];
   globalDir?: string;
-  watch?: boolean;
+  reactive?: boolean;
   watchDebounce?: number;
   rootAsCwd?: boolean;
   skipGlobalDirectory?: boolean;
@@ -79,7 +79,7 @@ export interface SetupTestOptions {
 }
 
 /**
-Minimal store interface returned by `setupTest` in watch mode.
+Minimal store interface returned by `setupTest` in reactive mode.
 */
 export interface MinimalStore {
   readonly config: Record<string, unknown>;
@@ -136,13 +136,13 @@ export interface SetupTestResult<
  * Setup a complete e2e test environment with optional project/global configs.
  * Creates a temp directory with `project/` and `global/` subdirectories.
  *
- * - If `watch` is `true`, returns a `store` from `watchConfig`.
+ * - If `reactive` is `true` (default), returns a `store` from `createReactiveStore`.
  * - Otherwise, returns a `result` from `loadConfig`.
  *
  * The temp directory is cleaned up automatically via `afterEach`.
  *
  * @param options - Configuration for the test environment. See {@link SetupTestOptions}.
- * @returns The temp directories and either a `store` (watch mode) or `result` (load mode).
+ * @returns The temp directories and either a `store` (reactive mode) or `result` (load mode).
  */
 export async function setupTest(
   options: SetupTestOptions = {},
@@ -157,7 +157,7 @@ export async function setupTest(
     extraConfigs,
     rawFiles,
     globalDir: customGlobalDirectory,
-    watch = false,
+    reactive = true,
     watchDebounce,
     rootAsCwd = false,
     skipGlobalDirectory = false,
@@ -180,7 +180,7 @@ export async function setupTest(
     globalFilename,
     projectConfig,
     projectFilename,
-    watch,
+    reactive,
     extraConfigs,
     rawFiles,
   });
@@ -194,12 +194,14 @@ export async function setupTest(
 
   const runtime = getMorselRuntime();
 
-  if (watch) {
-    const watchOptions: RuntimeOptions =
+  if (reactive) {
+    const reactiveOptions: RuntimeOptions =
       watchDebounce === undefined
         ? configOptions
         : { ...configOptions, watchDebounce };
-    const store = (await runtime.watchConfig(watchOptions)) as MinimalStore;
+    const store = (await runtime.createReactiveStore(
+      reactiveOptions,
+    )) as MinimalStore;
     return { directory, projectDirectory, globalDirectory, store };
   }
 
@@ -215,7 +217,7 @@ interface PrepareDirectoriesArguments {
   globalFilename: string;
   projectConfig: ConfigRecord | undefined;
   projectFilename: string;
-  watch: boolean;
+  reactive: boolean;
   extraConfigs: SetupTestOptions['extraConfigs'] | undefined;
   rawFiles: SetupTestOptions['rawFiles'] | undefined;
 }
@@ -231,7 +233,7 @@ async function prepareDirectories(
     globalFilename,
     projectConfig,
     projectFilename,
-    watch,
+    reactive,
     extraConfigs,
     rawFiles,
   } = arguments_;
@@ -246,7 +248,7 @@ async function prepareDirectories(
     await writeConfig(globalDirectory, globalFilename, globalConfig);
   }
 
-  if (projectConfig || watch || extraConfigs || rawFiles) {
+  if (projectConfig || reactive || extraConfigs || rawFiles) {
     await mkdir(projectDirectory, { recursive: true });
   }
 

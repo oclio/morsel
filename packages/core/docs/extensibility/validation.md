@@ -114,7 +114,7 @@ ValidationError [EVALIDATE]:
 
 - **In One-Shot Mode (`loadConfig` / `loadConfigSync`)**:
   Throws `ValidationError` immediately, preventing invalid boots.
-- **In Live-Reload Mode (`watchConfig`)**:
+- **In Live-Reload Mode (`createReactiveStore`)**:
   - Initial boot: throws `ValidationError` immediately.
   - Runtime re-merge: catches `ValidationError`, logs the validation issues via `onDebug`/`stderr`, and **keeps the last valid configuration intact**.
 

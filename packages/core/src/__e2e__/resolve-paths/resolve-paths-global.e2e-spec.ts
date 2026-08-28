@@ -13,6 +13,7 @@ describe('resolve-paths-global — resolveGlobalPath() discovery', () => {
 
   it('resolveGlobalPath candidates: <globalDir>/<name>.config<ext>', async () => {
     const { globalDirectory } = await setupTest({
+      reactive: false,
       rawFiles: [
         { filename: 'myapp.config.json', content: '{}\n', layer: 'global' },
       ],
@@ -29,6 +30,7 @@ describe('resolve-paths-global — resolveGlobalPath() discovery', () => {
 
   it('resolveGlobalPath returns undefined if none found', async () => {
     const { globalDirectory } = await setupTest({
+      reactive: false,
       createGlobalDir: true,
       rootAsCwd: true,
     });
@@ -50,6 +52,7 @@ describe('resolve-paths-global — resolveGlobalPath() discovery', () => {
     };
 
     const { globalDirectory } = await setupTest({
+      reactive: false,
       rawFiles: [
         { filename: 'myapp.config.yaml', content: '{}\n', layer: 'global' },
       ],

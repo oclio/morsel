@@ -130,12 +130,12 @@ console.log(config.metricsPort); // type: number | undefined
 
 ---
 
-## Reactive Store Typing with `watchConfig`
+## Reactive Store Typing with `createReactiveStore`
 
-When using `watchConfig`, `MorselStore<T>` preserves the same typed interface for `store.config`:
+When using `createReactiveStore`, `MorselStore<T>` preserves the same typed interface for `store.config`:
 
 ```typescript
-import { watchConfig } from '@oclio/morsel';
+import { createReactiveStore } from '@oclio/morsel';
 
 interface ServerConfig {
   http: {
@@ -144,7 +144,7 @@ interface ServerConfig {
   };
 }
 
-const store = await watchConfig<ServerConfig>({
+const store = await createReactiveStore<ServerConfig>({
   name: 'myapp',
   defaults: {
     http: {

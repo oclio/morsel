@@ -24,6 +24,7 @@ describe('hooks-lifecycle — layer insertion and ordering', () => {
     ];
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       hooks,
@@ -56,7 +57,7 @@ describe('hooks-lifecycle — layer insertion and ordering', () => {
     ).toThrow(TypeError);
   });
 
-  it('async hook in watchConfig awaited at boot and re-merge', async () => {
+  it('async hook in createReactiveStore awaited at boot and re-merge', async () => {
     const hooks = [
       {
         name: 'async-hook',
@@ -67,7 +68,6 @@ describe('hooks-lifecycle — layer insertion and ordering', () => {
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       hooks,
     } as never);
@@ -125,6 +125,7 @@ describe('hooks-lifecycle — layer insertion and ordering', () => {
     ];
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       defaults: { port: 3000 },
       overrides: { port: 4000 },
@@ -174,6 +175,7 @@ describe('hooks-lifecycle — layer insertion and ordering', () => {
     ];
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       hooks,
@@ -197,6 +199,7 @@ describe('hooks-lifecycle — layer insertion and ordering', () => {
     ];
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       hooks,
@@ -215,6 +218,7 @@ describe('hooks-lifecycle — layer insertion and ordering', () => {
     ];
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       defaults: { port: 3000 },
       createGlobalDir: true,
@@ -234,6 +238,7 @@ describe('hooks-lifecycle — layer insertion and ordering', () => {
     ];
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { host: 'localhost' },
       defaults: { port: 3000 },
       createGlobalDir: true,
@@ -253,6 +258,7 @@ describe('hooks-lifecycle — layer insertion and ordering', () => {
     ];
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       hooks,

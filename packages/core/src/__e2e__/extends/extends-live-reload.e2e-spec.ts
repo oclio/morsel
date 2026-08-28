@@ -7,7 +7,7 @@ import {
   writeConfig,
 } from '@oclio/test-helpers';
 
-import { loadConfig, watchConfig } from '@/index';
+import { createReactiveStore, loadConfig } from '@/index';
 
 describe('extends-live-reload — watch + extends', () => {
   suppressConsoleError();
@@ -18,6 +18,7 @@ describe('extends-live-reload — watch + extends', () => {
 
   it('missing file: B created after boot → re-merge includes B', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -26,7 +27,7 @@ describe('extends-live-reload — watch + extends', () => {
       port: 3000,
     });
 
-    const store = await watchConfig({
+    const store = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,
@@ -43,13 +44,14 @@ describe('extends-live-reload — watch + extends', () => {
 
   it('added: adding extends to A triggers re-merge', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
     await writeConfig(projectDirectory, 'base.json', { host: '0.0.0.0' });
     await writeConfig(projectDirectory, 'myapp.config.json', { port: 3000 });
 
-    const store = await watchConfig({
+    const store = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,
@@ -69,6 +71,7 @@ describe('extends-live-reload — watch + extends', () => {
 
   it('removed: removing extends from A drops B', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -78,7 +81,7 @@ describe('extends-live-reload — watch + extends', () => {
       port: 3000,
     });
 
-    const store = await watchConfig({
+    const store = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,
@@ -97,6 +100,7 @@ describe('extends-live-reload — watch + extends', () => {
 
   it('edit: editing B triggers re-merge', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -109,7 +113,7 @@ describe('extends-live-reload — watch + extends', () => {
       port: 3000,
     });
 
-    const store = await watchConfig({
+    const store = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,
@@ -129,6 +133,7 @@ describe('extends-live-reload — watch + extends', () => {
 
   it('missing file at boot: A extends B (B missing) → exists:false, extendsPaths set, config = A only', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -153,6 +158,7 @@ describe('extends-live-reload — watch + extends', () => {
 
   it('missing file in middle of chain: A extends B extends C (C missing) → B merged, C = exists:false', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 

@@ -11,7 +11,6 @@ describe('read-ops-get — get() API', () => {
         server: { host: 'localhost', port: 3000 },
       },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.get('server.host')).toBe('localhost');
@@ -24,7 +23,6 @@ describe('read-ops-get — get() API', () => {
     const { store } = await setupTest({
       defaults: { port: 3000 },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.get('missing')).toBeUndefined();
@@ -37,7 +35,6 @@ describe('read-ops-get — get() API', () => {
     const { store } = await setupTest({
       defaults: { port: 3000 },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.get('missing', 'fallback')).toBe('fallback');
@@ -50,7 +47,6 @@ describe('read-ops-get — get() API', () => {
     const { store } = await setupTest({
       defaults: { server: { host: 'localhost' } },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.get('server.missing.nested')).toBeUndefined();
@@ -68,7 +64,6 @@ describe('read-ops-get — get() API', () => {
         ],
       },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.get('users[0].name')).toBe('Alice');
@@ -87,7 +82,6 @@ describe('read-ops-get — get() API', () => {
         ],
       },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.get('users.0.name')).toBe('Alice');
@@ -103,7 +97,6 @@ describe('read-ops-get — get() API', () => {
         'app.config': { host: 'example.com', port: 8443 },
       },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.get(String.raw`app\.config.host`)).toBe('example.com');
@@ -119,7 +112,6 @@ describe('read-ops-get — get() API', () => {
         users: [{ name: 'Alice' }, { name: 'Bob' }],
       },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.get(['server', 'host'])).toBe('localhost');
@@ -137,7 +129,6 @@ describe('read-ops-get — get() API', () => {
         host: 'localhost',
       },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.get('port')).toBe(3000);
@@ -153,7 +144,6 @@ describe('read-ops-get — get() API', () => {
     const { store } = await setupTest({
       defaults: { port: 3000 },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.get('port.0')).toBeUndefined();

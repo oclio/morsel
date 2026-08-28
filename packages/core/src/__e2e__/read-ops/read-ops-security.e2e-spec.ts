@@ -11,7 +11,6 @@ describe('read-ops-security — prototype protection', () => {
       const { store } = await setupTest({
         defaults: { port: 3000 },
         createGlobalDir: true,
-        watch: true,
       });
 
       expect(() => store!.get(unsafeKey)).toThrow(TypeError);
@@ -26,7 +25,6 @@ describe('read-ops-security — prototype protection', () => {
       const { store } = await setupTest({
         defaults: { port: 3000 },
         createGlobalDir: true,
-        watch: true,
       });
 
       expect(() => store!.has(unsafeKey)).toThrow(TypeError);
@@ -39,7 +37,6 @@ describe('read-ops-security — prototype protection', () => {
     const { store } = await setupTest({
       defaults: { port: 3000 },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(() => store!.get(['__proto__'])).toThrow(TypeError);

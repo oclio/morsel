@@ -7,6 +7,7 @@ describe('boot-mutability — freeze + layer shape', () => {
 
   it('Object.isFrozen(config) is true by default', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000, tools: { eslint: true } },
     });
 
@@ -15,6 +16,7 @@ describe('boot-mutability — freeze + layer shape', () => {
 
   it('config is not frozen and can be modified freely', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       configMutability: 'mutable',
     });
@@ -28,6 +30,7 @@ describe('boot-mutability — freeze + layer shape', () => {
 
   it('MorselLayer shape: extendsPaths: [] on layers without extends, no hookName on core layers', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -41,6 +44,7 @@ describe('boot-mutability — freeze + layer shape', () => {
 
   it('layers[].config is deep-frozen by toMorselLayer', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: {
         port: 3000,
         nested: { deep: { value: true } },

@@ -66,6 +66,7 @@ describe('boot-options — resolveOptions defaults', () => {
 
   it('arrayMerge defaults to replace', async () => {
     const { result } = await setupTest({
+      reactive: false,
       rootAsCwd: true,
       projectConfig: { tags: ['a', 'b'] },
       globalConfig: { tags: ['c'] },
@@ -77,6 +78,7 @@ describe('boot-options — resolveOptions defaults', () => {
 
   it('configMutability defaults to frozen', async () => {
     const { result } = await setupTest({
+      reactive: false,
       rootAsCwd: true,
       projectConfig: { port: 3000 },
     });
@@ -86,6 +88,7 @@ describe('boot-options — resolveOptions defaults', () => {
 
   it('defaults: null treated as {}', async () => {
     const { result } = await setupTest({
+      reactive: false,
       rootAsCwd: true,
       projectConfig: { port: 3000 },
       defaults: null,
@@ -96,6 +99,7 @@ describe('boot-options — resolveOptions defaults', () => {
 
   it('overrides: null treated as {}', async () => {
     const { result } = await setupTest({
+      reactive: false,
       rootAsCwd: true,
       projectConfig: { port: 3000 },
       overrides: null,
@@ -107,6 +111,7 @@ describe('boot-options — resolveOptions defaults', () => {
   it('applies $env block matching explicit envName, not NODE_ENV', async () => {
     await withEnvironmentVariable('NODE_ENV', 'ci', async () => {
       const { result } = await setupTest({
+        reactive: false,
         rootAsCwd: true,
         projectConfig: {
           port: 3000,
@@ -125,6 +130,7 @@ describe('boot-options — resolveOptions defaults', () => {
   it('applies $env block matching process.env.NODE_ENV', async () => {
     await withEnvironmentVariable('NODE_ENV', 'ci', async () => {
       const { result } = await setupTest({
+        reactive: false,
         rootAsCwd: true,
         projectConfig: {
           port: 3000,
@@ -144,6 +150,7 @@ describe('boot-options — resolveOptions defaults', () => {
 
     await withEnvironmentVariable('NODE_ENV', undefined, async () => {
       const { result } = await setupTest({
+        reactive: false,
         rootAsCwd: true,
         projectConfig: {
           port: 3000,
@@ -164,6 +171,7 @@ describe('boot-options — resolveOptions defaults', () => {
 
   it('verbose: true accepted at boot, config loads without error', async () => {
     const { result } = await setupTest({
+      reactive: false,
       rootAsCwd: true,
       projectConfig: { port: 3000 },
       verbose: true,
@@ -176,6 +184,7 @@ describe('boot-options — resolveOptions defaults', () => {
     const stderrSpy = vi.spyOn(console, 'error');
 
     const { result } = await setupTest({
+      reactive: false,
       rootAsCwd: true,
       projectConfig: { port: 3000 },
       onDebug: () => {},
@@ -191,6 +200,7 @@ describe('boot-options — resolveOptions defaults', () => {
     const { messages: debugMessages, callback } = createDebugCollector();
 
     const { result } = await setupTest({
+      reactive: false,
       rootAsCwd: true,
       projectConfig: { port: 3000 },
       onDebug: callback,

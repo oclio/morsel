@@ -9,6 +9,7 @@ describe('interpolation-refs — {{ref.path}} cross-references', () => {
 
   it('{{ref.path}} cross-references within config', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: {
         host: 'localhost',
         url: '{{host}}',

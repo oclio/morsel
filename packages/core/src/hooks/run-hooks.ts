@@ -99,7 +99,7 @@ export function runHooksSync(
 
     if (isPromise(result)) {
       throw new TypeError(
-        `morsel: hook "${hook.name}" is async — use loadConfig or watchConfig`,
+        `morsel: hook "${hook.name}" is async — use loadConfig or createReactiveStore`,
       );
     }
 

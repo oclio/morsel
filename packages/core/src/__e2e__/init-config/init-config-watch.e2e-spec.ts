@@ -13,7 +13,6 @@ describe('init-config-watch — watch integration', () => {
 
   it('initConfig during active watch → fs.watch fires → re-merge', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       defaults: { port: 3000 },
       createGlobalDir: true,
     });

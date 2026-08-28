@@ -2,14 +2,14 @@ import { registerMorselRuntime } from '@oclio/test-helpers';
 
 import {
   clearRegistry,
+  createReactiveStore,
   loadConfig,
   loadConfigSync,
-  watchConfig,
 } from '@/index';
 
 registerMorselRuntime({
   loadConfig,
   loadConfigSync,
-  watchConfig,
+  createReactiveStore,
   clearRegistry,
 });

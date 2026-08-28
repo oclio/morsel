@@ -22,7 +22,7 @@ features:
   - title: Reactive
     details: store.on('database.port', callback) — listen to specific keys using dotted notation, not the entire config object.
   - title: Live-reload
-    details: watchConfig attaches fs.watch to directories with per-file debouncing and automatic re-merging. The returned Proxy remains stable.
+    details: createReactiveStore attaches fs.watch to directories with per-file debouncing and automatic re-merging. The returned Proxy remains stable.
   - title: Layered Cascade
     details: defaults → global (~/.config/morsel/) → project (./myapp.config.json) → overrides. Each layer is resolved independently then deep-merged.
   - title: Self-healing & Resilience
@@ -72,14 +72,14 @@ console.log(config.port); // 3000, or overridden by ./myapp.config.json
 ## Live-reload with key-level events
 
 ```ts
-import { defineConfig, watchConfig } from '@oclio/morsel';
+import { defineConfig, createReactiveStore } from '@oclio/morsel';
 
 const myApp = defineConfig({
   name: 'myapp',
   defaults: { port: 3000, host: 'localhost' },
 });
 
-const store = await watchConfig(myApp);
+const store = await createReactiveStore(myApp);
 
 store.on('port', (next, prev) => {
   console.log(`port: ${prev} → ${next}`);

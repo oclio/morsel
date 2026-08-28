@@ -29,6 +29,7 @@ describe('plugin-errors — ENOPLUGIN errors', () => {
 
   it('project file with unsupported extension silently ignored (not discovered)', async () => {
     const { result } = await setupTest({
+      reactive: false,
       rawFiles: [{ filename: 'myapp.config.yaml', content: 'port: 3000' }],
       createGlobalDir: true,
     });
@@ -114,7 +115,6 @@ describe('plugin-errors — ENOPLUGIN errors', () => {
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       onDebug: callback,
     });

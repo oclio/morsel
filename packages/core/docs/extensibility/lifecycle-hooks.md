@@ -87,7 +87,7 @@ export function createEnvFileHook(envPath: string): LayerWatchableHook {
   return {
     name: 'dotenv',
     lifecycle: 'after:defaults',
-    watchPaths: [envPath], // morsel will watch this path under watchConfig!
+    watchPaths: [envPath], // morsel will watch this path under createReactiveStore!
     load(ctx: HookContext) {
       if (!fs.existsSync(envPath)) {
         return {};
@@ -105,7 +105,7 @@ export function createEnvFileHook(envPath: string): LayerWatchableHook {
 }
 ```
 
-When used with `watchConfig`:
+When used with `createReactiveStore`:
 
 - morsel registers directory watchers for all paths listed in `hook.watchPaths`.
 - Any edit to `.env` triggers an automatic live-reload and re-merges the entire configuration pipeline.
@@ -116,11 +116,11 @@ When used with `watchConfig`:
 
 Hooks can return either a plain object or a `Promise`:
 
-- **`loadConfig` & `watchConfig`**: Both synchronous and asynchronous hooks are fully awaited.
+- **`loadConfig` & `createReactiveStore`**: Both synchronous and asynchronous hooks are fully awaited.
 - **`loadConfigSync`**: If any registered hook returns a `Promise`, `loadConfigSync` immediately throws:
 
   ```text
-  TypeError: morsel: hook "vault" is async — use loadConfig or watchConfig
+  TypeError: morsel: hook "vault" is async — use loadConfig or createReactiveStore
   ```
 
 ---

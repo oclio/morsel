@@ -27,8 +27,6 @@ export interface MockResolvedOptions {
   formatPlugins: readonly unknown[];
   validationPlugins: readonly unknown[];
   hooks: readonly unknown[];
-  watch: boolean;
-  proxy: boolean;
 }
 
 /**
@@ -61,8 +59,6 @@ export function createMockResolvedOptions(
     formatPlugins: [],
     validationPlugins: [],
     hooks: [],
-    watch: true,
-    proxy: true,
     ...overrides,
   };
 }

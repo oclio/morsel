@@ -12,7 +12,6 @@ describe('events-wildcards — wildcard patterns', () => {
 
   it('foo.* matches direct children only (one segment)', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { foo: { bar: 1, baz: { qux: 2 } } },
       createGlobalDir: true,
     });
@@ -38,7 +37,6 @@ describe('events-wildcards — wildcard patterns', () => {
 
   it('** matches any key at any depth', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { a: { b: { c: 1 } } },
       createGlobalDir: true,
     });
@@ -69,7 +67,6 @@ describe('events-wildcards — wildcard patterns', () => {
 
   it('foo.** matches foo and all descendants (zero or more segments)', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { foo: { bar: 1, baz: { qux: 2 } } },
       createGlobalDir: true,
     });
@@ -95,7 +92,6 @@ describe('events-wildcards — wildcard patterns', () => {
 
   it('wildcard backtracking: a.**.b matches a.x.y.b', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { a: { x: { y: { b: 1 } } } },
       createGlobalDir: true,
     });
@@ -128,7 +124,6 @@ describe('events-wildcards — wildcard patterns', () => {
 
   it('wildcard listeners emitted after exact-match listeners', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { foo: { bar: 1 } },
       createGlobalDir: true,
     });
@@ -156,7 +151,6 @@ describe('events-wildcards — wildcard patterns', () => {
 
   it('wildcard listeners in insertion order', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { foo: { bar: 1 } },
       createGlobalDir: true,
     });
