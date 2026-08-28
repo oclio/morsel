@@ -1,6 +1,7 @@
 import type { ResolvedLayer } from '@/load/resolve-layer';
 import type { ArrayMergeStrategy } from '@/merge/deep-merge';
 import { deepMergeInPlace } from '@/merge/deep-merge';
+import { deepFreeze } from '@/utils/deep-freeze';
 
 type ConfigRecord = Record<string, unknown>;
 
@@ -53,21 +54,4 @@ export function mergeLayers(
   }
 
   return result;
-}
-
-function deepFreeze<T extends ConfigRecord>(
-  object: T,
-  visited = new WeakSet<object>(),
-): T {
-  if (visited.has(object)) {
-    return object;
-  }
-  visited.add(object);
-
-  for (const value of Object.values(object)) {
-    if (typeof value === 'object' && !Object.isFrozen(value)) {
-      deepFreeze(value as ConfigRecord, visited);
-    }
-  }
-  return Object.freeze(object);
 }
