@@ -50,7 +50,7 @@
     "test:e2e": "vitest run --project e2e",
     "test:focus": "node ../../scripts/test-focus.mjs",
     "test:mutate": "stryker run",
-    "test:unit": "vitest run --project unit --coverage.exclude=src/__e2e__/**",
+    "test:unit": "vitest run --project unit --coverage.enabled",
     "docs:api": "typedoc",
     "docs:dev": "vitepress dev docs",
     "docs:build": "pnpm docs:api && vitepress build docs",
