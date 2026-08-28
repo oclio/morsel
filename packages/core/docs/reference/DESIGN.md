@@ -42,7 +42,7 @@ morsel starts from the premise that a configuration loader must be **lean, robus
 
 #### Lean by construction
 
-- Zero runtime dependencies — `node:fs`, `node:path`, `node:os` only. No `js-yaml`, no `ajv`, no `typescript` pulled into the bundle. Minimal attack surface.
+- Zero runtime dependencies — `node:fs`, `node:path`, `node:os`, `node:util` only. No `js-yaml`, no `ajv`, no `typescript` pulled into the bundle. Minimal attack surface.
 - Formats as opt-in plugins — adding YAML does not add 400 KB to the core, but an external plugin. The core bundle stays < 8 KB.
 - ESM + CJS first-class — both formats are natively supported.
 
@@ -77,7 +77,7 @@ morsel starts from the premise that a configuration loader must be **lean, robus
 
 - `store.getProvenance(path)` — returns the final value, its source layer, file path, and the chain of overridden layers that defined but lost the key. Traverses `store.layers` in reverse cascade order using `getPathValue` on each layer's `config`.
 - Answers the #1 config debugging question: "why does my app have this value?" in a single call — no manual layer traversal.
-- No new infrastructure — built on existing `MorselLayer` trace and `getPathValue`. ~150 lines, < 1 KB minified.
+- No new infrastructure — built on existing `MorselLayer` trace and `getPathValue`. Minimal bundle impact.
 
 #### Mutation serialization
 
@@ -85,9 +85,9 @@ morsel starts from the premise that a configuration loader must be **lean, robus
 - Eliminates the latent race condition where `Promise.all([set('a', 1), set('b', 2)])` could lose a write if the second read overlaps the first write.
 - No competitor (c12, cosmiconfig, convict, node-config) serializes writes — morsel is the only config loader that offers this guarantee.
 - Errors are isolated: a failed mutation does not block subsequent mutations in the queue.
-- `stop()` drains the queue before closing watchers — no mutation in flight after stop.
-- Prerequisite for `transaction` — the commit enters the queue as a single operation, preventing external mutations from interleaving during cross-file writes.
-- ~10 lines of code, ~0.05 KB — negligible bundle impact for a robustness guarantee.
+- `stop()` drains the queue and any in-flight re-merge before closing watchers — no mutation or re-merge in flight after stop.
+- Prerequisite for `transaction` — the `inTransaction` flag bypasses the writeQueue for the duration of the callback, accumulating mutations in-memory via `transactionDirtyKeys`. The commit writes all dirty layers atomically without going through the queue, preventing external mutations from interleaving during cross-file writes.
+- Negligible bundle impact for a robustness guarantee.
 
 #### Headless mode
 
@@ -96,7 +96,7 @@ morsel starts from the premise that a configuration loader must be **lean, robus
 - `proxy: false` skips `createStableProxy` — `store.config` returns `state._config` directly. `store.get()`, `store.on()`, and change events are unaffected.
 - `queue: false` bypasses `chainMutation` — mutations execute immediately without Promise chain serialization. The caller must serialize concurrent writes manually.
 - Enables `morsel-cli` one-shot commands (`morsel set`, `morsel get`) to boot, mutate, and exit without paying for watchers, proxy, or queue overhead.
-- ~20 lines of code, ~0.4 KB — flags are guards around existing code paths, no new abstractions.
+- Flags are guards around existing code paths, no new abstractions — negligible bundle impact.
 
 ---
 
@@ -175,7 +175,7 @@ Each layer (`global`, `project`) resolves its own `extends` and `$env` independe
 - A modified/added/removed scalar → emits the deepest dotted key.
 - A modified object → recursive descent toward child scalars.
 - An entire object replaced (type change, e.g. object → string) or added/removed → emits the parent.
-- A modified array → emits the parent only (no index notation).
+- A modified array → emits the parent only (no per-index diff). `push` additionally emits on `path.<newIndex>` for the newly added element.
 - Wildcard patterns (`foo.*`, `**`, `foo.**`) supported in `store.on()` for ergonomic event subscription. Matching is $O(N)$ per key — see SPEC §4.5 for semantics.
 
 ### 2.4 Directory-level watching + filename filtering
@@ -210,8 +210,8 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 ### Public Types & Interfaces
 
 - `MorselOptions` — common configuration options (`name`, `cwd`, `defaults`, `overrides`, `globalDir`, etc.).
-- `WatchOptions` — extends `MorselOptions` with `watchDebounce` and `signal`.
-- `MorselStore<T>` — reactive store instance (`config`, `layers`, `on`, `get`, `set`, `has`, `unset`, `all`, `dotify`, `getProvenance`, `push`, `unshift`, `pop`, `shift`, `splice`, `indexOf`, `lastIndexOf`, `stop`).
+- `WatchOptions` — extends `MorselOptions` with `watchDebounce`, `signal`, `watch`, `proxy`, and `queue`.
+- `MorselStore<T>` — reactive store instance (`config`, `layers`, `on`, `get`, `set`, `has`, `unset`, `all`, `dotify`, `getProvenance`, `mutateKey`, `deleteKey`, `push`, `unshift`, `pop`, `shift`, `splice`, `indexOf`, `lastIndexOf`, `transaction`, `stop`).
 - `MorselLayer` — trace of a resolved layer (`source`, `path`, `config`, `exists`, `extendsPaths`, `hookName`).
 - `MorselError` — base error class with `path`, `code`, and `cause`.
 - `ErrorCode` — union of error codes (`'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK' | 'EWRITE'`).
@@ -255,6 +255,14 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `interpolate` — `${VAR}` env and `{{ref.path}}` cross-reference interpolation on merged config.
 - `defineConfig` — typing and options validation helper.
 - `mergeConfig` — composition of two `MorselOptions` objects.
+- `parsePath` — dot/bracket path parsing into segments.
+- `validatePath` — prototype pollution guard for path segments.
+- `getPathValue` — read a value by dot/bracket path.
+- `setPathValue` — set a value by dot/bracket path.
+- `hasRemovedPathValue` — check if a path would be removed by delete.
+- `jsonPlugin` — built-in JSON format plugin.
+- `getRegistry` — test/internal helper to inspect the global watcher registry.
+- `clearRegistry` — test/internal helper to clear the global watcher registry.
 
 ### Internal Types & Functions
 
@@ -270,6 +278,11 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `resolveExtends` / `resolveExtendsSync` — recursive resolution of the local inheritance chain.
 - `handleWatchEvent` — filtering and dispatching of `fs.watch` events to concerned stores.
 - `emitChanges` — delta computation and Two-Phase Ordering dispatch to listeners. Supports wildcard patterns (`foo.*`, `**`) via separate wildcard listener map.
+- `StoreTarget` — target layer for set/mutate operations (`'global' | 'project'`).
+- `DeleteTarget` — target layer(s) for delete operations (`'all' | 'global' | 'project'`).
+- `MutationOperation` — describes a mutation applied to a config file (`path`, `value?`, `isDelete?`). Surfaced via `WriteEvent.mutation`.
+- `KeyOrigin` — result of resolving which layer and file path owns a given key (`layer`, `filePath`, `isWritable`, `exists`).
+- `dotifyObject` — flatten a nested object into a 1D record with dotted paths. Internal equivalent of `MorselStore.dotify()`.
 
 ---
 
@@ -308,15 +321,16 @@ loadConfigSync(opts) / loadConfig(opts)
 
 watchConfig(opts)
 │
-├─ [same as loadConfig] ─── initial merge (collects extends paths + hook watchPaths)
-├─ applyMutability(config)
+├─ [same as loadConfig] ─── initial merge (resolveOptions + buildLayers + processConfig)
 │
-├─ createWatcher(globalDir)       ─── ref-counting via WatcherRegistry
-├─ createWatcher(projectDir)      ─── ref-counting via WatcherRegistry
-├─ createWatcher(extendsDirs[])   ─── one watcher per extends directory
-├─ createWatcher(hookWatchDirs[]) ─── one watcher per hook watchPaths directory
+├─ collectWatchedFiles(state, layers) ─── indexes extends paths + hook watchPaths
+├─ setupWatchers(state, layers)        ─── ref-counting via WatcherRegistry
+│   ├─ createWatcher(globalDir)       ─── ref-counting via WatcherRegistry
+│   ├─ createWatcher(projectDir)      ─── ref-counting via WatcherRegistry
+│   ├─ createWatcher(extendsDirs[])   ─── one watcher per extends directory
+│   └─ createWatcher(hookWatchDirs[]) ─── one watcher per hook watchPaths directory
 │
-└─ MorselStore<T> { config, layers, on(), get(), set(), has(), unset(), all(), dotify(), push(), unshift(), pop(), shift(), splice(), indexOf(), lastIndexOf(), stop() }
+└─ MorselStore<T> { config, layers, on(), get(), set(), has(), unset(), all(), dotify(), push(), unshift(), pop(), shift(), splice(), indexOf(), lastIndexOf(), mutateKey(), deleteKey(), getProvenance(), transaction(), stop() }
     │
     ├─ store.get(path, default)    ─── read by dot/bracket path
     ├─ store.has(path)             ─── key existence check
@@ -332,10 +346,11 @@ watchConfig(opts)
     ├─ store.indexOf(path, val)    ─── read-only array search
     ├─ store.lastIndexOf(path, val) ─── read-only reverse array search
     ├─ store.getProvenance(path)  ─── reverse traverse of layers, first hit = winner, rest = overridden
+    ├─ store.transaction(cb)      ─── batch mutations in-memory, atomic commit to disk, rollback on error
     │
     └─ fs.watch fire (directory) ─── filtering by filename
         │
-        └─ debounce(300ms) ─── if re-merge in progress: skip, next trigger via pendingRemerge
+        └─ debounce(300ms) ─── if re-merge in progress: deferred via pendingRemerge
             │
             └─ full re-merge (same as loadConfig via buildLayers)
                 │   └─ buildLayers → resolveLayer → resolveExtends re-collects paths
