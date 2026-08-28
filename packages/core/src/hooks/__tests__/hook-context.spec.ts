@@ -12,30 +12,31 @@ function makeOptions(
 describe('createHookContext', () => {
   const noop = (): void => {};
 
-  it('builds context with cwd and envName from resolved options', () => {
-    const context = createHookContext(makeOptions(), noop);
+  it.each<{
+    property: 'cwd' | 'envName';
+    overrides: Partial<ResolvedOptions>;
+    expected: unknown;
+  }>([
+    { property: 'cwd', overrides: {}, expected: '/project' },
+    { property: 'envName', overrides: {}, expected: 'test' },
+    {
+      property: 'envName',
+      overrides: { envName: undefined },
+      expected: undefined,
+    },
+    {
+      property: 'cwd',
+      overrides: { cwd: '/custom/path' },
+      expected: '/custom/path',
+    },
+  ])(
+    'sets $property to $expected with given overrides',
+    ({ property, overrides, expected }) => {
+      const context = createHookContext(makeOptions(overrides), noop);
 
-    expect(context.cwd).toBe('/project');
-    expect(context.envName).toBe('test');
-  });
-
-  it('preserves undefined envName when not set', () => {
-    const context = createHookContext(
-      makeOptions({ envName: undefined }),
-      noop,
-    );
-
-    expect(context.envName).toBeUndefined();
-  });
-
-  it('uses custom cwd from options', () => {
-    const context = createHookContext(
-      makeOptions({ cwd: '/custom/path' }),
-      noop,
-    );
-
-    expect(context.cwd).toBe('/custom/path');
-  });
+      expect(context[property]).toBe(expected);
+    },
+  );
 
   it('creates a fresh context object each call', () => {
     const options = makeOptions();

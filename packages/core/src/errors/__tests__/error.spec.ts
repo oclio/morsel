@@ -82,16 +82,18 @@ describe('MorselError', () => {
     });
   });
 
-  it('is an instance of Error', () => {
-    const error = new MorselError('/path', 'EIO', new Error('fail'));
+  describe('Error inheritance', () => {
+    it('is an instance of Error', () => {
+      const error = new MorselError('/path', 'EIO', new Error('fail'));
 
-    expect(error).toBeInstanceOf(Error);
-  });
+      expect(error).toBeInstanceOf(Error);
+    });
 
-  it('has a stack trace', () => {
-    const error = new MorselError('/path', 'EIO', new Error('fail'));
+    it('has a stack trace', () => {
+      const error = new MorselError('/path', 'EIO', new Error('fail'));
 
-    expect(typeof error.stack).toBe('string');
-    expect(error.stack).toContain('MorselError');
+      expect(typeof error.stack).toBe('string');
+      expect(error.stack).toContain('MorselError');
+    });
   });
 });
