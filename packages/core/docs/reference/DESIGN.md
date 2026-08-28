@@ -42,7 +42,7 @@ morsel starts from the premise that a configuration loader must be **lean, robus
 
 #### Lean by construction
 
-- Zero runtime dependencies — `node:fs`, `node:path`, `node:os` only. No `js-yaml`, no `ajv`, no `typescript` pulled into the bundle. Minimal attack surface.
+- Zero runtime dependencies — `node:fs`, `node:path`, `node:os`, `node:util` only. No `js-yaml`, no `ajv`, no `typescript` pulled into the bundle. Minimal attack surface.
 - Formats as opt-in plugins — adding YAML does not add 400 KB to the core, but an external plugin. The core bundle stays < 8 KB.
 - ESM + CJS first-class — both formats are natively supported.
 
@@ -255,6 +255,14 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `interpolate` — `${VAR}` env and `{{ref.path}}` cross-reference interpolation on merged config.
 - `defineConfig` — typing and options validation helper.
 - `mergeConfig` — composition of two `MorselOptions` objects.
+- `parsePath` — dot/bracket path parsing into segments.
+- `validatePath` — prototype pollution guard for path segments.
+- `getPathValue` — read a value by dot/bracket path.
+- `setPathValue` — set a value by dot/bracket path.
+- `hasRemovedPathValue` — check if a path would be removed by delete.
+- `jsonPlugin` — built-in JSON format plugin.
+- `getRegistry` — test/internal helper to inspect the global watcher registry.
+- `clearRegistry` — test/internal helper to clear the global watcher registry.
 
 ### Internal Types & Functions
 
@@ -270,6 +278,11 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `resolveExtends` / `resolveExtendsSync` — recursive resolution of the local inheritance chain.
 - `handleWatchEvent` — filtering and dispatching of `fs.watch` events to concerned stores.
 - `emitChanges` — delta computation and Two-Phase Ordering dispatch to listeners. Supports wildcard patterns (`foo.*`, `**`) via separate wildcard listener map.
+- `StoreTarget` — target layer for set/mutate operations (`'global' | 'project'`).
+- `DeleteTarget` — target layer(s) for delete operations (`'all' | 'global' | 'project'`).
+- `MutationOperation` — describes a mutation applied to a config file (`path`, `value?`, `isDelete?`). Surfaced via `WriteEvent.mutation`.
+- `KeyOrigin` — result of resolving which layer and file path owns a given key (`layer`, `filePath`, `isWritable`, `exists`).
+- `dotifyObject` — flatten a nested object into a 1D record with dotted paths. Internal equivalent of `MorselStore.dotify()`.
 
 ---
 
@@ -308,13 +321,14 @@ loadConfigSync(opts) / loadConfig(opts)
 
 watchConfig(opts)
 │
-├─ [same as loadConfig] ─── initial merge (collects extends paths + hook watchPaths)
-├─ applyMutability(config)
+├─ [same as loadConfig] ─── initial merge (resolveOptions + buildLayers + processConfig)
 │
-├─ createWatcher(globalDir)       ─── ref-counting via WatcherRegistry
-├─ createWatcher(projectDir)      ─── ref-counting via WatcherRegistry
-├─ createWatcher(extendsDirs[])   ─── one watcher per extends directory
-├─ createWatcher(hookWatchDirs[]) ─── one watcher per hook watchPaths directory
+├─ collectWatchedFiles(state, layers) ─── indexes extends paths + hook watchPaths
+├─ setupWatchers(state, layers)        ─── ref-counting via WatcherRegistry
+│   ├─ createWatcher(globalDir)       ─── ref-counting via WatcherRegistry
+│   ├─ createWatcher(projectDir)      ─── ref-counting via WatcherRegistry
+│   ├─ createWatcher(extendsDirs[])   ─── one watcher per extends directory
+│   └─ createWatcher(hookWatchDirs[]) ─── one watcher per hook watchPaths directory
 │
 └─ MorselStore<T> { config, layers, on(), get(), set(), has(), unset(), all(), dotify(), push(), unshift(), pop(), shift(), splice(), indexOf(), lastIndexOf(), mutateKey(), deleteKey(), getProvenance(), transaction(), stop() }
     │
@@ -332,6 +346,7 @@ watchConfig(opts)
     ├─ store.indexOf(path, val)    ─── read-only array search
     ├─ store.lastIndexOf(path, val) ─── read-only reverse array search
     ├─ store.getProvenance(path)  ─── reverse traverse of layers, first hit = winner, rest = overridden
+    ├─ store.transaction(cb)      ─── batch mutations in-memory, atomic commit to disk, rollback on error
     │
     └─ fs.watch fire (directory) ─── filtering by filename
         │
