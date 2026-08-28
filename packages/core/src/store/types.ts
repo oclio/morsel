@@ -99,7 +99,6 @@ export interface MorselOptions<
   /**
    * Hooks inserted into the pipeline at their lifecycle point.
    * Layer hooks produce a Record that becomes a layer.
-   * Event hooks (`after:write`) react to successful writes without producing a layer.
    * Async hooks (Promise) → TypeError in loadConfigSync.
    * LayerWatchableHook → watchPaths watched by the core.
    */
@@ -130,22 +129,7 @@ export interface WatchOptions<
   instead of a stable proxy. Use when accessing config via store.get() only.
   */
   readonly proxy?: boolean;
-  /**
-  Default: true. If false, mutations bypass the write queue and execute
-  immediately. Only safe in sequential code (await between mutations).
-  */
-  readonly queue?: boolean;
 }
-
-/**
- * Target layer for set and mutate operations.
- */
-export type StoreTarget = 'global' | 'project';
-
-/**
- * Target layer(s) for delete operations. Use `'all'` to delete from every writable layer.
- */
-export type DeleteTarget = 'all' | 'global' | 'project';
 
 /**
  * Entry in the `overridden` chain — a layer that defined the key
@@ -225,21 +209,6 @@ export interface MorselStore<
   */
   has(path: string | readonly (string | number)[]): boolean;
   /**
-  Mutate a key by path and persist to source file (alias of mutateKey).
-  */
-  set(
-    path: string | readonly (string | number)[],
-    value: unknown,
-    target?: StoreTarget,
-  ): Promise<void>;
-  /**
-  Delete a key by path and persist deletion to source file (alias of deleteKey).
-  */
-  unset(
-    path: string | readonly (string | number)[],
-    target?: DeleteTarget,
-  ): Promise<boolean>;
-  /**
   Return a complete clone snapshot of the entire merged configuration.
   */
   all(): T;
@@ -247,71 +216,6 @@ export interface MorselStore<
   Flatten the configuration into a 1D Record of dotted paths to leaf values.
   */
   dotify(): Record<string, unknown>;
-  /**
-  Mutate a key by path and persist to source file.
-  */
-  mutateKey(
-    path: string | readonly (string | number)[],
-    value: unknown,
-    target?: StoreTarget,
-  ): Promise<void>;
-  /**
-  Delete a key by path and persist deletion to source file.
-  */
-  deleteKey(
-    path: string | readonly (string | number)[],
-    target?: DeleteTarget,
-  ): Promise<boolean>;
-  /**
-  Push a value onto the end of an array key. Returns the new element's index.
-  */
-  push(
-    path: string | readonly (string | number)[],
-    value: unknown,
-    target?: StoreTarget,
-  ): Promise<number>;
-  /**
-  Unshift a value onto the beginning of an array key. Returns the new array length.
-  */
-  unshift(
-    path: string | readonly (string | number)[],
-    value: unknown,
-    target?: StoreTarget,
-  ): Promise<number>;
-  /**
-  Pop the last element from an array key. Returns the removed value.
-  */
-  pop(
-    path: string | readonly (string | number)[],
-    target?: StoreTarget,
-  ): Promise<unknown>;
-  /**
-  Shift the first element from an array key. Returns the removed value.
-  */
-  shift(
-    path: string | readonly (string | number)[],
-    target?: StoreTarget,
-  ): Promise<unknown>;
-  /**
-  Splice an array key: remove and/or insert elements. Returns the removed elements.
-  */
-  splice(
-    path: string | readonly (string | number)[],
-    start: number,
-    deleteCount: number,
-    ...items: unknown[]
-  ): Promise<unknown[]>;
-  /**
-  Find the first index of a value in an array key. Returns -1 if absent.
-  */
-  indexOf(path: string | readonly (string | number)[], value: unknown): number;
-  /**
-  Find the last index of a value in an array key. Returns -1 if absent.
-  */
-  lastIndexOf(
-    path: string | readonly (string | number)[],
-    value: unknown,
-  ): number;
   /**
   Stop watching, clean up listeners. Async.
   */
@@ -323,11 +227,4 @@ export interface MorselStore<
   getProvenance(
     path: string | readonly (string | number)[],
   ): Provenance | undefined;
-  /**
-  Run a transaction: mutations inside the callback are applied in-memory
-  only and committed atomically to disk when the callback completes.
-  If the callback throws, all mutations are rolled back. Events are
-  emitted after a successful commit.
-  */
-  transaction(callback: () => Promise<void>): Promise<void>;
 }

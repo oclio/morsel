@@ -79,37 +79,25 @@ morsel starts from the premise that a configuration loader must be **lean, robus
 - Answers the #1 config debugging question: "why does my app have this value?" in a single call — no manual layer traversal.
 - No new infrastructure — built on existing `MorselLayer` trace and `getPathValue`. Minimal bundle impact.
 
-#### Mutation serialization
-
-- All mutations (`set`, `unset`, `push`, etc.) are serialized via a per-store `writeQueue` — a `Promise<void>` chain that ensures mutations execute in call order.
-- Eliminates the latent race condition where `Promise.all([set('a', 1), set('b', 2)])` could lose a write if the second read overlaps the first write.
-- No competitor (c12, cosmiconfig, convict, node-config) serializes writes — morsel is the only config loader that offers this guarantee.
-- Errors are isolated: a failed mutation does not block subsequent mutations in the queue.
-- `stop()` drains the queue and any in-flight re-merge before closing watchers — no mutation or re-merge in flight after stop.
-- Prerequisite for `transaction` — the `inTransaction` flag bypasses the writeQueue for the duration of the callback, accumulating mutations in-memory via `transactionDirtyKeys`. The commit writes all dirty layers atomically without going through the queue, preventing external mutations from interleaving during cross-file writes.
-- Negligible bundle impact for a robustness guarantee.
-
 #### Headless mode
 
-- Three orthogonal flags on `WatchOptions` (`watch`, `proxy`, `queue`, all default `true`) allow disabling reactive features for one-shot use cases (CI, scripts, CLI).
-- `watch: false` skips `collectWatchedFiles` + `setupWatchers` — no `fs.watch` overhead. Mutations still work, but no re-merge on external file changes.
+- Two orthogonal flags on `WatchOptions` (`watch`, `proxy`, both default `true`) allow disabling reactive features for one-shot use cases (CI, scripts, CLI).
+- `watch: false` skips `collectWatchedFiles` + `setupWatchers` — no `fs.watch` overhead. No re-merge on external file changes.
 - `proxy: false` skips `createStableProxy` — `store.config` returns `state._config` directly. `store.get()`, `store.on()`, and change events are unaffected.
-- `queue: false` bypasses `chainMutation` — mutations execute immediately without Promise chain serialization. The caller must serialize concurrent writes manually.
-- Enables `morsel-cli` one-shot commands (`morsel set`, `morsel get`) to boot, mutate, and exit without paying for watchers, proxy, or queue overhead.
+- Enables `morsel-cli` one-shot commands (`morsel get`) to boot and exit without paying for watchers or proxy overhead.
 - Flags are guards around existing code paths, no new abstractions — negligible bundle impact.
 
 ---
 
-### 1.3 Extensibility via Lifecycle (`LayerHook`, `EventHook`)
+### 1.3 Extensibility via Lifecycle (`LayerHook`)
 
-The core provides four pluggable contracts:
+The core provides three pluggable contracts:
 
 1. **`FormatPlugin`** — parses a file into a `Record` (bytes → structure).
 2. **`ValidationPlugin`** — validates and transforms the merged configuration.
 3. **`LayerHook`** — inserts into the pipeline lifecycle, produces a dynamic layer. Optional `init`/`dispose` methods allow stateful hooks to manage external connections.
-4. **`EventHook`** — reacts to lifecycle events (e.g. `after:write`) without producing a layer. Side-effect only (logging, metrics, audit).
 
-A layer hook attaches to a specific lifecycle point and produces a `Record<string, unknown>` that inserts as a layer in the cascade, just like `defaults` or `overrides`. An event hook reacts to events (e.g. successful writes) and does not produce a layer.
+A layer hook attaches to a specific lifecycle point and produces a `Record<string, unknown>` that inserts as a layer in the cascade, just like `defaults` or `overrides`.
 
 #### Stateful hooks (`init`/`dispose`)
 
@@ -118,7 +106,6 @@ Layer hooks may optionally define `init(ctx)` and `dispose()` methods for statef
 - `init` is called once after the store is created in `watchConfig` — use it to open connections, start pollers, etc. If `init` throws, a `MorselError` (`EHOOK`) is thrown and the store is not returned.
 - `dispose` is called once when the store is stopped via `stop()` — use it to close connections, clear timers, etc. Errors in `dispose` are caught and logged via `onDebug` — they do not block `stop()`.
 - Neither `init` nor `dispose` is called in `loadConfig`/`loadConfigSync` (one-shot, no lifecycle).
-- `EventHook` does not have `init`/`dispose` — it is purely event-driven.
 
 #### `triggerRemerge`
 
@@ -128,7 +115,7 @@ The `HookContext` provides `triggerRemerge()` — a function that requests a re-
 - In `loadConfig`/`loadConfigSync`, `triggerRemerge` is a noop — there is no store lifecycle.
 - Safe to call multiple times — coalesced via the re-merge in-progress and pending flags.
 
-#### 8 layer lifecycle points + 1 event point (before/after for each layer + after:write)
+#### 8 layer lifecycle points (before/after for each layer)
 
 ```text
 before:defaults → defaults → after:defaults
@@ -136,15 +123,12 @@ before:defaults → defaults → after:defaults
 → before:project → project → after:project
 → before:overrides → overrides → after:overrides
 → merge → validation
-→ after:write (event hook, triggered on successful write)
 ```
 
 - `before:X` hooks produce a layer that stacks **before** layer `X` (lower priority).
 - `after:X` hooks produce a layer that stacks **after** layer `X` (higher priority).
-- `after:write` is an event hook — it does not produce a layer, it reacts to a successful write via `onWrite(event: WriteEvent)`.
 - Hooks are executed in `hooks[]` array order for the same lifecycle point.
 - **Stateless `load`, stateful `init`/`dispose`** — the core calls `load` on each merge (no state between merges). Optional `init`/`dispose` methods allow stateful hooks to manage external connections across the store lifecycle.
-- **Event hook errors are non-fatal** — if an `EventHook`'s `onWrite` throws, the error is logged via `onDebug` and the mutation is not rolled back (the write is already confirmed on disk).
 
 ---
 
@@ -210,22 +194,19 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 ### Public Types & Interfaces
 
 - `MorselOptions` — common configuration options (`name`, `cwd`, `defaults`, `overrides`, `globalDir`, etc.).
-- `WatchOptions` — extends `MorselOptions` with `watchDebounce`, `signal`, `watch`, `proxy`, and `queue`.
-- `MorselStore<T>` — reactive store instance (`config`, `layers`, `on`, `get`, `set`, `has`, `unset`, `all`, `dotify`, `getProvenance`, `mutateKey`, `deleteKey`, `push`, `unshift`, `pop`, `shift`, `splice`, `indexOf`, `lastIndexOf`, `transaction`, `stop`).
+- `WatchOptions` — extends `MorselOptions` with `watchDebounce`, `signal`, `watch`, and `proxy`.
+- `MorselStore<T>` — reactive store instance (`config`, `layers`, `on`, `get`, `has`, `all`, `dotify`, `getProvenance`, `stop`).
 - `MorselLayer` — trace of a resolved layer (`source`, `path`, `config`, `exists`, `extendsPaths`, `hookName`).
 - `MorselError` — base error class with `path`, `code`, and `cause`.
-- `ErrorCode` — union of error codes (`'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK' | 'EWRITE'`).
+- `ErrorCode` — union of error codes (`'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK'`).
 - `NoPluginError` — thrown when no extension matches a plugin (`ENOPLUGIN`).
 - `ValidationError` — thrown on schema validation failure (`EVALIDATE`).
-- `WriteError` — thrown on write/mutation failure (`EWRITE`, + `filePath`, + `mutation`).
 - `FormatPlugin` — format plugin contract (raw parsing → object).
 - `ValidationPlugin` — post-merge validation/transformation plugin contract.
 - `LayerHook` — lifecycle hook contract.
 - `LayerWatchableHook` — hook declaring watch paths (`watchPaths`).
-- `EventHook` — event hook contract (reacts to `after:write`, no layer produced).
-- `WriteEvent` — event payload passed to `EventHook.onWrite` (`filePath`, `keyPath`, `mutation`).
-- `Hook` — union of all hook types (`LayerHook | LayerWatchableHook | EventHook`).
-- `HookLifecycle` — union of the 9 lifecycle points (8 layer points + `after:write`).
+- `Hook` — union of all hook types (`LayerHook | LayerWatchableHook`).
+- `HookLifecycle` — union of the 8 lifecycle points.
 - `HookContext` — execution context provided to the hook (`cwd`, `envName`, `triggerRemerge`).
 - `ConfigResult<T>` — result returned by `loadConfig` / `loadConfigSync`.
 - `ResolvedPaths` — theoretical paths resolved without I/O (`global`, `project`).
@@ -271,17 +252,13 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `LoadFileResult` — discriminated union (`exists: true` + populated config, or `exists: false` + `Record<string, never>`).
 - `ResolvedLayer` — intermediate resolved layer (`source`, `path`, `exists`, `config`, `extendsPaths`, `hookName`).
 - `ResolvedOptions` — complete validated options with default values applied.
-- `StoreState` — internal mutable shared state of a reactive store (includes `writeQueue: Promise<void>` for mutation serialization).
+- `StoreState` — internal mutable shared state of a reactive store.
 - `WatcherEntry` — `WatcherRegistry` entry (`watcher`, `refCount`, `stores`, `retryTimer`).
 - `WatcherRegistry` — global registry mapping directory paths to `WatcherEntry` (`Map<string, WatcherEntry>`).
 - `buildLayers` — async orchestration of the 4 core layers and hooks resolution. The sync path is handled inline by `loadConfigSync` via `runHooksSync` + `resolveLayerSync`.
 - `resolveExtends` / `resolveExtendsSync` — recursive resolution of the local inheritance chain.
 - `handleWatchEvent` — filtering and dispatching of `fs.watch` events to concerned stores.
 - `emitChanges` — delta computation and Two-Phase Ordering dispatch to listeners. Supports wildcard patterns (`foo.*`, `**`) via separate wildcard listener map.
-- `StoreTarget` — target layer for set/mutate operations (`'global' | 'project'`).
-- `DeleteTarget` — target layer(s) for delete operations (`'all' | 'global' | 'project'`).
-- `MutationOperation` — describes a mutation applied to a config file (`path`, `value?`, `isDelete?`). Surfaced via `WriteEvent.mutation`.
-- `KeyOrigin` — result of resolving which layer and file path owns a given key (`layer`, `filePath`, `isWritable`, `exists`).
 - `dotifyObject` — flatten a nested object into a 1D record with dotted paths. Internal equivalent of `MorselStore.dotify()`.
 
 ---
@@ -330,23 +307,13 @@ watchConfig(opts)
 │   ├─ createWatcher(extendsDirs[])   ─── one watcher per extends directory
 │   └─ createWatcher(hookWatchDirs[]) ─── one watcher per hook watchPaths directory
 │
-└─ MorselStore<T> { config, layers, on(), get(), set(), has(), unset(), all(), dotify(), push(), unshift(), pop(), shift(), splice(), indexOf(), lastIndexOf(), mutateKey(), deleteKey(), getProvenance(), transaction(), stop() }
+└─ MorselStore<T> { config, layers, on(), get(), has(), all(), dotify(), getProvenance(), stop() }
     │
     ├─ store.get(path, default)    ─── read by dot/bracket path
     ├─ store.has(path)             ─── key existence check
     ├─ store.all()                 ─── full clone snapshot
     ├─ store.dotify()              ─── 1D dotted record
-    ├─ store.set(path, val)        ─── writeQueue → optimistic update + writeConfigFile + rollback on failure + after:write hooks
-    ├─ store.unset(path)           ─── writeQueue → optimistic removal + writeConfigFile + rollback on failure + after:write hooks
-    ├─ store.push(path, val)       ─── array append via mutateKey + index listener emit
-    ├─ store.unshift(path, val)    ─── array prepend via mutateKey
-    ├─ store.pop(path)             ─── array pop via mutateKey
-    ├─ store.shift(path)           ─── array shift via mutateKey
-    ├─ store.splice(path, ...)     ─── array splice via mutateKey
-    ├─ store.indexOf(path, val)    ─── read-only array search
-    ├─ store.lastIndexOf(path, val) ─── read-only reverse array search
     ├─ store.getProvenance(path)  ─── reverse traverse of layers, first hit = winner, rest = overridden
-    ├─ store.transaction(cb)      ─── batch mutations in-memory, atomic commit to disk, rollback on error
     │
     └─ fs.watch fire (directory) ─── filtering by filename
         │

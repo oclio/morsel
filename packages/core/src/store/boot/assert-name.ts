@@ -28,7 +28,6 @@ export interface ResolvedOptions {
   readonly hooks: readonly Hook[];
   readonly watch: boolean;
   readonly proxy: boolean;
-  readonly queue: boolean;
 }
 
 /**
@@ -83,6 +82,5 @@ export function resolveOptions<
     hooks: options.hooks ?? [],
     watch: (options as WatchOptions<T>).watch ?? true,
     proxy: (options as WatchOptions<T>).proxy ?? true,
-    queue: (options as WatchOptions<T>).queue ?? true,
   };
 }

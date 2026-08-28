@@ -2,15 +2,12 @@ export type { ErrorCode } from '@/errors/error';
 export { MorselError } from '@/errors/error';
 export { NoPluginError } from '@/errors/no-plugin-error';
 export { ValidationError } from '@/errors/validation-error';
-export { WriteError } from '@/errors/write-error';
 export type {
-  EventHook,
   Hook,
   HookContext,
   HookLifecycle,
   LayerHook,
   LayerWatchableHook,
-  WriteEvent,
 } from '@/hooks/types';
 export type { ConfigMutability } from '@/load/merge-layers';
 export type { DebugCallback } from '@/load/resolve-env';
