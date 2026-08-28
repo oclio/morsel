@@ -1,7 +1,18 @@
 import type { ResolvedLayer } from '@/load/resolve-layer';
 import { toMorselLayer } from '@/store/layer';
+import { deepFreeze } from '@/utils/deep-freeze';
+
+vi.mock('@/utils/deep-freeze', () => ({
+  deepFreeze: vi.fn((value: Record<string, unknown>) =>
+    Object.freeze({ ...value }),
+  ),
+}));
 
 describe('toMorselLayer', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('maps all fields from ResolvedLayer to MorselLayer', () => {
     const layer: ResolvedLayer = {
       source: 'global',
@@ -18,122 +29,8 @@ describe('toMorselLayer', () => {
     expect(result.exists).toBe(true);
   });
 
-  it('freezes the config object', () => {
-    const layer: ResolvedLayer = {
-      source: 'defaults',
-      path: undefined,
-      config: { foo: 'bar' },
-      exists: true,
-      extendsPaths: [],
-    };
-
-    const result = toMorselLayer(layer);
-
-    expect(Object.isFrozen(result.config)).toBe(true);
-  });
-
-  it('deep freezes nested objects', () => {
-    const layer: ResolvedLayer = {
-      source: 'project',
-      path: '/project/config.json',
-      config: { nested: { inner: { deep: true } } },
-      exists: true,
-      extendsPaths: [],
-    };
-
-    const result = toMorselLayer(layer);
-
-    expect(Object.isFrozen(result.config)).toBe(true);
-    expect(Object.isFrozen(result.config['nested'])).toBe(true);
-    expect(
-      Object.isFrozen(
-        (result.config['nested'] as Record<string, unknown>)['inner'],
-      ),
-    ).toBe(true);
-  });
-
-  it('does not freeze null values', () => {
-    const layer: ResolvedLayer = {
-      source: 'defaults',
-      path: undefined,
-      config: { foo: null },
-      exists: true,
-      extendsPaths: [],
-    };
-
-    const result = toMorselLayer(layer);
-
-    expect(result.config['foo']).toBe(null);
-    expect(Object.isFrozen(result.config)).toBe(true);
-  });
-
-  it('freezes arrays recursively', () => {
-    const layer: ResolvedLayer = {
-      source: 'defaults',
-      path: undefined,
-      config: { items: [1, 2, 3] },
-      exists: true,
-      extendsPaths: [],
-    };
-
-    const result = toMorselLayer(layer);
-
-    expect(Object.isFrozen(result.config)).toBe(true);
-    expect(Object.isFrozen(result.config['items'])).toBe(true);
-  });
-
-  it('does not freeze primitive values', () => {
-    const layer: ResolvedLayer = {
-      source: 'defaults',
-      path: undefined,
-      config: { num: 42, str: 'hello', bool: true },
-      exists: true,
-      extendsPaths: [],
-    };
-
-    const result = toMorselLayer(layer);
-
-    expect(result.config['num']).toBe(42);
-    expect(result.config['str']).toBe('hello');
-    expect(result.config['bool']).toBe(true);
-  });
-
-  it('does not freeze function values', () => {
-    const function_ = (): void => {};
-    const layer: ResolvedLayer = {
-      source: 'defaults',
-      path: undefined,
-      config: { fn: function_ },
-      exists: true,
-      extendsPaths: [],
-    };
-
-    const result = toMorselLayer(layer);
-
-    expect(typeof result.config['fn']).toBe('function');
-    expect(Object.isFrozen(result.config['fn'])).toBe(false);
-  });
-
-  it('does not re-freeze already frozen nested objects', () => {
-    const frozenInner = Object.freeze({ deep: true });
-    const layer: ResolvedLayer = {
-      source: 'defaults',
-      path: undefined,
-      config: { nested: frozenInner },
-      exists: true,
-      extendsPaths: [],
-    };
-
-    const result = toMorselLayer(layer);
-
-    expect(Object.isFrozen(result.config)).toBe(true);
-    expect(Object.isFrozen(result.config['nested'])).toBe(true);
-    expect(result.config['nested']).toBe(frozenInner);
-  });
-
-  it('handles circular references without throwing (cycle protection)', () => {
-    const config: Record<string, unknown> = { foo: 'bar' };
-    config['self'] = config;
+  it('calls deepFreeze with a shallow copy of the config', () => {
+    const config = { foo: 'bar' };
     const layer: ResolvedLayer = {
       source: 'defaults',
       path: undefined,
@@ -142,42 +39,12 @@ describe('toMorselLayer', () => {
       extendsPaths: [],
     };
 
-    const result = toMorselLayer(layer);
-    expect(Object.isFrozen(result.config)).toBe(true);
-    // Circular ref preserved — self points back to the original config object
-    expect(Object.isFrozen(result.config['self'])).toBe(true);
-  });
+    toMorselLayer(layer);
 
-  it('creates a shallow copy of config before freezing', () => {
-    const originalConfig = { foo: 'bar' };
-    const layer: ResolvedLayer = {
-      source: 'defaults',
-      path: undefined,
-      config: originalConfig,
-      exists: true,
-      extendsPaths: [],
-    };
-
-    const result = toMorselLayer(layer);
-
-    expect(result.config).not.toBe(originalConfig);
-    expect(result.config).toEqual({ foo: 'bar' });
-    expect(Object.isFrozen(originalConfig)).toBe(false);
-  });
-
-  it('handles empty config object', () => {
-    const layer: ResolvedLayer = {
-      source: 'defaults',
-      path: undefined,
-      config: {},
-      exists: true,
-      extendsPaths: [],
-    };
-
-    const result = toMorselLayer(layer);
-
-    expect(result.config).toEqual({});
-    expect(Object.isFrozen(result.config)).toBe(true);
+    expect(deepFreeze).toHaveBeenCalledTimes(1);
+    const frozenArgument = vi.mocked(deepFreeze).mock.calls[0]![0];
+    expect(frozenArgument).toEqual(config);
+    expect(frozenArgument).not.toBe(config);
   });
 
   it('handles false exists flag', () => {
@@ -194,19 +61,18 @@ describe('toMorselLayer', () => {
     expect(result.exists).toBe(false);
   });
 
-  it('handles undefined values in config', () => {
+  it('handles empty config object', () => {
     const layer: ResolvedLayer = {
       source: 'defaults',
       path: undefined,
-      config: { foo: undefined },
+      config: {},
       exists: true,
       extendsPaths: [],
     };
 
     const result = toMorselLayer(layer);
 
-    expect(result.config['foo']).toBe(undefined);
-    expect(Object.isFrozen(result.config)).toBe(true);
+    expect(result.config).toEqual({});
   });
 
   it('includes hookName when source is hook', () => {

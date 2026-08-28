@@ -1,7 +1,6 @@
 import type { ResolvedLayer } from '@/load/resolve-layer';
 import type { MorselLayer } from '@/store/types';
-
-type ConfigRecord = Record<string, unknown>;
+import { deepFreeze } from '@/utils/deep-freeze';
 
 /**
  * Convert a {@link ResolvedLayer} into an immutable {@link MorselLayer}.
@@ -19,20 +18,4 @@ export function toMorselLayer(layer: ResolvedLayer): MorselLayer {
   return layer.hookName === undefined
     ? base
     : { ...base, hookName: layer.hookName };
-}
-
-function deepFreeze<T extends ConfigRecord>(
-  object: T,
-  visited = new WeakSet<object>(),
-): T {
-  if (visited.has(object)) {
-    return object;
-  }
-  visited.add(object);
-  for (const value of Object.values(object)) {
-    if (typeof value === 'object' && !Object.isFrozen(value)) {
-      deepFreeze(value as ConfigRecord, visited);
-    }
-  }
-  return Object.freeze(object);
 }

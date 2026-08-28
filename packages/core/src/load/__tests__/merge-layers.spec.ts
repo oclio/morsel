@@ -3,6 +3,7 @@ import { createMockLayer } from '@oclio/test-helpers';
 import { applyMutability, mergeLayers } from '@/load/merge-layers';
 import type { ResolvedLayer } from '@/load/resolve-layer';
 import { deepMergeInPlace } from '@/merge/deep-merge';
+import { deepFreeze } from '@/utils/deep-freeze';
 
 vi.mock('@/merge/deep-merge', () => ({
   deepMergeInPlace: vi.fn(
@@ -10,6 +11,11 @@ vi.mock('@/merge/deep-merge', () => ({
       ...base,
       ...override,
     }),
+  ),
+}));
+vi.mock('@/utils/deep-freeze', () => ({
+  deepFreeze: vi.fn((value: Record<string, unknown>) =>
+    Object.freeze({ ...value }),
   ),
 }));
 
@@ -25,16 +31,8 @@ function makeLayer(
 }
 
 describe('applyMutability', () => {
-  it.each([
-    { name: 'frozen', mutability: 'frozen' as const },
-    { name: 'mutable', mutability: 'mutable' as const },
-  ])('returns a value for mutability $name', ({ mutability }) => {
-    const config = { foo: 'bar' };
-
-    const result = applyMutability(config, mutability);
-
-    expect(result).toBeDefined();
-    expect(result.foo).toBe('bar');
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
   it('returns the same object reference for mutable', () => {
@@ -43,52 +41,25 @@ describe('applyMutability', () => {
     const result = applyMutability(config, 'mutable');
 
     expect(result).toBe(config);
+    expect(deepFreeze).not.toHaveBeenCalled();
   });
 
-  it('returns a frozen object for frozen', () => {
-    const config = { foo: 'bar', nested: { a: 1 } };
-
-    const result = applyMutability(config, 'frozen');
-
-    expect(Object.isFrozen(result)).toBe(true);
-    expect(Object.isFrozen(result.nested)).toBe(true);
-  });
-
-  it('deep freezes nested objects', () => {
-    const config = { a: { b: { c: 1 } } };
-
-    const result = applyMutability(config, 'frozen');
-
-    expect(Object.isFrozen(result.a)).toBe(true);
-    expect(Object.isFrozen(result.a.b)).toBe(true);
-  });
-
-  it('does not freeze function values in deepFreeze', () => {
-    const function_ = (): void => {};
-    const config = { callback: function_ };
-
-    const result = applyMutability(config, 'frozen');
-
-    expect(Object.isFrozen(result)).toBe(true);
-    expect(Object.isFrozen(result.callback)).toBe(false);
-  });
-
-  it('handles circular references in deepFreeze without stack overflow', () => {
-    const config: Record<string, unknown> = { foo: 'bar' };
-    config['self'] = config;
-
-    const result = applyMutability(config, 'frozen');
-
-    expect(Object.isFrozen(result)).toBe(true);
-  });
-
-  it('does not re-freeze already frozen objects', () => {
+  it('calls deepFreeze for frozen', () => {
     const config = { foo: 'bar' };
-    Object.freeze(config);
+
+    applyMutability(config, 'frozen');
+
+    expect(deepFreeze).toHaveBeenCalledWith(config);
+  });
+
+  it('returns the result of deepFreeze for frozen', () => {
+    const config = { foo: 'bar' };
+    const frozen = { frozen: true } as never;
+    vi.mocked(deepFreeze).mockReturnValue(frozen);
 
     const result = applyMutability(config, 'frozen');
 
-    expect(Object.isFrozen(result)).toBe(true);
+    expect(result).toBe(frozen);
   });
 });
 

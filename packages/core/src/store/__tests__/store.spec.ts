@@ -303,6 +303,46 @@ describe('createMorselStore', () => {
       expect(listener).toHaveBeenCalledTimes(2);
       expect(state.listeners.get('foo')!.size).toBe(1);
     });
+
+    it('keeps set in map when once listener fires but other listeners remain', () => {
+      const state = createState();
+      const store = createMorselStore(state, 'frozen');
+
+      const onceListener = vi.fn();
+      const persistentListener = vi.fn();
+      store.on('foo', onceListener, { once: true });
+      store.on('foo', persistentListener);
+
+      emitChanges(
+        { foo: 0 },
+        { foo: 1 },
+        state.listeners,
+        state.wildcardListeners,
+      );
+
+      expect(onceListener).toHaveBeenCalledTimes(1);
+      expect(persistentListener).toHaveBeenCalledTimes(1);
+      expect(state.listeners.get('foo')).toBeDefined();
+      expect(state.listeners.get('foo')!.size).toBe(1);
+    });
+
+    it('keeps set in map when one listener unsubscribes but others remain', () => {
+      const state = createState();
+      const store = createMorselStore(state, 'frozen');
+
+      const listener1 = vi.fn();
+      const listener2 = vi.fn();
+      store.on('foo', listener1);
+      store.on('foo', listener2);
+      const unsub1 = store.on('foo', vi.fn());
+
+      unsub1();
+
+      expect(state.listeners.get('foo')).toBeDefined();
+      expect(state.listeners.get('foo')!.size).toBe(2);
+      expect(state.listeners.get('foo')!.has(listener1)).toBe(true);
+      expect(state.listeners.get('foo')!.has(listener2)).toBe(true);
+    });
   });
 
   describe('stop', () => {
