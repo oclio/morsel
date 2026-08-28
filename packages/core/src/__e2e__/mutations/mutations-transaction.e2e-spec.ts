@@ -411,10 +411,10 @@ describe('mutations-transaction — store.transaction()', () => {
     });
 
     await store!.transaction(async () => {
-      await store!.splice('tags', 1, 2, 'x'); // ['a', 'x', 'd', 'e']
-      await store!.pop('tags'); // ['a', 'x', 'd']
-      await store!.shift('tags'); // ['x', 'd']
-      await store!.unshift('tags', 'z'); // ['z', 'x', 'd']
+      await store!.splice('tags', 1, 2, 'x');
+      await store!.pop('tags');
+      await store!.shift('tags');
+      await store!.unshift('tags', 'z');
     });
 
     expect(store!.get('tags')).toEqual(['z', 'x', 'd']);

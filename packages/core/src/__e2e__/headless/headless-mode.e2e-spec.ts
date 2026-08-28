@@ -77,15 +77,12 @@ describe('headless-mode — watch/proxy/queue flags', () => {
         watch: false,
       });
 
-      // Modify file on disk after boot
       await writeConfig(projectDirectory, 'myapp.config.json', {
         port: 9999,
       });
 
-      // Wait a bit to ensure no re-merge fires
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // Store still has the original value — no re-merge
       expect(store.get('port')).toBe(3000);
 
       await store.stop();
@@ -137,10 +134,8 @@ describe('headless-mode — watch/proxy/queue flags', () => {
         signal: controller.signal,
       });
 
-      // store.stop() was called immediately because signal was already aborted
       expect(store.get('port')).toBe(3000);
 
-      // stop() is idempotent — calling again is safe
       await store.stop();
     });
   });
@@ -222,11 +217,9 @@ describe('headless-mode — watch/proxy/queue flags', () => {
         configMutability: 'mutable',
       });
 
-      // Direct mutation modifies in-memory state
       (store.config as Record<string, unknown>)['port'] = 9999;
       expect(store.get('port')).toBe(9999);
 
-      // But disk is not written — file still has original value
       const content = JSON.parse(
         await readFile(
           path.resolve(projectDirectory, 'myapp.config.json'),
@@ -305,14 +298,11 @@ describe('headless-mode — watch/proxy/queue flags', () => {
         queue: false,
       });
 
-      // Start a set and immediately stop — stop() should not wait
       const setPromise = store.set('port', 8080);
       await store.stop();
 
-      // set() may still be in flight — await it to avoid unhandled rejection
       await setPromise;
 
-      // Config is readable after stop
       expect(store.get('port')).toBe(8080);
     });
   });
@@ -351,7 +341,6 @@ describe('headless-mode — watch/proxy/queue flags', () => {
 
       await store.stop();
 
-      // Config still readable after stop
       expect(store.get('port')).toBe(8080);
     });
 

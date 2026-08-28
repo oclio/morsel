@@ -1,10 +1,14 @@
-import { promises as fs } from 'node:fs';
-
 import { runWriteHooks } from '@/hooks/run-hooks';
 import type { WriteEvent } from '@/hooks/types';
 import { selectParser } from '@/plugins/select-parser';
 import { emitChanges } from '@/store/reactive/emit-changes';
 import type { StoreState } from '@/store/store-state';
+import type { BackupEntry } from '@/store/transaction-backup';
+import {
+  backupDirtyFiles,
+  cleanupBackups,
+  restoreFromBak,
+} from '@/store/transaction-backup';
 import type { ConfigRecord, MorselLayer } from '@/store/types';
 import { atomicWrite } from '@/writer/atomic-write';
 
@@ -71,32 +75,6 @@ async function writeLayer(
   await atomicWrite(filePath, serialized);
 }
 
-interface BackupEntry {
-  bakPath: string;
-  originalPath: string;
-}
-
-async function backupDirtyFiles(
-  dirtyLayers: MorselLayer[],
-): Promise<BackupEntry[]> {
-  const backups: BackupEntry[] = [];
-  for (const layer of dirtyLayers) {
-    const filePath = layer.path as string;
-    const bakPath = `${filePath}.bak`;
-    try {
-      await fs.copyFile(filePath, bakPath);
-      backups.push({ bakPath, originalPath: filePath });
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        // File doesn't exist yet — no backup needed, write will create it
-      } else {
-        throw error;
-      }
-    }
-  }
-  return backups;
-}
-
 async function writeDirtyLayers<T extends ConfigRecord>(
   state: StoreState<T>,
   dirtyLayers: MorselLayer[],
@@ -112,26 +90,6 @@ async function writeDirtyLayers<T extends ConfigRecord>(
     writtenFiles.push(filePath);
   }
   return writtenFiles;
-}
-
-async function cleanupBackups(backups: BackupEntry[]): Promise<void> {
-  for (const { bakPath } of backups) {
-    try {
-      await fs.unlink(bakPath);
-    } catch {
-      // Ignore cleanup errors — .bak is already orphaned
-    }
-  }
-}
-
-async function restoreFromBak(backups: BackupEntry[]): Promise<void> {
-  for (const { bakPath, originalPath } of backups) {
-    try {
-      await fs.rename(bakPath, originalPath);
-    } catch {
-      // Best-effort restore — .bak may be manually recovered
-    }
-  }
 }
 
 async function runWriteHooksForFiles<T extends ConfigRecord>(

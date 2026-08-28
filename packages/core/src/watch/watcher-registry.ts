@@ -1,8 +1,7 @@
-import { existsSync, type FSWatcher, watch } from 'node:fs';
+import type { FSWatcher } from 'node:fs';
 
-import { noop } from '@/store/boot/assert-name';
 import type { StoreState } from '@/store/store-state';
-import { handleWatchEvent } from '@/watch/handle-event';
+import { createFSWatcher } from '@/watch/watcher-recovery';
 
 /**
  * Registry entry for a watched directory — holds the `fs.watch` handle,
@@ -25,117 +24,6 @@ export interface WatcherEntry {
 export type WatcherRegistry = Map<string, WatcherEntry>;
 
 const registry: WatcherRegistry = new Map();
-
-/**
- * Route a debug message to each non-stopped store via its configured channel.
- *
- * Since a watcher is shared between stores, the message is delivered to every
- * active store: stores with a real `onDebug` callback receive it there, while
- * stores using the default `noop` receive it via a single `console.error`
- * emission (stderr is a shared channel, so it is written once for all noop
- * stores rather than once per store). This respects spec §5.2 per-store: each
- * store gets the message through exactly one channel — its own `onDebug` if
- * configured, or stderr otherwise.
- */
-function logToStores(
-  entry: WatcherEntry,
-  message: string,
-  context?: Record<string, unknown>,
-): void {
-  let isNeedsStderr = false;
-  for (const store of entry.stores) {
-    if (store.stopped) continue;
-    if (store.options.onDebug === noop) {
-      isNeedsStderr = true;
-    } else {
-      store.options.onDebug(message, context);
-    }
-  }
-  if (isNeedsStderr) {
-    console.error(message);
-  }
-}
-
-/**
- * Check if any non-stopped store in the entry has verbose mode enabled.
- */
-function hasVerbose(entry: WatcherEntry): boolean {
-  for (const store of entry.stores) {
-    if (!store.stopped && store.options.verbose) return true;
-  }
-  return false;
-}
-
-function startRecovery(entry: WatcherEntry, directoryPath: string): void {
-  if (entry.retryTimer !== undefined) {
-    return;
-  }
-
-  if (entry.watcher !== undefined) {
-    void entry.watcher.close();
-  }
-  logToStores(
-    entry,
-    `morsel: fs.watch crashed for ${directoryPath} — retrying in 1s`,
-  );
-
-  const poll = (): void => {
-    if (entry.stores.size === 0) {
-      entry.retryTimer = undefined;
-      return;
-    }
-
-    if (!existsSync(directoryPath)) {
-      logToStores(
-        entry,
-        `morsel: directory ${directoryPath} still missing — retrying in 1s`,
-      );
-      entry.retryTimer = setTimeout(poll, 1000);
-      return;
-    }
-
-    if (hasVerbose(entry)) {
-      logToStores(entry, `morsel: re-attaching fs.watch to ${directoryPath}`);
-    }
-
-    const newWatcher = createFSWatcher(directoryPath, entry);
-    entry.watcher = newWatcher;
-    entry.retryTimer = undefined;
-
-    for (const s of entry.stores) {
-      if (s.stopped) {
-        continue;
-      }
-      void s.remerge(s);
-    }
-  };
-
-  entry.retryTimer = setTimeout(poll, 1000);
-}
-
-function createFSWatcher(
-  directoryPath: string,
-  entry: WatcherEntry,
-): FSWatcher | undefined {
-  if (!existsSync(directoryPath)) {
-    startRecovery(entry, directoryPath);
-    return undefined;
-  }
-
-  const watcher = watch(directoryPath, (_eventType, filename) => {
-    if (!existsSync(directoryPath)) {
-      startRecovery(entry, directoryPath);
-      return;
-    }
-    handleWatchEvent(registry, directoryPath, filename ?? undefined);
-  });
-
-  watcher.on('error', () => {
-    startRecovery(entry, directoryPath);
-  });
-
-  return watcher;
-}
 
 /**
  * Create or reuse a watcher for a directory.
@@ -166,7 +54,7 @@ export function createWatcher(
     retryTimer: undefined,
   };
 
-  entry.watcher = createFSWatcher(directoryPath, entry);
+  entry.watcher = createFSWatcher(registry, directoryPath, entry);
   registry.set(directoryPath, entry);
   return entry;
 }

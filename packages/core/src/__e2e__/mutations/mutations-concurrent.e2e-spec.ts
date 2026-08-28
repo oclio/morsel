@@ -158,13 +158,11 @@ describe('mutations-concurrent — serialization', () => {
       watch: true,
     });
 
-    // set then unset in sequence — unset should win (last in queue)
     const setPromise = store!.set('target', 'updated');
     const unsetPromise = store!.unset('target');
 
     await Promise.all([setPromise, unsetPromise]);
 
-    // The queue processes set first, then unset — key should be gone
     expect(store!.has('target')).toBe(false);
 
     const content = JSON.parse(
@@ -218,22 +216,18 @@ describe('mutations-concurrent — serialization', () => {
       watch: true,
     });
 
-    // Trigger a re-merge by modifying the file externally
     await writeConfig(projectDirectory, 'myapp.config.json', {
       port: 3000,
       external: 'added',
     });
 
-    // Concurrently, set a key via the store API
     await store!.set('viaApi', 'set');
 
-    // Wait for re-merge to settle
     await waitForRemerge(
       store as never,
       (config) => config['external'] === 'added',
     );
 
-    // Both the external change and the API mutation should be present
     expect(store!.get('external')).toBe('added');
     expect(store!.get('viaApi')).toBe('set');
 
@@ -260,12 +254,10 @@ describe('mutations-concurrent — serialization', () => {
 
     await Promise.all([...sets, ...unsets]);
 
-    // All new keys should be present
     for (let index = 0; index < 50; index++) {
       expect(store!.get(`newKey${index}`)).toBe(index);
     }
 
-    // All original keys should be gone
     for (let index = 0; index < 50; index++) {
       expect(store!.has(`key${index}`)).toBe(false);
     }
