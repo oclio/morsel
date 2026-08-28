@@ -18,7 +18,7 @@
 2. **Zero runtime dependencies**: `node:fs`, `node:path`, `node:os` only. No external packages.
 3. **Watch resilience, one-shot throw**: `loadConfig`/`loadConfigSync` throw `MorselError` on fs or parse errors. `watchConfig` throws `MorselError` if the initial load (first pass) fails — there is no "last valid state" at boot. For subsequent re-merges (fs.watch fire), `watchConfig` catches internally, keeps the last valid state, logs the error to `stderr`, and routes to `onDebug` (noop by default). Programming errors (`name` missing, `name` invalid, `on()` after `stop()`) throw in both modes.
 4. **Reserved keyword cleanup**: `extends` and `$env` are **absolute reserved keywords** of the engine — they cannot be used as business keys in the final config. They are stripped from each layer before inter-layer merge. Never present in the final `config`. If an application needs a key named `$env` or `extends` for business purposes, it must be renamed (`$envConfig`, `extendsList`, etc.).
-5. **Sync-first & distinct async**: `loadConfigSync` is synchronous, `loadConfig` and `watchConfig` are async. The chosen function determines the behavior. `watchConfig` accepts optional `watch`, `proxy`, and `queue` flags (default `true`) to disable reactive features for one-shot use cases (CI, scripts, CLI) — see §4.4 Headless Mode. Async `loadConfig` avoids blocking the event loop during reads — useful for apps that load multiple configs in parallel with `Promise.all`. `watchConfig` is async because boot performs reads (`readFile`) before setting up watchers.
+5. **Sync-first & distinct async**: `loadConfigSync` is synchronous, `loadConfig` and `watchConfig` are async. The chosen function determines the behavior. `watchConfig` accepts optional `watch` and `proxy` flags (default `true`) to disable reactive features for one-shot use cases (CI, scripts, CLI) — see §4.4 Headless Mode. Async `loadConfig` avoids blocking the event loop during reads — useful for apps that load multiple configs in parallel with `Promise.all`. `watchConfig` is async because boot performs reads (`readFile`) before setting up watchers.
 6. **Watch ref-counting**: a single `fs.watch` per directory, shared across all stores. Closed when the last store calls `stop()`. Includes directories of `extends` files and `watchPaths` of watchable hooks — a change in an inherited file triggers a re-merge.
 7. **Parsing / semantics separation**: the plugin parses raw content → `Record<string, unknown>`. Semantic concepts (`extends`, `$env`, cleanup) are core. The plugin knows nothing about `extends` or `$env`.
 8. **Lifecycle hooks**: layer hooks (`LayerHook`) insert at 8 pipeline points (before/after for each layer). A layer hook produces a `Record` that becomes a layer in the cascade. The `load` method is stateless — the core calls it on each merge, no state is kept between merges. Optional `init`/`dispose` lifecycle methods allow stateful hooks to manage external connections (pollers, WebSocket, etcd watch) — `init` is called once after the store is created in `watchConfig`, `dispose` is called once when the store is stopped via `stop()`. Neither is called in `loadConfig`/`loadConfigSync` (one-shot, no lifecycle). The `HookContext` provides `triggerRemerge()` so a hook can request a re-merge of the configuration (e.g. when a remote config source changes). In `loadConfig`/`loadConfigSync`, `triggerRemerge` is a noop.
@@ -74,7 +74,6 @@ Layers resolved independently, with hooks interleaved (4 core layers + hook laye
 - `node:fs/promises`: `readFile`, `access`, `writeFile`, `mkdir`, `rename`
 - `node:path`: `resolve`, `dirname`, `extname`, `basename`
 - `node:os`: `homedir`
-- `node:util`: `isDeepStrictEqual`
 
 ### 3.2 External Dependencies
 
@@ -144,6 +143,19 @@ export interface MorselStore<
   getProvenance(
     path: string | readonly (string | number)[],
   ): Provenance | undefined;
+  /**
+   * Return the first index of `value` in the array at `path`, or -1.
+   * @throws MorselError(EVALIDATE) if the value at `path` is not an array.
+   */
+  indexOf(path: string | readonly (string | number)[], value: unknown): number;
+  /**
+   * Return the last index of `value` in the array at `path`, or -1.
+   * @throws MorselError(EVALIDATE) if the value at `path` is not an array.
+   */
+  lastIndexOf(
+    path: string | readonly (string | number)[],
+    value: unknown,
+  ): number;
   stop(): Promise<void>;
 }
 
@@ -343,7 +355,6 @@ export interface ResolvedOptions {
   readonly hooks: readonly Hook[];
   readonly watch: boolean;
   readonly proxy: boolean;
-  readonly queue: boolean;
 }
 
 /**
@@ -408,8 +419,8 @@ export function resolvePaths(
 
 // All path resolution functions (resolvePaths, resolveProjectPath,
 // resolveProjectPathSync, resolveGlobalPath, resolveGlobalPathSync)
-// throw TypeError('morsel: formatPlugins must not be empty') if
-// formatPlugins is an empty array.
+// and initConfig throw TypeError('morsel: formatPlugins must not be empty')
+// if formatPlugins is an empty array.
 
 export function initConfig<
   T extends Record<string, unknown> = Record<string, unknown>,
@@ -465,17 +476,6 @@ export function getPathValue(
   path: string | readonly PathSegment[],
 ): unknown;
 
-export function setPathValue(
-  target: Record<string, unknown> | unknown[],
-  path: string | readonly PathSegment[],
-  value: unknown,
-): void;
-
-export function hasRemovedPathValue(
-  target: ConfigRecord | unknown[],
-  path: string | readonly PathSegment[],
-): boolean;
-
 // ── Format Plugin ──
 
 export const jsonPlugin: FormatPlugin;
@@ -509,7 +509,7 @@ export function clearRegistry(): void;
 #### `initConfig`
 
 1. Checks if the configuration file already exists via `resolveProjectPathSync`. If yes → returns the existing path without modifying anything (idempotence).
-2. If no: `mkdirSync(dirname, { recursive: true })` — creates the parent directory if needed.
+2. If no: selects the destination path — if `<cwd>/.config/` already exists, writes to `<cwd>/.config/<name><ext>`; otherwise writes to `<cwd>/<name>.config<ext>` (using the first format plugin's first extension). `mkdirSync(dirname, { recursive: true })` — creates the parent directory if needed.
 3. Writes `content` (or `fallbackContent`, or `{}`) via the first format plugin's `serialize` method via atomic write: `writeFileSync` to `<path>.tmp.<timestamp>` then `renameSync` to `<path>` (avoids partial reads in case of crash).
 4. Returns the created path.
 5. On serialize failure (`plugin.serialize` throws): throws `MorselError` (`EIO`) with the project path and original error as cause — the content is not written and no fallback is applied.
@@ -517,7 +517,7 @@ export function clearRegistry(): void;
 
 #### `stop()`
 
-`stop()` is async (`Promise<void>`). `stopped = true` is assigned **synchronously** at the start, before any `await`. `stop()` awaits `state.remergeDone` to drain any in-flight re-merge, before closing watchers. Watchers whose `refCount` reaches zero are closed. All registered listeners are cleared. `store.config`, `store.layers`, `store.get()`, `store.has()`, `store.all()`, `store.dotify()`, and `store.getProvenance()` remain readable after stop at the last known state. Any subsequent call to `store.on()` throws `Error('morsel: store is stopped')`.
+`stop()` is async (`Promise<void>`). `stopped = true` is assigned **synchronously** at the start, before any `await`. `stop()` awaits `state.remergeDone` to drain any in-flight re-merge, before closing watchers. Watchers whose `refCount` reaches zero are closed. All registered listeners are cleared. `store.config`, `store.layers`, `store.get()`, `store.has()`, `store.all()`, `store.dotify()`, `store.getProvenance()`, `store.indexOf()`, and `store.lastIndexOf()` remain readable after stop at the last known state. Any subsequent call to `store.on()` throws `Error('morsel: store is stopped')`.
 
 #### `signal` — AbortSignal
 
@@ -566,7 +566,7 @@ If `WatchOptions.signal` is provided, it is checked **after** hook `init` comple
 
 - `createStableProxy` is not called. `state._proxy` remains `undefined`.
 - The `config` getter returns `state._config` directly (or the stopped config clone after `stop()`).
-- `store.get()`, `store.has()`, `store.all()`, `store.dotify()`, `store.getProvenance()` are unaffected — they read `state._config` directly, not the proxy.
+- `store.get()`, `store.has()`, `store.all()`, `store.dotify()`, `store.getProvenance()`, `store.indexOf()`, and `store.lastIndexOf()` are unaffected — they read `state._config` directly, not the proxy.
 - `store.on()` and change events are unaffected — `emitChanges` is called by the re-merge independently of the proxy.
 - With `configMutability: 'frozen'`, `state._config` is already frozen by `applyMutability` — `Object.isFrozen(store.config)` is `true`.
 - With `configMutability: 'mutable'`, `store.config.key = value` modifies `_config` in memory but does **not** persist to disk.
@@ -757,7 +757,7 @@ In `frozen` mode, `store.config` is backed by a stable Proxy (`stable-proxy.ts`)
 
 `resolveGlobalDirectory` resolves the global configuration directory with the following priority:
 
-1. **Explicit `globalDir` option** — used as-is, with tilde expansion:
+1. **Explicit `globalDir` option** — used as-is, with tilde expansion. An empty string is treated as not provided (falls through to the next priority):
    - `~/path` → resolved to `<homedir>/path`
    - `~` → resolved to `<homedir>`
    - Other values → resolved via `path.resolve`
