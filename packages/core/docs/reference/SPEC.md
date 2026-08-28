@@ -74,6 +74,7 @@ Layers resolved independently, with hooks interleaved (4 core layers + hook laye
 - `node:fs/promises`: `readFile`, `access`, `writeFile`, `mkdir`, `rename`
 - `node:path`: `resolve`, `dirname`, `extname`, `basename`
 - `node:os`: `homedir`
+- `node:util`: `isDeepStrictEqual`
 
 ### 3.2 External Dependencies
 
@@ -626,7 +627,7 @@ export function clearRegistry(): void;
 
 #### `stop()`
 
-`stop()` is async (`Promise<void>`). `stopped = true` is assigned **synchronously** at the start, before any `await`. `stop()` awaits `state.writeQueue` to drain any in-flight mutations before closing watchers. Watchers whose `refCount` reaches zero are closed. All registered listeners are cleared. `store.config`, `store.layers`, `store.get()`, `store.has()`, `store.all()`, `store.dotify()`, and `store.getProvenance()` remain readable after stop at the last known state. Any subsequent call to `store.on()`, `store.set()`, `store.unset()`, `store.push()`, `store.unshift()`, `store.pop()`, `store.shift()`, `store.splice()`, `store.mutateKey()`, or `store.deleteKey()` throws `Error('morsel: store is stopped')`.
+`stop()` is async (`Promise<void>`). `stopped = true` is assigned **synchronously** at the start, before any `await`. `stop()` awaits `state.writeQueue` to drain any in-flight mutations before closing watchers. Watchers whose `refCount` reaches zero are closed. All registered listeners are cleared. `store.config`, `store.layers`, `store.get()`, `store.has()`, `store.all()`, `store.dotify()`, and `store.getProvenance()` remain readable after stop at the last known state. Any subsequent call to `store.on()`, `store.set()`, `store.unset()`, `store.push()`, `store.unshift()`, `store.pop()`, `store.shift()`, `store.splice()`, `store.mutateKey()`, `store.deleteKey()`, or `store.transaction()` throws `Error('morsel: store is stopped')`.
 
 #### `signal` — AbortSignal
 
@@ -642,6 +643,7 @@ If `WatchOptions.signal` is provided, it is checked **after** hook `init` comple
 4. Serializes the result via the plugin's `serialize` method.
 5. Writes to a temporary file (`<path>.tmp.<timestamp>`), then atomically renames to the target path.
 6. Writes are serialized per file path via a promise queue — concurrent mutations to the same file are queued.
+7. If the mutation does not change the value (`set` with an identical value compared via `isDeepStrictEqual`, or `delete` of a non-existent key), the write is skipped and the function returns early — no disk I/O, no `after:write` hook.
 
 On I/O or serialization failure, a `WriteError` (`EWRITE`) is thrown. The caller (`mutateKey`/`deleteKey`) is responsible for rolling back the in-memory state.
 
@@ -794,6 +796,7 @@ Wildcard listeners are emitted after exact-match listeners for each key, within 
 - **`hook` (hook throws in `load()`)** — One-shot: throws `MorselError` (`EHOOK`). Watch boot: throws. Re-merge: caught, keeps previous config, `onDebug`/stderr.
 - **`hook async` (hook returns a Promise in `loadConfigSync`)** — Throws `TypeError('morsel: hook "<name>" is async — use loadConfig or watchConfig')`. Programming error.
 - **`env` (`$env` present but `envName` undefined)** — Warns via `onDebug` (or stderr if `onDebug` is not provided), `$env` ignored. Same in one-shot and watch.
+- **`env` (`$env` present but not a plain object)** — Warns via `onDebug` (or stderr if `onDebug` is not provided), `$env` ignored. Same in one-shot and watch.
 - **`program` (`name` missing, `name` invalid, `on()` after `stop()`)** — Throws `TypeError`/`Error`. Same in one-shot and watch.
 
 ### 5.2 Priority & Debug Channels
