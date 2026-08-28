@@ -1,29 +1,7 @@
 import { createMockStoreState } from '@oclio/test-helpers';
 
-import {
-  popKey,
-  pushKey,
-  shiftKey,
-  spliceKey,
-  unshiftKey,
-} from '@/store/array-ops';
 import { createArrayMethods } from '@/store/store-array-methods';
 import type { StoreState } from '@/store/store-state';
-
-vi.mock('@/store/array-ops', async () => {
-  const actual =
-    await vi.importActual<typeof import('@/store/array-ops')>(
-      '@/store/array-ops',
-    );
-  return {
-    ...actual,
-    popKey: vi.fn(),
-    pushKey: vi.fn(),
-    shiftKey: vi.fn(),
-    spliceKey: vi.fn(),
-    unshiftKey: vi.fn(),
-  };
-});
 
 function createState<T extends Record<string, unknown>>(
   overrides: Partial<StoreState<T>> = {},
@@ -35,97 +13,7 @@ function createState<T extends Record<string, unknown>>(
   }) as unknown as StoreState<T>;
 }
 
-describe('createArrayMethods', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  describe('push', () => {
-    it('delegates to pushKey with state, path, value, target, and mutability', async () => {
-      vi.mocked(pushKey).mockResolvedValue(2);
-      const state = createState();
-      const methods = createArrayMethods(state, 'frozen');
-
-      const result = await methods.push('tags', 'new', 'project');
-
-      expect(result).toBe(2);
-      expect(pushKey).toHaveBeenCalledWith(
-        state,
-        'tags',
-        'new',
-        'project',
-        'frozen',
-      );
-    });
-  });
-
-  describe('unshift', () => {
-    it('delegates to unshiftKey with state, path, value, target, and mutability', async () => {
-      vi.mocked(unshiftKey).mockResolvedValue(0);
-      const state = createState();
-      const methods = createArrayMethods(state, 'frozen');
-
-      const result = await methods.unshift('tags', 'new');
-
-      expect(result).toBe(0);
-      expect(unshiftKey).toHaveBeenCalledWith(
-        state,
-        'tags',
-        'new',
-        undefined,
-        'frozen',
-      );
-    });
-  });
-
-  describe('pop and shift', () => {
-    it.each([
-      {
-        name: 'pop',
-        fn: popKey,
-        call: (m: ReturnType<typeof createArrayMethods>) => m.pop('tags'),
-      },
-      {
-        name: 'shift',
-        fn: shiftKey,
-        call: (m: ReturnType<typeof createArrayMethods>) => m.shift('tags'),
-      },
-    ])(
-      'delegates to $name with state, path, target, and mutability',
-      async ({ fn, call }) => {
-        vi.mocked(fn).mockResolvedValue('removed');
-        const state = createState();
-        const methods = createArrayMethods(state, 'frozen');
-
-        const result = await call(methods);
-
-        expect(result).toBe('removed');
-        expect(fn).toHaveBeenCalledWith(state, 'tags', undefined, 'frozen');
-      },
-    );
-  });
-
-  describe('splice', () => {
-    it('delegates to spliceKey with state, path, start, deleteCount, items, and mutability', async () => {
-      vi.mocked(spliceKey).mockResolvedValue(['removed']);
-      const state = createState();
-      const methods = createArrayMethods(state, 'frozen');
-
-      const result = await methods.splice('tags', 1, 2, 'a', 'b');
-
-      expect(result).toEqual(['removed']);
-      expect(spliceKey).toHaveBeenCalledWith(
-        state,
-        'tags',
-        1,
-        2,
-        ['a', 'b'],
-        undefined,
-        'frozen',
-      );
-    });
-  });
-
+describe('createArrayMethods — read-only array methods', () => {
   describe('indexOf and lastIndexOf', () => {
     it.each([
       {
@@ -162,7 +50,7 @@ describe('createArrayMethods', () => {
         const state = createState({
           _config: config as never,
         });
-        const methods = createArrayMethods(state, 'frozen');
+        const methods = createArrayMethods(state);
 
         const result =
           method === 'indexOf'
@@ -182,7 +70,7 @@ describe('createArrayMethods', () => {
         const state = createState({
           _config: config as never,
         });
-        const methods = createArrayMethods(state, 'frozen');
+        const methods = createArrayMethods(state);
 
         expect(() =>
           method === 'indexOf'

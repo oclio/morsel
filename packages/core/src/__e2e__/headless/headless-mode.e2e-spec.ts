@@ -3,7 +3,6 @@ import path from 'node:path';
 
 import {
   clearWatcherRegistry,
-  createEventCollector,
   setupTest,
   suppressConsoleError,
   writeConfig,
@@ -11,7 +10,7 @@ import {
 
 import { watchConfig } from '@/index';
 
-describe('headless-mode — watch/proxy/queue flags', () => {
+describe('headless-mode — watch/proxy flags', () => {
   suppressConsoleError();
 
   beforeEach(() => {
@@ -33,34 +32,6 @@ describe('headless-mode — watch/proxy/queue flags', () => {
       });
 
       expect(store.get('port')).toBe(3000);
-      await store.stop();
-    });
-
-    it('set() persists to disk without re-merge', async () => {
-      const { projectDirectory, globalDirectory } = await setupTest({
-        projectConfig: { port: 3000 },
-        createGlobalDir: true,
-      });
-
-      const store = await watchConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: globalDirectory,
-        watch: false,
-      });
-
-      await store.set('port', 8080);
-
-      expect(store.get('port')).toBe(8080);
-
-      const content = JSON.parse(
-        await readFile(
-          path.resolve(projectDirectory, 'myapp.config.json'),
-          'utf8',
-        ),
-      ) as Record<string, unknown>;
-      expect(content['port']).toBe(8080);
-
       await store.stop();
     });
 
@@ -88,291 +59,96 @@ describe('headless-mode — watch/proxy/queue flags', () => {
       await store.stop();
     });
 
-    it('on() listener fires on store.set() without watchers', async () => {
-      const { projectDirectory, globalDirectory } = await setupTest({
-        projectConfig: { port: 3000 },
-        createGlobalDir: true,
+    describe('proxy: false', () => {
+      it('store.config returns raw config object', async () => {
+        const { projectDirectory, globalDirectory } = await setupTest({
+          projectConfig: { port: 3000, host: 'localhost' },
+          createGlobalDir: true,
+        });
+
+        const store = await watchConfig({
+          name: 'myapp',
+          cwd: projectDirectory,
+          globalDir: globalDirectory,
+          watch: false,
+          proxy: false,
+        });
+
+        const config = store.config;
+        expect(config).toEqual({ port: 3000, host: 'localhost' });
+
+        await store.stop();
       });
 
-      const store = await watchConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: globalDirectory,
-        watch: false,
+      it('store.get() works without proxy', async () => {
+        const { projectDirectory, globalDirectory } = await setupTest({
+          projectConfig: { server: { port: 3000, host: 'localhost' } },
+          createGlobalDir: true,
+        });
+
+        const store = await watchConfig({
+          name: 'myapp',
+          cwd: projectDirectory,
+          globalDir: globalDirectory,
+          watch: false,
+          proxy: false,
+        });
+
+        expect(store.get('server.port')).toBe(3000);
+        expect(store.get('server.host')).toBe('localhost');
+        expect(store.has('server')).toBe(true);
+
+        await store.stop();
       });
 
-      const { events, listener } = createEventCollector();
-      store.on('port', listener);
+      it('frozen config is frozen without proxy', async () => {
+        const { projectDirectory, globalDirectory } = await setupTest({
+          projectConfig: { port: 3000 },
+          createGlobalDir: true,
+        });
 
-      await store.set('port', 8080);
+        const store = await watchConfig({
+          name: 'myapp',
+          cwd: projectDirectory,
+          globalDir: globalDirectory,
+          watch: false,
+          proxy: false,
+          configMutability: 'frozen',
+        });
 
-      expect(events).toHaveLength(1);
-      expect(events[0]).toEqual({
-        keyPath: 'port',
-        type: 'modified',
-        next: 8080,
-        prev: 3000,
+        expect(Object.isFrozen(store.config)).toBe(true);
+
+        await store.stop();
       });
 
-      await store.stop();
-    });
+      it('mutable config: direct modification does not persist to disk', async () => {
+        const { projectDirectory, globalDirectory } = await setupTest({
+          projectConfig: { port: 3000 },
+          createGlobalDir: true,
+        });
 
-    it('signal still calls stop() without watchers', async () => {
-      const { projectDirectory, globalDirectory } = await setupTest({
-        projectConfig: { port: 3000 },
-        createGlobalDir: true,
+        const store = await watchConfig({
+          name: 'myapp',
+          cwd: projectDirectory,
+          globalDir: globalDirectory,
+          watch: false,
+          proxy: false,
+          configMutability: 'mutable',
+        });
+
+        (store.config as Record<string, unknown>)['port'] = 9999;
+        expect(store.get('port')).toBe(9999);
+
+        const content = JSON.parse(
+          await readFile(
+            path.resolve(projectDirectory, 'myapp.config.json'),
+            'utf8',
+          ),
+        ) as Record<string, unknown>;
+        expect(content['port']).toBe(3000);
+
+        await store.stop();
       });
-
-      const controller = new AbortController();
-      controller.abort();
-
-      const store = await watchConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: globalDirectory,
-        watch: false,
-        signal: controller.signal,
-      });
-
-      expect(store.get('port')).toBe(3000);
-
-      await store.stop();
-    });
-  });
-
-  describe('proxy: false', () => {
-    it('store.config returns raw config object', async () => {
-      const { projectDirectory, globalDirectory } = await setupTest({
-        projectConfig: { port: 3000, host: 'localhost' },
-        createGlobalDir: true,
-      });
-
-      const store = await watchConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: globalDirectory,
-        watch: false,
-        proxy: false,
-      });
-
-      const config = store.config;
-      expect(config).toEqual({ port: 3000, host: 'localhost' });
-
-      await store.stop();
-    });
-
-    it('store.get() works without proxy', async () => {
-      const { projectDirectory, globalDirectory } = await setupTest({
-        projectConfig: { server: { port: 3000, host: 'localhost' } },
-        createGlobalDir: true,
-      });
-
-      const store = await watchConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: globalDirectory,
-        watch: false,
-        proxy: false,
-      });
-
-      expect(store.get('server.port')).toBe(3000);
-      expect(store.get('server.host')).toBe('localhost');
-      expect(store.has('server')).toBe(true);
-
-      await store.stop();
-    });
-
-    it('frozen config is frozen without proxy', async () => {
-      const { projectDirectory, globalDirectory } = await setupTest({
-        projectConfig: { port: 3000 },
-        createGlobalDir: true,
-      });
-
-      const store = await watchConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: globalDirectory,
-        watch: false,
-        proxy: false,
-        configMutability: 'frozen',
-      });
-
-      expect(Object.isFrozen(store.config)).toBe(true);
-
-      await store.stop();
-    });
-
-    it('mutable config: direct mutation does not persist to disk', async () => {
-      const { projectDirectory, globalDirectory } = await setupTest({
-        projectConfig: { port: 3000 },
-        createGlobalDir: true,
-      });
-
-      const store = await watchConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: globalDirectory,
-        watch: false,
-        proxy: false,
-        configMutability: 'mutable',
-      });
-
-      (store.config as Record<string, unknown>)['port'] = 9999;
-      expect(store.get('port')).toBe(9999);
-
-      const content = JSON.parse(
-        await readFile(
-          path.resolve(projectDirectory, 'myapp.config.json'),
-          'utf8',
-        ),
-      ) as Record<string, unknown>;
-      expect(content['port']).toBe(3000);
-
-      await store.stop();
-    });
-  });
-
-  describe('queue: false', () => {
-    it('set() works without queue', async () => {
-      const { projectDirectory, globalDirectory } = await setupTest({
-        projectConfig: { port: 3000 },
-        createGlobalDir: true,
-      });
-
-      const store = await watchConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: globalDirectory,
-        watch: false,
-        queue: false,
-      });
-
-      await store.set('port', 8080);
-
-      expect(store.get('port')).toBe(8080);
-
-      const content = JSON.parse(
-        await readFile(
-          path.resolve(projectDirectory, 'myapp.config.json'),
-          'utf8',
-        ),
-      ) as Record<string, unknown>;
-      expect(content['port']).toBe(8080);
-
-      await store.stop();
-    });
-
-    it('unset() works without queue', async () => {
-      const { projectDirectory, globalDirectory } = await setupTest({
-        projectConfig: { port: 3000, host: 'localhost' },
-        createGlobalDir: true,
-      });
-
-      const store = await watchConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: globalDirectory,
-        watch: false,
-        queue: false,
-      });
-
-      const result = await store.unset('port');
-
-      expect(result).toBe(true);
-      expect(store.has('port')).toBe(false);
-
-      await store.stop();
-    });
-
-    it('stop() does not wait for in-flight mutation when queue is false', async () => {
-      const { projectDirectory, globalDirectory } = await setupTest({
-        projectConfig: { port: 3000 },
-        createGlobalDir: true,
-      });
-
-      const store = await watchConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: globalDirectory,
-        watch: false,
-        queue: false,
-      });
-
-      const setPromise = store.set('port', 8080);
-      await store.stop();
-
-      await setPromise;
-
-      expect(store.get('port')).toBe(8080);
-    });
-  });
-
-  describe('full headless — watch: false, proxy: false, queue: false', () => {
-    it('boot + set + read + stop works end-to-end', async () => {
-      const { projectDirectory, globalDirectory } = await setupTest({
-        projectConfig: { port: 3000 },
-        createGlobalDir: true,
-      });
-
-      const store = await watchConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: globalDirectory,
-        watch: false,
-        proxy: false,
-        queue: false,
-      });
-
-      expect(store.get('port')).toBe(3000);
-
-      await store.set('port', 8080);
-      await store.set('host', '0.0.0.0');
-
-      expect(store.get('port')).toBe(8080);
-      expect(store.get('host')).toBe('0.0.0.0');
-
-      const content = JSON.parse(
-        await readFile(
-          path.resolve(projectDirectory, 'myapp.config.json'),
-          'utf8',
-        ),
-      ) as Record<string, unknown>;
-      expect(content).toEqual({ port: 8080, host: '0.0.0.0' });
-
-      await store.stop();
-
-      expect(store.get('port')).toBe(8080);
-    });
-
-    it('on() fires without proxy, watch, or queue', async () => {
-      const { projectDirectory, globalDirectory } = await setupTest({
-        projectConfig: { port: 3000 },
-        createGlobalDir: true,
-      });
-
-      const store = await watchConfig({
-        name: 'myapp',
-        cwd: projectDirectory,
-        globalDir: globalDirectory,
-        watch: false,
-        proxy: false,
-        queue: false,
-      });
-
-      const { events, listener } = createEventCollector();
-      store.on('port', listener);
-
-      await store.set('port', 8080);
-
-      expect(events).toHaveLength(1);
-      expect(events[0]).toEqual({
-        keyPath: 'port',
-        type: 'modified',
-        next: 8080,
-        prev: 3000,
-      });
-
-      await store.stop();
     });
   });
 });

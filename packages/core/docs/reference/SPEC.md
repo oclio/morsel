@@ -14,16 +14,16 @@
 
 ## 1. Normative Invariants
 
-1. **Pluggable architecture**: parsing is provided by format plugins (`FormatPlugin`). The core provides `jsonPlugin` by default. No format is hardcoded in the core — `JSON.parse` lives in `jsonPlugin`, not in `loadFile`. Pipeline extensibility is provided by hooks (`LayerHook`, `EventHook`) that insert at specific lifecycle points or react to events.
+1. **Pluggable architecture**: parsing is provided by format plugins (`FormatPlugin`). The core provides `jsonPlugin` by default. No format is hardcoded in the core — `JSON.parse` lives in `jsonPlugin`, not in `loadFile`. Pipeline extensibility is provided by hooks (`LayerHook`) that insert at specific lifecycle points.
 2. **Zero runtime dependencies**: `node:fs`, `node:path`, `node:os` only. No external packages.
 3. **Watch resilience, one-shot throw**: `loadConfig`/`loadConfigSync` throw `MorselError` on fs or parse errors. `watchConfig` throws `MorselError` if the initial load (first pass) fails — there is no "last valid state" at boot. For subsequent re-merges (fs.watch fire), `watchConfig` catches internally, keeps the last valid state, logs the error to `stderr`, and routes to `onDebug` (noop by default). Programming errors (`name` missing, `name` invalid, `on()` after `stop()`) throw in both modes.
 4. **Reserved keyword cleanup**: `extends` and `$env` are **absolute reserved keywords** of the engine — they cannot be used as business keys in the final config. They are stripped from each layer before inter-layer merge. Never present in the final `config`. If an application needs a key named `$env` or `extends` for business purposes, it must be renamed (`$envConfig`, `extendsList`, etc.).
 5. **Sync-first & distinct async**: `loadConfigSync` is synchronous, `loadConfig` and `watchConfig` are async. The chosen function determines the behavior. `watchConfig` accepts optional `watch`, `proxy`, and `queue` flags (default `true`) to disable reactive features for one-shot use cases (CI, scripts, CLI) — see §4.4 Headless Mode. Async `loadConfig` avoids blocking the event loop during reads — useful for apps that load multiple configs in parallel with `Promise.all`. `watchConfig` is async because boot performs reads (`readFile`) before setting up watchers.
 6. **Watch ref-counting**: a single `fs.watch` per directory, shared across all stores. Closed when the last store calls `stop()`. Includes directories of `extends` files and `watchPaths` of watchable hooks — a change in an inherited file triggers a re-merge.
 7. **Parsing / semantics separation**: the plugin parses raw content → `Record<string, unknown>`. Semantic concepts (`extends`, `$env`, cleanup) are core. The plugin knows nothing about `extends` or `$env`.
-8. **Lifecycle hooks**: layer hooks (`LayerHook`) insert at 8 pipeline points (before/after for each layer). A layer hook produces a `Record` that becomes a layer in the cascade. The `load` method is stateless — the core calls it on each merge, no state is kept between merges. Optional `init`/`dispose` lifecycle methods allow stateful hooks to manage external connections (pollers, WebSocket, etcd watch) — `init` is called once after the store is created in `watchConfig`, `dispose` is called once when the store is stopped via `stop()`. Neither is called in `loadConfig`/`loadConfigSync` (one-shot, no lifecycle). The `HookContext` provides `triggerRemerge()` so a hook can request a re-merge of the configuration (e.g. when a remote config source changes). In `loadConfig`/`loadConfigSync`, `triggerRemerge` is a noop. Event hooks (`EventHook`) react to lifecycle events (e.g. `after:write`) without producing a layer — they are side-effect only (logging, metrics, audit).
+8. **Lifecycle hooks**: layer hooks (`LayerHook`) insert at 8 pipeline points (before/after for each layer). A layer hook produces a `Record` that becomes a layer in the cascade. The `load` method is stateless — the core calls it on each merge, no state is kept between merges. Optional `init`/`dispose` lifecycle methods allow stateful hooks to manage external connections (pollers, WebSocket, etcd watch) — `init` is called once after the store is created in `watchConfig`, `dispose` is called once when the store is stopped via `stop()`. Neither is called in `loadConfig`/`loadConfigSync` (one-shot, no lifecycle). The `HookContext` provides `triggerRemerge()` so a hook can request a re-merge of the configuration (e.g. when a remote config source changes). In `loadConfig`/`loadConfigSync`, `triggerRemerge` is a noop.
 9. **Native path parsing & prototype protection**: the core provides robust path parsing supporting dot notation (`a.b.c`), indexed arrays (`users[0].name`, `users.0.name`), and escaped dots (`app\.config.host`). Any attempt to access or mutate `__proto__`, `constructor`, or `prototype` is rejected (`TypeError`).
-10. **Transactional mutation & optimistic write**: `mutateKey` and `deleteKey` update the in-memory config optimistically, emit key-level change events, and persist changes via atomic read-modify-write on the source layer. All mutations are serialized via a per-store `writeQueue` (Promise chain) — concurrent calls (`Promise.all([set('a', 1), set('b', 2)])`) execute in call order, no write is lost. Errors in one mutation do not block subsequent mutations in the queue. `stop()` awaits the queue before closing watchers. In case of I/O or serialization failure, the in-memory state is automatically rolled back, revert events are emitted, and a `WriteError` (`EWRITE`) is thrown. `WriteError` extends `MorselError` and carries `filePath` and `mutation`. After a successful write, `after:write` event hooks (`EventHook`) are triggered with a `WriteEvent` — errors in these hooks are caught and logged via `onDebug`, they do not roll back the mutation.
+10. **Read-only store**: the store is strictly read-only. The filesystem is the single source of truth. Changes to config files on disk are detected by `fs.watch` and trigger a re-merge, which emits key-level change events to listeners. The store does not provide mutation methods (`set`, `unset`, `push`, etc.) — applications that need to modify configuration write directly to the files, and the store reacts automatically.
 
 ---
 
@@ -117,7 +117,6 @@ export interface WatchOptions<
   readonly signal?: AbortSignal;
   readonly watch?: boolean;
   readonly proxy?: boolean;
-  readonly queue?: boolean;
 }
 
 export interface MorselStore<
@@ -136,55 +135,8 @@ export interface MorselStore<
     defaultValue?: V,
   ): V;
   has(path: string | readonly (string | number)[]): boolean;
-  set(
-    path: string | readonly (string | number)[],
-    value: unknown,
-    target?: StoreTarget,
-  ): Promise<void>;
-  unset(
-    path: string | readonly (string | number)[],
-    target?: DeleteTarget,
-  ): Promise<boolean>;
   all(): T;
   dotify(): Record<string, unknown>;
-  mutateKey(
-    path: string | readonly (string | number)[],
-    value: unknown,
-    target?: StoreTarget,
-  ): Promise<void>;
-  deleteKey(
-    path: string | readonly (string | number)[],
-    target?: DeleteTarget,
-  ): Promise<boolean>;
-  push(
-    path: string | readonly (string | number)[],
-    value: unknown,
-    target?: StoreTarget,
-  ): Promise<number>;
-  unshift(
-    path: string | readonly (string | number)[],
-    value: unknown,
-    target?: StoreTarget,
-  ): Promise<number>;
-  pop(
-    path: string | readonly (string | number)[],
-    target?: StoreTarget,
-  ): Promise<unknown>;
-  shift(
-    path: string | readonly (string | number)[],
-    target?: StoreTarget,
-  ): Promise<unknown>;
-  splice(
-    path: string | readonly (string | number)[],
-    start: number,
-    deleteCount: number,
-    ...items: unknown[]
-  ): Promise<unknown[]>;
-  indexOf(path: string | readonly (string | number)[], value: unknown): number;
-  lastIndexOf(
-    path: string | readonly (string | number)[],
-    value: unknown,
-  ): number;
   /**
    * Trace the provenance of a key — final value, source layer, and
    * overridden chain. See §4.4 for semantics.
@@ -192,13 +144,6 @@ export interface MorselStore<
   getProvenance(
     path: string | readonly (string | number)[],
   ): Provenance | undefined;
-  /**
-   * Run a transaction: mutations inside the callback are applied in-memory
-   * only and committed atomically to disk when the callback completes.
-   * If the callback throws, all mutations are rolled back. Events are
-   * emitted after a successful commit. See §4.4 for semantics.
-   */
-  transaction(callback: () => Promise<void>): Promise<void>;
   stop(): Promise<void>;
 }
 
@@ -250,13 +195,8 @@ export class MorselError extends Error {
   override readonly cause: NodeJS.ErrnoException | Error;
 }
 
-export class WriteError extends MorselError {
-  readonly filePath: string;
-  readonly mutation: MutationOperation;
-}
-
 export type ErrorCode =
-  'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK' | 'EWRITE';
+  'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK';
 
 export class NoPluginError extends MorselError {
   readonly extension: string;
@@ -292,19 +232,7 @@ export interface LayerWatchableHook extends LayerHook {
   readonly watchPaths: readonly string[];
 }
 
-export interface WriteEvent {
-  readonly filePath: string;
-  readonly keyPath: string;
-  readonly mutation: MutationOperation;
-}
-
-export interface EventHook {
-  readonly name: string;
-  readonly lifecycle: 'after:write';
-  onWrite(event: WriteEvent): void | Promise<void>;
-}
-
-export type Hook = LayerHook | LayerWatchableHook | EventHook;
+export type Hook = LayerHook | LayerWatchableHook;
 
 export type HookLifecycle =
   | 'before:defaults'
@@ -314,8 +242,7 @@ export type HookLifecycle =
   | 'before:project'
   | 'after:project'
   | 'before:overrides'
-  | 'after:overrides'
-  | 'after:write';
+  | 'after:overrides';
 
 export interface HookContext {
   readonly cwd: string;
@@ -442,43 +369,6 @@ export interface StoreState<T extends ConfigRecord = ConfigRecord> {
   debounceMs: number;
   remerge: (store: StoreState) => Promise<void>;
   enoentLogged: Set<string>;
-  writeQueue: Promise<void>;
-  queueEnabled: boolean;
-  inTransaction: boolean;
-  transactionDirtyKeys: Map<string, Set<string>>;
-}
-
-/**
- * Target layer for set and mutate operations. Internal — inferred from
- * `MorselStore.set` / `mutateKey` / `push` / etc. via string literals.
- */
-export type StoreTarget = 'global' | 'project';
-
-/**
- * Target layer(s) for delete operations. Internal — inferred from
- * `MorselStore.unset` / `deleteKey` via string literals.
- */
-export type DeleteTarget = 'all' | 'global' | 'project';
-
-/**
- * Describes a mutation applied to a configuration file. Internal — surfaced
- * via `WriteEvent.mutation` consumed by `EventHook.onWrite`.
- */
-export interface MutationOperation {
-  readonly path: string;
-  readonly value?: unknown;
-  readonly isDelete?: boolean;
-}
-
-/**
- * Result of resolving which layer and file path owns a given key. Internal —
- * `resolveKeyOrigin` is not part of the public API.
- */
-export interface KeyOrigin {
-  readonly layer: MorselLayer | undefined;
-  readonly filePath: string | undefined;
-  readonly isWritable: boolean;
-  readonly exists: boolean;
 }
 
 /**
@@ -622,34 +512,16 @@ export function clearRegistry(): void;
 2. If no: `mkdirSync(dirname, { recursive: true })` — creates the parent directory if needed.
 3. Writes `content` (or `fallbackContent`, or `{}`) via the first format plugin's `serialize` method via atomic write: `writeFileSync` to `<path>.tmp.<timestamp>` then `renameSync` to `<path>` (avoids partial reads in case of crash).
 4. Returns the created path.
-5. On serialize failure (`plugin.serialize` throws): throws `MorselError` (`EWRITE`) with the project path and original error as cause — the content is not written and no fallback is applied.
+5. On serialize failure (`plugin.serialize` throws): throws `MorselError` (`EIO`) with the project path and original error as cause — the content is not written and no fallback is applied.
 6. On write failure (`writeFileSync` or `renameSync` throws): throws `MorselError` (`EIO`) with the project path and original error as cause.
 
 #### `stop()`
 
-`stop()` is async (`Promise<void>`). `stopped = true` is assigned **synchronously** at the start, before any `await`. `stop()` awaits `state.writeQueue` to drain any in-flight mutations, then awaits `state.remergeDone` to drain any in-flight re-merge, before closing watchers. Watchers whose `refCount` reaches zero are closed. All registered listeners are cleared. `store.config`, `store.layers`, `store.get()`, `store.has()`, `store.all()`, `store.dotify()`, and `store.getProvenance()` remain readable after stop at the last known state. Any subsequent call to `store.on()`, `store.set()`, `store.unset()`, `store.push()`, `store.unshift()`, `store.pop()`, `store.shift()`, `store.splice()`, `store.mutateKey()`, `store.deleteKey()`, or `store.transaction()` throws `Error('morsel: store is stopped')`.
+`stop()` is async (`Promise<void>`). `stopped = true` is assigned **synchronously** at the start, before any `await`. `stop()` awaits `state.remergeDone` to drain any in-flight re-merge, before closing watchers. Watchers whose `refCount` reaches zero are closed. All registered listeners are cleared. `store.config`, `store.layers`, `store.get()`, `store.has()`, `store.all()`, `store.dotify()`, and `store.getProvenance()` remain readable after stop at the last known state. Any subsequent call to `store.on()` throws `Error('morsel: store is stopped')`.
 
 #### `signal` — AbortSignal
 
 If `WatchOptions.signal` is provided, it is checked **after** hook `init` completes and the store is fully bootstrapped. If the signal is already aborted at that point, `store.stop()` is called immediately. Otherwise, an `abort` listener is registered to call `store.stop()` when the signal fires. This ordering ensures that hooks are initialized before the store can be stopped.
-
-#### `writeConfigFile` — Atomic Write Engine
-
-`writeConfigFile` performs an atomic read-modify-write on a config file:
-
-1. Reads the existing file content. If the file does not exist (ENOENT), treats the content as empty and proceeds — the file will be created.
-2. Parses the existing content via the matching format plugin (or `{}` if empty).
-3. Applies the mutation (`set` or `delete`) to the parsed config.
-4. Serializes the result via the plugin's `serialize` method.
-5. Writes to a temporary file (`<path>.tmp.<timestamp>`), then atomically renames to the target path.
-6. Writes are serialized per file path via a promise queue — concurrent mutations to the same file are queued.
-7. If the mutation does not change the value (`set` with an identical value compared via `isDeepStrictEqual`, or `delete` of a non-existent key), the write is skipped and the function returns early — no disk I/O, no `after:write` hook.
-
-On I/O or serialization failure, a `WriteError` (`EWRITE`) is thrown. The caller (`mutateKey`/`deleteKey`) is responsible for rolling back the in-memory state.
-
-#### `DeleteTarget: 'all'`
-
-When `unset` or `deleteKey` is called with `target: 'all'` (the default), the deletion is applied to **every writable layer** that has a file path — both `project` and `global`. The key is removed from each file in sequence via `writeConfigFile`. If the key does not exist in the in-memory config, the operation returns `false` without writing. On write failure, the in-memory state is rolled back and revert events are emitted. Already-written files on disk are not reverted — eventual consistency is restored on the next re-merge (fs.watch fire or manual reload), which re-reads all files and re-merges from disk state.
 
 #### `getProvenance`
 
@@ -679,46 +551,15 @@ When `unset` or `deleteKey` is called with `target: 'all'` (the default), the de
 
 - `getProvenance` remains callable after `stop()` — it reads from `state._layers` and `state._config` which remain at the last known state. Same behavior as `store.get` and `store.layers`.
 
-#### `transaction`
+#### Headless Mode — `watch`, `proxy` flags
 
-`transaction(callback)` batches mutations into an atomic, all-or-nothing commit across multiple files.
-
-1. **Preconditions**: throws `Error('morsel: store is stopped')` if `state.stopped` is `true`. Throws `Error('morsel: nested transactions are not supported')` if `state.inTransaction` is already `true`.
-2. **Snapshot**: before the callback, captures `{ config, layers, lastConfig }` from `state`. Sets `state.inTransaction = true` and resets `state.transactionDirtyKeys`.
-3. **In-memory mutations**: during the callback, `mutateKey` and `deleteKey` bypass the `writeQueue` and execute `doMutateKey` / `doDeleteKey` directly. Writes to disk are skipped — only the in-memory layer configs and merged config are updated (via `applyOptimisticUpdateSilent`). Dirty keys are tracked per layer path in `state.transactionDirtyKeys`.
-4. **Callback error**: if the callback throws, the snapshot is restored (`state._config`, `state._layers`, `state.lastConfig`), `state.inTransaction` is set to `false`, and the error is rethrown. No events are emitted, no files are written.
-5. **Commit**: on successful callback return, dirty layer files are backed up to `<path>.bak`, then written atomically via `atomicWrite`. After all writes succeed, `.bak` files are cleaned up.
-6. **Commit error**: if any write fails, `.bak` files are restored to their original paths, the snapshot is restored, and the error is rethrown. `state.inTransaction` is set to `false`.
-7. **Events**: after a successful commit, `emitChanges` is called with the snapshot config and the new validated config. `state.inTransaction` is set to `false`.
-8. **`after:write` hooks**: triggered once per dirty file after successful commit, with a `WriteEvent` per file.
-9. **`stop()` interaction**: `stop()` awaits `state.writeQueue` but does not await an in-progress transaction. The caller must `await` the transaction before calling `stop()`.
-
-**Non-goals**: no nested transactions, no partial commit, no isolation from concurrent re-merges (a re-merge during a transaction is deferred via `remergeInProgress` / `pendingRemerge`).
-
-#### `writeQueue` — Mutation Serialization
-
-All mutations (`set`, `unset`, `push`, `unshift`, `pop`, `shift`, `splice`, `mutateKey`, `deleteKey`) are serialized via a per-store `Promise<void>` chain (`state.writeQueue`).
-
-1. Each mutation chains onto `state.writeQueue`: `run = writeQueue.then(() => doMutation())`.
-2. `state.writeQueue` is updated to `run.catch(() => {})` — errors are swallowed on the queue to avoid blocking subsequent mutations.
-3. The caller receives `run` — they get the error (or success) for their specific mutation.
-4. Mutations execute in **call order** (FIFO). `Promise.all([set('a', 1), set('b', 2)])` executes `set('a', 1)` then `set('b', 2)` — not in parallel.
-5. If a mutation fails, subsequent mutations are not blocked (error isolation).
-6. `stop()` awaits `state.writeQueue` before closing watchers — no mutation in flight after stop.
-7. Read operations (`get`, `has`, `all`, `dotify`, `getProvenance`) do not pass through the queue — they read `state._config` directly (synchronous, in-memory).
-
-**Non-goals**: no read queue, no priority (FIFO strict), no cancellation, no automatic batching (batching is the role of `transaction`).
-
-#### Headless Mode — `watch`, `proxy`, `queue` flags
-
-`watchConfig` accepts three orthogonal flags on `WatchOptions`, all defaulting to `true`. When set to `false`, the corresponding feature is disabled for the lifetime of the store. This enables one-shot use cases (CI, scripts, CLI commands) to avoid the overhead of reactive features they don't use.
+`watchConfig` accepts two orthogonal flags on `WatchOptions`, both defaulting to `true`. When set to `false`, the corresponding feature is disabled for the lifetime of the store. This enables one-shot use cases (CI, scripts, CLI commands) to avoid the overhead of reactive features they don't use.
 
 **`watch: false`** — Skip watcher setup.
 
 - `collectWatchedFiles` and `setupWatchers` are not called. `state.watchers` remains empty.
 - `stop()` works normally — `releaseAllWatchers` is a no-op on an empty set.
 - `triggerRemerge` is defined but never invoked (no watcher to fire it).
-- Mutations (`set`, `unset`) still work — they write to disk via `writeConfigFile` and update in-memory state via optimistic update. No re-merge is triggered after the write (no watcher).
 - `signal` (AbortSignal) is still handled independently of watchers.
 
 **`proxy: false`** — Skip proxy construction.
@@ -726,29 +567,21 @@ All mutations (`set`, `unset`, `push`, `unshift`, `pop`, `shift`, `splice`, `mut
 - `createStableProxy` is not called. `state._proxy` remains `undefined`.
 - The `config` getter returns `state._config` directly (or the stopped config clone after `stop()`).
 - `store.get()`, `store.has()`, `store.all()`, `store.dotify()`, `store.getProvenance()` are unaffected — they read `state._config` directly, not the proxy.
-- `store.on()` and change events are unaffected — `emitChanges` is called by `applyOptimisticUpdate` independently of the proxy.
+- `store.on()` and change events are unaffected — `emitChanges` is called by the re-merge independently of the proxy.
 - With `configMutability: 'frozen'`, `state._config` is already frozen by `applyMutability` — `Object.isFrozen(store.config)` is `true`.
-- With `configMutability: 'mutable'`, `store.config.key = value` modifies `_config` in memory but does **not** persist to disk. Use `store.set()` to persist.
-
-**`queue: false`** — Bypass write queue.
-
-- `state.queueEnabled` is set to `false` at boot. `mutateKey` and `deleteKey` execute `doMutateKey` / `doDeleteKey` directly without `chainMutation`.
-- `state.writeQueue` remains `Promise.resolve()` (never used).
-- `stop()` awaits `state.writeQueue` (a no-op) — if a mutation is in flight, `stop()` does not wait for it. The caller must `await` mutations before calling `stop()`.
-- Concurrent mutations (`Promise.all([set('a', 1), set('b', 2)])`) execute in parallel — race conditions are possible. This is the explicit trade-off: the caller assumes responsibility for serialization.
+- With `configMutability: 'mutable'`, `store.config.key = value` modifies `_config` in memory but does **not** persist to disk.
 
 **Flag combinations:**
 
-| `watch` | `proxy` | `queue` | Use case                          |
-| ------- | ------- | ------- | --------------------------------- |
-| `true`  | `true`  | `true`  | Default — long-running, reactive  |
-| `false` | `true`  | `true`  | CI with `store.config` access     |
-| `false` | `false` | `true`  | CI with `store.get()` only        |
-| `false` | `false` | `false` | CI one-shot sequential — max perf |
+| `watch` | `proxy` | Use case                         |
+| ------- | ------- | -------------------------------- |
+| `true`  | `true`  | Default — long-running, reactive |
+| `false` | `true`  | CI with `store.config` access    |
+| `false` | `false` | CI with `store.get()` only       |
 
 All combinations are valid. Flags are orthogonal and permanent for the lifetime of the store.
 
-**Non-goals**: no lazy watchers (watch on demand), no lazy proxy, no dynamic queue toggle. Flags are fixed at boot.
+**Non-goals**: no lazy watchers (watch on demand), no lazy proxy. Flags are fixed at boot.
 
 ---
 
@@ -763,7 +596,7 @@ Events are computed via `diffKeys` and emitted via `store.on(keyPath, listener, 
 - **Object replaced by scalar**: `event = { keyPath, type: 'modified', next: scalar, prev: oldObject }` on the parent + all child scalars as removed.
 - **Scalar replaced by object**: `event = { keyPath, type: 'modified', next: newObject, prev: scalar }` on the parent + all child scalars as added.
 - **Object added / removed**: emits on the parent + all child scalars.
-- **Array modified**: `event = { keyPath, type: 'modified', next: newArray, prev: oldArray }` on the parent (atomic replacement, no per-index diff). Array mutators (`push`, `unshift`, `pop`, `shift`, `splice`) delegate to `mutateKey` with the full replacement array. `push` additionally emits on `path.<newIndex>` for the newly added element. Type mismatch (target is not an array) throws `MorselError` (`EVALIDATE`) — applies to all array operations including `indexOf`/`lastIndexOf`. `push` returns the index of the newly added element (last position). `unshift` returns the new array length.
+- **Array modified**: `event = { keyPath, type: 'modified', next: newArray, prev: oldArray }` on the parent (atomic replacement, no per-index diff).
 
 #### Two-Phase Ordering Invariant
 
@@ -829,7 +662,6 @@ The core does not recommend any specific plugin package — the plugin architect
 - **No pool**: sequential layer reads in lifecycle order.
 - **Watch ref-counting**: a single `fs.watch` per unique directory (`WatcherRegistry`).
 - **Concurrent re-merges**: handled by an atomic queue without blocking mutex via `pendingRemerge`.
-- **Mutation serialization**: all mutations (`set`, `unset`, `push`, etc.) are serialized via a per-store `writeQueue` (Promise chain). Concurrent calls execute in call order — no write is lost. Errors are isolated per mutation.
 
 ### 6.2 Watcher Registry — Reference Algorithm
 

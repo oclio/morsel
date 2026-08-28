@@ -1,11 +1,6 @@
-type ConfigRecord = Record<string, unknown>;
+import type { CustomFormatPlugin } from './morsel-plugin';
 
-interface FormatPlugin {
-  readonly name: string;
-  readonly extensions: readonly string[];
-  parse(content: string, filePath: string): Record<string, unknown>;
-  serialize(data: Record<string, unknown>): string;
-}
+type ConfigRecord = Record<string, unknown>;
 
 /**
  * Create a mock format plugin for a custom extension (e.g. `.morsel`).
@@ -15,7 +10,7 @@ interface FormatPlugin {
  * @param extensions - File extensions the plugin handles (e.g. `['.morsel']`).
  * @param parse - Optional parse function; defaults to returning an empty object.
  * @param serialize - Optional serialize function; defaults to `JSON.stringify`.
- * @returns A `FormatPlugin` object ready to pass to `formatPlugins`.
+ * @returns A `CustomFormatPlugin` object ready to pass to `formatPlugins`.
  */
 export function mockPlugin(
   name: string,
@@ -23,7 +18,7 @@ export function mockPlugin(
   parse: (content: string, filePath: string) => ConfigRecord = () => ({}),
   serialize: (data: Record<string, unknown>) => string = (data) =>
     JSON.stringify(data, undefined, 2) + '\n',
-): FormatPlugin {
+): CustomFormatPlugin {
   return {
     name,
     extensions,

@@ -34,7 +34,7 @@ describe('mutability-mutable-watch — mutable + watch', () => {
     await store!.stop();
   });
 
-  it('mutable deep clone diff: consumer mutation does not break diff', async () => {
+  it('mutable deep clone diff: consumer modification does not break diff', async () => {
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
       watch: true,
@@ -78,8 +78,8 @@ describe('mutability-mutable-watch — mutable + watch', () => {
     expect(store!.config).toEqual({ port: 3000, host: 'localhost' });
     expect(Object.isFrozen(store!.config)).toBe(false);
 
-    const mutated = store!.config as Record<string, unknown>;
-    mutated['port'] = 9999;
-    expect(mutated['port']).toBe(9999);
+    const modified = store!.config as Record<string, unknown>;
+    modified['port'] = 9999;
+    expect(modified['port']).toBe(9999);
   });
 });

@@ -15,7 +15,7 @@ import { atomicWriteSync } from '@/writer/atomic-write';
  * 3. If no: write `content` (or `fallbackContent`) — prefers `.config/` dir
  *    if it already exists, otherwise writes at the project root.
  * 4. Return the written path.
- * 5. On serialize failure: throws `MorselError` (code `EWRITE`).
+ * 5. On serialize failure: throws `MorselError` (code `EIO`).
  * 6. On write failure (permissions, disk full): throws `MorselError` (code `EIO`).
  *
  * @param options - `{ name, cwd?, content?, fallbackContent? }`.
@@ -54,7 +54,7 @@ export function initConfig<T extends ConfigRecord = ConfigRecord>(
   } catch (error) {
     throw new MorselError(
       projectPath,
-      'EWRITE',
+      'EIO',
       error instanceof Error ? error : new Error(String(error)),
     );
   }

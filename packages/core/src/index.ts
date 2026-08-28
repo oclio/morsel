@@ -2,15 +2,12 @@ export type { ErrorCode } from '@/errors/error';
 export { MorselError } from '@/errors/error';
 export { NoPluginError } from '@/errors/no-plugin-error';
 export { ValidationError } from '@/errors/validation-error';
-export { WriteError } from '@/errors/write-error';
 export type {
-  EventHook,
   Hook,
   HookContext,
   HookLifecycle,
   LayerHook,
   LayerWatchableHook,
-  WriteEvent,
 } from '@/hooks/types';
 export type { ConfigMutability } from '@/load/merge-layers';
 export type { DebugCallback } from '@/load/resolve-env';
@@ -22,11 +19,7 @@ export { diffKeys } from '@/merge/diff-keys';
 export { interpolate } from '@/merge/interpolate';
 export type { PathSegment } from '@/paths/parse-path';
 export { parsePath, validatePath } from '@/paths/parse-path';
-export {
-  getPathValue,
-  hasRemovedPathValue,
-  setPathValue,
-} from '@/paths/path-access';
+export { getPathValue } from '@/paths/path-access';
 export type { ResolvedPaths, ResolvePathsOptions } from '@/paths/resolve-paths';
 export { resolvePaths } from '@/paths/resolve-paths';
 export { jsonPlugin } from '@/plugins/json-plugin';

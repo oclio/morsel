@@ -297,20 +297,6 @@ describe('createStoreState', () => {
     expect(state.pendingRemerge).toBe(false);
   });
 
-  it('initializes inTransaction as false', () => {
-    const state = createStoreState(
-      {},
-      [],
-      '/project/config.json',
-      mockOptions,
-      300,
-      vi.fn(),
-    );
-
-    expect(state.inTransaction).toBe(false);
-    expect(state.transactionDirtyKeys).toEqual(new Map());
-  });
-
   it('initializes remergeDone as undefined', () => {
     const state = createStoreState(
       {},

@@ -29,7 +29,6 @@ export interface MockResolvedOptions {
   hooks: readonly unknown[];
   watch: boolean;
   proxy: boolean;
-  queue: boolean;
 }
 
 /**
@@ -57,16 +56,13 @@ export function createMockResolvedOptions(
     configMutability: 'frozen',
     verbose: false,
     onDebug: () => {
-      /**
-      noop debug callback
-      */
+      // noop debug callback
     },
     formatPlugins: [],
     validationPlugins: [],
     hooks: [],
     watch: true,
     proxy: true,
-    queue: true,
     ...overrides,
   };
 }

@@ -59,7 +59,6 @@ describe('resolveOptions', () => {
     expect(result.hooks).toEqual([]);
     expect(result.watch).toBe(true);
     expect(result.proxy).toBe(true);
-    expect(result.queue).toBe(true);
   });
 
   it('defaults watch to true when not provided', () => {
@@ -76,14 +75,6 @@ describe('resolveOptions', () => {
     const result = resolveOptions({ name: 'myapp' });
 
     expect(result.proxy).toBe(true);
-  });
-
-  it('defaults queue to true when not provided', () => {
-    vi.mocked(resolveGlobalDirectory).mockReturnValue('/fake/global');
-
-    const result = resolveOptions({ name: 'myapp' });
-
-    expect(result.queue).toBe(true);
   });
 
   it('uses provided watch: false', () => {
@@ -106,17 +97,6 @@ describe('resolveOptions', () => {
     } as WatchOptions);
 
     expect(result.proxy).toBe(false);
-  });
-
-  it('uses provided queue: false', () => {
-    vi.mocked(resolveGlobalDirectory).mockReturnValue('/fake/global');
-
-    const result = resolveOptions({
-      name: 'myapp',
-      queue: false,
-    } as WatchOptions);
-
-    expect(result.queue).toBe(false);
   });
 
   it('uses provided formatPlugins and validationPlugins', () => {

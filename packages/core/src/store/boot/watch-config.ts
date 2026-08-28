@@ -33,7 +33,6 @@ async function initHooks<T extends ConfigRecord>(
   context: HookContext,
 ): Promise<void> {
   for (const hook of hooks) {
-    if (hook.lifecycle === 'after:write') continue;
     if (hook.init === undefined) continue;
     try {
       await hook.init(context);

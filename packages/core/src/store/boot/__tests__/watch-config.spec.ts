@@ -88,7 +88,6 @@ function makeState(overrides: Partial<StoreState> = {}): StoreState {
       hooks: [],
       watch: true,
       proxy: true,
-      queue: true,
     },
     ...overrides,
   }) as StoreState;
@@ -119,7 +118,6 @@ describe('watchConfig', () => {
       hooks: [],
       watch: true,
       proxy: true,
-      queue: true,
     } as never);
 
     vi.mocked(resolveGlobalPath).mockResolvedValue('/global/myapp.config.json');
@@ -304,7 +302,6 @@ describe('watchConfig', () => {
         hooks: [hook],
         watch: true,
         proxy: true,
-        queue: true,
       } as never);
 
       await watchConfig({ name: 'myapp' });
@@ -317,38 +314,6 @@ describe('watchConfig', () => {
           triggerRemerge: expect.any(Function),
         }),
       );
-    });
-
-    it('skips init for EventHook (after:write)', async () => {
-      const init = vi.fn();
-      const hook = {
-        name: 'audit',
-        lifecycle: 'after:write',
-        onWrite: vi.fn(),
-        init,
-      };
-      vi.mocked(resolveOptions).mockReturnValue({
-        name: 'myapp',
-        cwd: '/project',
-        defaults: {},
-        overrides: {},
-        globalDir: '/global',
-        arrayMerge: 'replace',
-        envName: 'test',
-        onDebug: noop,
-        configMutability: 'frozen',
-        verbose: false,
-        formatPlugins: [jsonPlugin],
-        validationPlugins: [],
-        hooks: [hook],
-        watch: true,
-        proxy: true,
-        queue: true,
-      } as never);
-
-      await watchConfig({ name: 'myapp' });
-
-      expect(init).not.toHaveBeenCalled();
     });
 
     it('skips init when not defined on hook', async () => {
@@ -373,7 +338,6 @@ describe('watchConfig', () => {
         hooks: [hook],
         watch: true,
         proxy: true,
-        queue: true,
       } as never);
 
       await expect(watchConfig({ name: 'myapp' })).resolves.toBeDefined();
@@ -404,7 +368,6 @@ describe('watchConfig', () => {
         hooks: [hook],
         watch: true,
         proxy: true,
-        queue: true,
       } as never);
       mockState.watchers = new Set(['/dir1', '/dir2']);
 
@@ -488,7 +451,6 @@ describe('watchConfig', () => {
         hooks: [hook],
         watch: true,
         proxy: true,
-        queue: true,
       } as never);
 
       await watchConfig({ name: 'myapp' });
@@ -546,7 +508,6 @@ describe('watchConfig', () => {
         hooks: [],
         watch: false,
         proxy: true,
-        queue: true,
       } as never);
 
       await watchConfig({ name: 'myapp', watch: false });
@@ -571,7 +532,6 @@ describe('watchConfig', () => {
         hooks: [],
         watch: false,
         proxy: true,
-        queue: true,
       } as never);
 
       await watchConfig({ name: 'myapp', watch: false });

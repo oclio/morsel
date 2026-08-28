@@ -21,10 +21,6 @@ function createState<T extends Record<string, unknown>>(
     remergeInProgress: false,
     remergeDone: undefined,
     enoentLogged: new Set(),
-    writeQueue: Promise.resolve(),
-    queueEnabled: true,
-    inTransaction: false,
-    transactionDirtyKeys: new Map(),
     ...overrides,
   } as StoreState<T>;
 }

@@ -1,70 +1,42 @@
+import { MorselError } from '@/errors/error';
 import { parsePath } from '@/paths/parse-path';
-import {
-  assertArray,
-  popKey,
-  pushKey,
-  shiftKey,
-  spliceKey,
-  unshiftKey,
-} from '@/store/array-ops';
+import { getPathValue } from '@/paths/path-access';
 import type { StoreState } from '@/store/store-state';
-import type { StoreTarget } from '@/store/types';
 
 type ConfigRecord = Record<string, unknown>;
 
 /**
- * Array operation methods for the store.
+ * Resolve a path in the config and assert that the value is an array.
  *
- * Each method delegates to the corresponding array-ops function,
- * passing the store state and mutability mode.
+ * @throws MorselError with code `EVALIDATE` if the value is not an array.
+ */
+function assertArray(
+  pathInput: string | readonly (string | number)[],
+  config: Record<string, unknown>,
+  segments: (string | number)[],
+): unknown[] {
+  const array = getPathValue(config, segments);
+  if (!Array.isArray(array)) {
+    throw new MorselError(
+      undefined,
+      'EVALIDATE',
+      new Error(`"${pathInput}" is not an array`),
+    );
+  }
+  return array;
+}
+
+/**
+ * Build the read-only array lookup methods (`indexOf`, `lastIndexOf`) bound
+ * to the given store state. Both resolve `path` against the current config,
+ * assert the value is an array (else `MorselError`/`EVALIDATE`), and delegate
+ * to the native `Array.prototype` method. Neither mutates the config or the
+ * filesystem.
  */
 export function createArrayMethods<T extends ConfigRecord>(
   state: StoreState<T>,
-  mutability: 'frozen' | 'mutable',
 ) {
   return {
-    async push(
-      pathInput: string | readonly (string | number)[],
-      value: unknown,
-      target?: StoreTarget,
-    ): Promise<number> {
-      return pushKey(state, pathInput, value, target, mutability);
-    },
-    async unshift(
-      pathInput: string | readonly (string | number)[],
-      value: unknown,
-      target?: StoreTarget,
-    ): Promise<number> {
-      return unshiftKey(state, pathInput, value, target, mutability);
-    },
-    async pop(
-      pathInput: string | readonly (string | number)[],
-      target?: StoreTarget,
-    ): Promise<unknown> {
-      return popKey(state, pathInput, target, mutability);
-    },
-    async shift(
-      pathInput: string | readonly (string | number)[],
-      target?: StoreTarget,
-    ): Promise<unknown> {
-      return shiftKey(state, pathInput, target, mutability);
-    },
-    async splice(
-      pathInput: string | readonly (string | number)[],
-      start: number,
-      deleteCount: number,
-      ...items: unknown[]
-    ): Promise<unknown[]> {
-      return spliceKey(
-        state,
-        pathInput,
-        start,
-        deleteCount,
-        items,
-        undefined,
-        mutability,
-      );
-    },
     indexOf(
       pathInput: string | readonly (string | number)[],
       value: unknown,

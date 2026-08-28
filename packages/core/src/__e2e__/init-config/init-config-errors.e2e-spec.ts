@@ -14,7 +14,7 @@ describe('init-config-errors — error handling', () => {
     clearWatcherRegistry();
   });
 
-  it('serialize failure → MorselError(EWRITE) with path and cause', async () => {
+  it('serialize failure → MorselError(EIO) with path and cause', async () => {
     const { projectDirectory } = await setupTest({
       projectConfig: {},
       projectFilename: '_setup-test.json',
@@ -29,7 +29,7 @@ describe('init-config-errors — error handling', () => {
         content: { port: 3000 },
         formatPlugins: [throwingPlugin],
       } as never),
-    ).toThrow(expect.objectContaining({ name: 'MorselError', code: 'EWRITE' }));
+    ).toThrow(expect.objectContaining({ name: 'MorselError', code: 'EIO' }));
   });
 
   it('write failure → MorselError(EIO) with path and cause', async () => {

@@ -1,10 +1,8 @@
 /**
- * Hook lifecycle — 8 layer insertion points + 1 event point.
+ * Hook lifecycle — 8 layer insertion points.
  *
  * Hooks `before:X` produce a layer that stacks **before** layer `X` (lower priority).
  * Hooks `after:X` produce a layer that stacks **after** layer `X` (higher priority).
- * `after:write` is an event hook — it does not produce a layer, it reacts to
- * a successful write (see {@link EventHook}).
  */
 export type HookLifecycle =
   | 'before:defaults'
@@ -14,8 +12,7 @@ export type HookLifecycle =
   | 'before:project'
   | 'after:project'
   | 'before:overrides'
-  | 'after:overrides'
-  | 'after:write';
+  | 'after:overrides';
 
 /**
  * Context passed to a hook's `load` method.
@@ -98,49 +95,6 @@ export interface LayerWatchableHook extends LayerHook {
 }
 
 /**
- * Event payload passed to an {@link EventHook} with lifecycle `after:write`.
- */
-export interface WriteEvent {
-  /**
-  Absolute path of the file that was written.
-  */
-  readonly filePath: string;
-  /**
-  Dotted key path that was mutated.
-  */
-  readonly keyPath: string;
-  /**
-  The mutation that was applied.
-  */
-  readonly mutation: import('@/writer/write-config').MutationOperation;
-}
-
-/**
- * Event hook — reacts to a successful write, does not produce a layer.
- *
- * Currently only supports lifecycle `after:write`.
- * Called after `writeConfigFile` succeeds in `mutateKey`/`deleteKey`.
- * Not called on rollback.
- * If `onWrite` throws, the error is logged via `onDebug`/stderr — the write
- * is already confirmed on disk, so the mutation is not rolled back.
- */
-export interface EventHook {
-  /**
-  Unique hook name, ex: "audit-log", "metrics".
-  */
-  readonly name: string;
-  /**
-  Event lifecycle point. Currently only `after:write`.
-  */
-  readonly lifecycle: 'after:write';
-  /**
-  Called after a successful write. Sync or async.
-  Errors are caught and logged — they do not fail the mutation.
-  */
-  onWrite(event: WriteEvent): void | Promise<void>;
-}
-
-/**
  * Union of all hook types accepted by `MorselOptions.hooks`.
  */
-export type Hook = LayerHook | LayerWatchableHook | EventHook;
+export type Hook = LayerHook | LayerWatchableHook;

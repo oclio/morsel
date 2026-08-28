@@ -1,3 +1,3 @@
-const exclude = ['src/**/__tests__/**', 'src/**/types.ts'];
+const exclude = ['src/**/__e2e__/**', 'src/**/__tests__/**', 'src/**/types.ts'];
 
 export default exclude;

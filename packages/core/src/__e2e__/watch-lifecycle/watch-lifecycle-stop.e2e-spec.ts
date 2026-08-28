@@ -199,7 +199,7 @@ describe('watch-lifecycle-stop — boot & stop() behavior', () => {
     await stopPromise;
   });
 
-  it('stop() disposes hooks (non after:write)', async () => {
+  it('stop() disposes hooks', async () => {
     let isDisposeCalled = false;
 
     const hooks = [

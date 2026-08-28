@@ -81,10 +81,6 @@ function makeState(overrides: Partial<StoreState> = {}): StoreState {
     debounceMs: 300,
     remerge: vi.fn(),
     enoentLogged: new Set(),
-    writeQueue: Promise.resolve(),
-    queueEnabled: true,
-    inTransaction: false,
-    transactionDirtyKeys: new Map(),
     options: {
       name: 'myapp',
       cwd: '/project',
@@ -93,7 +89,6 @@ function makeState(overrides: Partial<StoreState> = {}): StoreState {
       hooks: [],
       watch: true,
       proxy: true,
-      queue: true,
     } as never,
     ...overrides,
   } as StoreState;
@@ -331,7 +326,6 @@ describe('collectWatchedFiles', () => {
         hooks: [],
         watch: true,
         proxy: true,
-        queue: true,
       } as never,
     });
     const layers: ResolvedLayer[] = [];

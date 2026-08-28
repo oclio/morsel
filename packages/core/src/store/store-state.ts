@@ -59,30 +59,6 @@ export interface StoreState<T extends ConfigRecord = ConfigRecord> {
   Reset when all previously-missing files reappear.
   */
   enoentLogged: Set<string>;
-  /**
-  Promise chain that serializes all mutations (set, unset, push, etc.).
-  Each mutation chains onto this and updates it. Errors are swallowed
-  on the queue (propagated to the caller) to avoid blocking subsequent
-  mutations.
-  */
-  writeQueue: Promise<void>;
-  /**
-  Whether the write queue is enabled. When false, mutations execute
-  immediately without serialization. Set at boot from options.queue.
-  */
-  queueEnabled: boolean;
-  /**
-  True during a transaction. mutateKey / deleteKey skip writeConfigFile
-  and event emission, applying mutations in-memory only. The re-merge
-  watch is blocked while this is true.
-  */
-  inTransaction: boolean;
-  /**
-  Dirty keys per layer path during a transaction. Keyed by layer file path,
-  value is a Set of canonical dotted paths that have been mutated.
-  Reset at the start of each transaction.
-  */
-  transactionDirtyKeys: Map<string, Set<string>>;
 }
 
 /**
@@ -156,9 +132,5 @@ export function createStoreState<T extends ConfigRecord>(
     debounceMs,
     remerge,
     enoentLogged: new Set(),
-    writeQueue: Promise.resolve(),
-    queueEnabled: options.queue,
-    inTransaction: false,
-    transactionDirtyKeys: new Map(),
   };
 }

@@ -9,4 +9,5 @@ export default defineConfig({
   outDir: 'dist',
   outExtension: (context) => (context.format === 'esm' ? { js: '.mjs' } : {}),
   splitting: false,
+  treeshake: true,
 });

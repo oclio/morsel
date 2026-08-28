@@ -95,7 +95,7 @@ describe('extends-live-reload — watch + extends', () => {
     await store.stop();
   });
 
-  it('mutation: editing B triggers re-merge', async () => {
+  it('edit: editing B triggers re-merge', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
       projectConfig: { port: 3000 },
     });

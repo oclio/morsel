@@ -13,7 +13,7 @@ describe('boot-mutability — freeze + layer shape', () => {
     expect(Object.isFrozen(result!.config)).toBe(true);
   });
 
-  it('config is not frozen and can be mutated freely', async () => {
+  it('config is not frozen and can be modified freely', async () => {
     const { result } = await setupTest({
       projectConfig: { port: 3000 },
       configMutability: 'mutable',

@@ -1,3 +1,5 @@
+import { pollUntil } from './poll-until';
+
 /**
 Minimal store interface with a readable `config` property.
 */
@@ -20,16 +22,9 @@ export async function waitForRemerge(
   isMatch: (config: Record<string, unknown>) => boolean,
   timeoutMs = 5000,
 ): Promise<void> {
-  const start = Date.now();
-  const intervalMs = 50;
-
-  while (Date.now() - start < timeoutMs) {
-    const config = store.config as Record<string, unknown>;
-    if (isMatch(config)) return;
-    await new Promise((resolve) => setTimeout(resolve, intervalMs));
-  }
-
-  throw new Error(
+  await pollUntil(
+    () => isMatch(store.config as Record<string, unknown>),
+    timeoutMs,
     `waitForRemerge: condition not satisfied within ${timeoutMs}ms`,
   );
 }

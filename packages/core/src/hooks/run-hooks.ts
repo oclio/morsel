@@ -1,12 +1,10 @@
 import { MorselError } from '@/errors/error';
 import type {
-  EventHook,
   Hook,
   HookContext,
   HookLifecycle,
   LayerHook,
   LayerWatchableHook,
-  WriteEvent,
 } from '@/hooks/types';
 import { stripExtends } from '@/load/extends/extends-helpers';
 import { buildHookLayer } from '@/load/layer-helpers';
@@ -39,10 +37,6 @@ function cleanupHookResult(
   );
 }
 
-function isEventHook(hook: Hook): hook is EventHook {
-  return hook.lifecycle === 'after:write';
-}
-
 function isPromise<T>(value: T | Promise<T>): value is Promise<T> {
   return (
     typeof value === 'object' &&
@@ -54,14 +48,12 @@ function isPromise<T>(value: T | Promise<T>): value is Promise<T> {
 
 /**
  * Check if a hook should run for the given lifecycle point.
- * Skips event hooks (after:write) and non-matching lifecycles.
- * Acts as a type guard narrowing to non-EventHook variants.
  */
 function shouldRunHook(
   hook: Hook,
   lifecycle: HookLifecycle,
 ): hook is LayerHook | LayerWatchableHook {
-  return !isEventHook(hook) && hook.lifecycle === lifecycle;
+  return hook.lifecycle === lifecycle;
 }
 
 /**
@@ -155,29 +147,4 @@ export async function runHooks(
   }
 
   return layers;
-}
-
-/**
- * Run all `after:write` event hooks after a successful write.
- *
- * Errors from `onWrite` are caught and logged via `onDebug` — the write is
- * already confirmed on disk, so the mutation is not rolled back.
- */
-export async function runWriteHooks(
-  hooks: readonly Hook[],
-  event: WriteEvent,
-  onDebug: (message: string, context?: Record<string, unknown>) => void,
-): Promise<void> {
-  for (const hook of hooks) {
-    if (!isEventHook(hook)) continue;
-
-    try {
-      await hook.onWrite(event);
-    } catch (error) {
-      onDebug(
-        `hook "${hook.name}" failed in after:write: ${(error as Error).message}`,
-        { hookName: hook.name, event },
-      );
-    }
-  }
 }

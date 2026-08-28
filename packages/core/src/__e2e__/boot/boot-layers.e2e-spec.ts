@@ -308,27 +308,6 @@ describe('boot-layers — layer resolution + $env + hooks', () => {
     expect(order).toEqual(['before:global', 'after:project']);
   });
 
-  it('after:write hook registered, not called at boot', async () => {
-    let isCalled = false;
-
-    await setupTest({
-      rootAsCwd: true,
-      projectConfig: { port: 3000 },
-      hooks: [
-        {
-          name: 'write-hook',
-          lifecycle: 'after:write',
-          load: () => {
-            isCalled = true;
-            return {};
-          },
-        },
-      ],
-    } as never);
-
-    expect(isCalled).toBe(false);
-  });
-
   it('hook returns null → deepMerge crashes (contract violation)', async () => {
     await expect(
       setupTest({

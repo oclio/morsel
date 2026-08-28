@@ -31,7 +31,7 @@ export interface ProcessedConfig<T extends ConfigRecord> {
  * Run the full config pipeline: merge → interpolate → validate → mutability.
  *
  * This is the single source of truth for the 5-step transformation shared
- * across boot, re-merge, and optimistic update paths.
+ * across boot and re-merge paths.
  *
  * @param layers - Resolved layers to merge.
  * @param arrayMerge - Array merge strategy.

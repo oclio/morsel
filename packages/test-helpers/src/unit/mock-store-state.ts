@@ -29,10 +29,6 @@ export interface MockStoreState<T extends ConfigRecord = ConfigRecord> {
   debounceMs: number;
   remerge: (store: unknown) => Promise<void>;
   enoentLogged: Set<string>;
-  writeQueue: Promise<void>;
-  queueEnabled: boolean;
-  inTransaction: boolean;
-  transactionDirtyKeys: Map<string, Set<string>>;
 }
 
 /**
@@ -69,10 +65,6 @@ export function createMockStoreState<T extends ConfigRecord = ConfigRecord>(
     debounceMs: 300,
     remerge: vi.fn(),
     enoentLogged: new Set(),
-    writeQueue: Promise.resolve(),
-    queueEnabled: true,
-    inTransaction: false,
-    transactionDirtyKeys: new Map(),
     ...overrides,
   };
 }

@@ -5,7 +5,7 @@ describe('read-ops-all — all() API', () => {
     clearWatcherRegistry();
   });
 
-  it("all(): deep clone snapshot, mutations on result don't affect store", async () => {
+  it("all(): deep clone snapshot, modifications on result don't affect store", async () => {
     const { store } = await setupTest({
       defaults: {
         port: 3000,

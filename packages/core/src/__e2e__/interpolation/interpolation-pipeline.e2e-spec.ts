@@ -71,23 +71,6 @@ describe('interpolation-pipeline — integration with pipeline', () => {
     });
   });
 
-  it('interpolation in mutateKey (after optimistic update)', async () => {
-    await withEnvironmentVariable('MORSEL_PORT', '8080', async () => {
-      const { store } = await setupTest({
-        projectConfig: { port: 3000, url: 'localhost' },
-        watch: true,
-        createGlobalDir: true,
-        configMutability: 'mutable',
-      });
-
-      await store!.set('port', '${MORSEL_PORT}');
-
-      expect(store!.config).toEqual({ port: '8080', url: 'localhost' });
-
-      await store!.stop();
-    });
-  });
-
   it('interpolation produces new config (deep clone before resolving)', () => {
     const input = { port: 3000, copy: '{{port}}' };
     const result = interpolate(input);

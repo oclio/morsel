@@ -5,7 +5,7 @@ describe('mutability-mutable — mutable mode', () => {
     clearWatcherRegistry();
   });
 
-  it('mutable: config not frozen, can be mutated', async () => {
+  it('mutable: config not frozen, can be modified', async () => {
     const { result } = await setupTest({
       projectConfig: { port: 3000 },
       createGlobalDir: true,

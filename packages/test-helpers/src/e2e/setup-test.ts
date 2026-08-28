@@ -99,50 +99,8 @@ export interface MinimalStore {
     defaultValue?: V,
   ): V;
   has(path: string | readonly (string | number)[]): boolean;
-  set(
-    path: string | readonly (string | number)[],
-    value: unknown,
-    target?: unknown,
-  ): Promise<void>;
-  unset(
-    path: string | readonly (string | number)[],
-    target?: unknown,
-  ): Promise<boolean>;
   all(): Record<string, unknown>;
   dotify(): Record<string, unknown>;
-  mutateKey(
-    path: string | readonly (string | number)[],
-    value: unknown,
-    target?: unknown,
-  ): Promise<void>;
-  deleteKey(
-    path: string | readonly (string | number)[],
-    target?: unknown,
-  ): Promise<boolean>;
-  push(
-    path: string | readonly (string | number)[],
-    value: unknown,
-    target?: unknown,
-  ): Promise<number>;
-  unshift(
-    path: string | readonly (string | number)[],
-    value: unknown,
-    target?: unknown,
-  ): Promise<number>;
-  pop(
-    path: string | readonly (string | number)[],
-    target?: unknown,
-  ): Promise<unknown>;
-  shift(
-    path: string | readonly (string | number)[],
-    target?: unknown,
-  ): Promise<unknown>;
-  splice(
-    path: string | readonly (string | number)[],
-    start: number,
-    deleteCount: number,
-    ...items: unknown[]
-  ): Promise<unknown[]>;
   indexOf(path: string | readonly (string | number)[], value: unknown): number;
   lastIndexOf(
     path: string | readonly (string | number)[],
@@ -150,7 +108,6 @@ export interface MinimalStore {
   ): number;
   stop(): Promise<void>;
   getProvenance(path: string | readonly (string | number)[]): unknown;
-  transaction(callback: () => Promise<void>): Promise<void>;
 }
 
 /**

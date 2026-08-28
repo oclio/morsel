@@ -5,10 +5,8 @@ import { stopStore } from '@/store/boot/stop-store';
 import { emitChanges } from '@/store/reactive/emit-changes';
 import { createStableProxy } from '@/store/reactive/stable-proxy';
 import { createMorselStore } from '@/store/store';
-import { deleteKey, mutateKey, setKey, unsetKey } from '@/store/store-mutator';
 import { resolveProvenance } from '@/store/store-provenance';
 import type { StoreState } from '@/store/store-state';
-import { runTransaction } from '@/store/store-transaction';
 
 vi.mock('@/load/merge-layers', () => ({
   applyMutability: vi.fn(),
@@ -19,17 +17,8 @@ vi.mock('@/store/boot/stop-store', () => ({
 vi.mock('@/store/reactive/stable-proxy', () => ({
   createStableProxy: vi.fn(),
 }));
-vi.mock('@/store/store-mutator', () => ({
-  deleteKey: vi.fn(),
-  mutateKey: vi.fn(),
-  setKey: vi.fn(),
-  unsetKey: vi.fn(),
-}));
 vi.mock('@/store/store-provenance', () => ({
   resolveProvenance: vi.fn(),
-}));
-vi.mock('@/store/store-transaction', () => ({
-  runTransaction: vi.fn(),
 }));
 
 function createState<T extends Record<string, unknown>>(
@@ -196,7 +185,7 @@ describe('createMorselStore', () => {
 
       unsub();
 
-      expect(state.listeners.get('foo')!.has(listener)).toBe(false);
+      expect(state.listeners.get('foo')).toBeUndefined();
     });
 
     it('throws when store is stopped', () => {
@@ -252,7 +241,7 @@ describe('createMorselStore', () => {
       );
 
       expect(listener).toHaveBeenCalledTimes(1);
-      expect(state.listeners.get('foo')!.size).toBe(0);
+      expect(state.listeners.get('foo')).toBeUndefined();
     });
 
     it('auto-unsubscribes wildcard listener after first event when once is true', () => {
@@ -276,7 +265,7 @@ describe('createMorselStore', () => {
       );
 
       expect(listener).toHaveBeenCalledTimes(1);
-      expect(state.wildcardListeners.get('foo.*')!.size).toBe(0);
+      expect(state.wildcardListeners.get('foo.*')).toBeUndefined();
     });
 
     it('manual unsubscribe works with once listener', () => {
@@ -288,7 +277,7 @@ describe('createMorselStore', () => {
 
       unsub();
 
-      expect(state.listeners.get('foo')!.size).toBe(0);
+      expect(state.listeners.get('foo')).toBeUndefined();
     });
 
     it('does not auto-unsubscribe when once is not set', () => {
@@ -392,78 +381,6 @@ describe('createMorselStore', () => {
     });
   });
 
-  describe('set', () => {
-    it('delegates to setKey with path, value, and target', async () => {
-      vi.mocked(setKey).mockResolvedValue(undefined);
-      const state = createState();
-      const store = createMorselStore(state, 'mutable');
-
-      await store.set('server.port', 8080, 'project');
-
-      expect(setKey).toHaveBeenCalledWith(
-        state,
-        'server.port',
-        8080,
-        'project',
-        'mutable',
-      );
-    });
-  });
-
-  describe('unset', () => {
-    it('delegates to unsetKey with path and target', async () => {
-      vi.mocked(unsetKey).mockResolvedValue(true);
-      const state = createState();
-      const store = createMorselStore(state, 'mutable');
-
-      const result = await store.unset('server.port', 'all');
-
-      expect(result).toBe(true);
-      expect(unsetKey).toHaveBeenCalledWith(
-        state,
-        'server.port',
-        'all',
-        'mutable',
-      );
-    });
-  });
-
-  describe('mutateKey', () => {
-    it('calls mutateKeyMutator with state, path, value, target, and mutability', async () => {
-      vi.mocked(mutateKey).mockResolvedValue(undefined);
-      const state = createState();
-      const store = createMorselStore(state, 'frozen');
-
-      await store.mutateKey('server.port', 8080, 'project');
-
-      expect(mutateKey).toHaveBeenCalledWith(
-        state,
-        'server.port',
-        8080,
-        'project',
-        'frozen',
-      );
-    });
-  });
-
-  describe('deleteKey', () => {
-    it('calls deleteKeyMutator with state, path, target, and mutability', async () => {
-      vi.mocked(deleteKey).mockResolvedValue(false);
-      const state = createState();
-      const store = createMorselStore(state, 'frozen');
-
-      const result = await store.deleteKey('server.port', 'global');
-
-      expect(result).toBe(false);
-      expect(deleteKey).toHaveBeenCalledWith(
-        state,
-        'server.port',
-        'global',
-        'frozen',
-      );
-    });
-  });
-
   describe('getProvenance', () => {
     it('delegates to resolveProvenance with layers and path', () => {
       const layers = [
@@ -487,18 +404,6 @@ describe('createMorselStore', () => {
         file: undefined,
         overridden: [],
       });
-    });
-  });
-
-  describe('transaction', () => {
-    it('delegates to runTransaction with state, mutability, and callback', async () => {
-      const state = createState();
-      const store = createMorselStore(state, 'frozen');
-      const callback = vi.fn(async () => {});
-
-      await store.transaction(callback);
-
-      expect(runTransaction).toHaveBeenCalledWith(state, 'frozen', callback);
     });
   });
 

@@ -90,55 +90,6 @@ describe('validation-pipeline — integration with pipeline', () => {
     });
   });
 
-  it('validation in mutateKey (after optimistic update)', async () => {
-    const validate = (config: Record<string, unknown>) => {
-      if (config['port'] === 'invalid') {
-        throw new Error('port must be a number');
-      }
-      return config;
-    };
-
-    const { store } = await setupTest({
-      projectConfig: { port: 3000 },
-      watch: true,
-      createGlobalDir: true,
-      validationPlugins: [{ name: 'port-type', validate }],
-    } as never);
-
-    await expect(store!.set('port', 'invalid')).rejects.toMatchObject({
-      name: 'ValidationError',
-      code: 'EVALIDATE',
-    });
-
-    expect(store!.config).toEqual({ port: 3000 });
-
-    await store!.stop();
-  });
-
-  it('validation in mutateKey rollback on failure', async () => {
-    const validate = (config: Record<string, unknown>) => {
-      if (config['port'] === 'bad') {
-        throw new Error('port must be a number');
-      }
-      return config;
-    };
-
-    const { store } = await setupTest({
-      projectConfig: { port: 3000 },
-      watch: true,
-      createGlobalDir: true,
-      validationPlugins: [{ name: 'rollback', validate }],
-    } as never);
-
-    const originalConfig = store!.config;
-
-    await expect(store!.set('port', 'bad')).rejects.toThrow();
-
-    expect(store!.config).toEqual(originalConfig);
-
-    await store!.stop();
-  });
-
   it('multiple plugins, second throws → first already applied', async () => {
     const first = (config: Record<string, unknown>) => ({
       ...config,

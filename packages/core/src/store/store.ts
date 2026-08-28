@@ -5,24 +5,15 @@ import { stopStore } from '@/store/boot/stop-store';
 import { isWildcardPattern } from '@/store/reactive/match-wildcard';
 import { createStableProxy } from '@/store/reactive/stable-proxy';
 import { createArrayMethods } from '@/store/store-array-methods';
-import {
-  deleteKey as deleteKeyMutator,
-  mutateKey as mutateKeyMutator,
-  setKey,
-  unsetKey,
-} from '@/store/store-mutator';
 import { resolveProvenance } from '@/store/store-provenance';
 import type { StoreState } from '@/store/store-state';
-import { runTransaction } from '@/store/store-transaction';
 import type {
   ChangeEvent,
-  DeleteTarget,
   Listener,
   ListenerOptions,
   MorselLayer,
   MorselStore,
   Provenance,
-  StoreTarget,
 } from '@/store/types';
 import { deepClone } from '@/utils/deep-clone';
 
@@ -30,7 +21,7 @@ type ConfigRecord = Record<string, unknown>;
 
 /**
  * Create a {@link MorselStore} from internal state and a mutability mode.
- * The store exposes `config`, `layers`, `on`, `get`, `set`, `has`, `unset`, `all`, `dotify`, `push`, `unshift`, `pop`, `shift`, `splice`, `indexOf`, `lastIndexOf`, and `stop`.
+ * The store exposes `config`, `layers`, `on`, `get`, `has`, `all`, `dotify`, `getProvenance`, and `stop`.
  */
 export function createMorselStore<T extends ConfigRecord>(
   state: StoreState<T>,
@@ -41,7 +32,7 @@ export function createMorselStore<T extends ConfigRecord>(
     : undefined;
   state._proxy = proxy;
 
-  const arrayMethods = createArrayMethods(state, mutability);
+  const arrayMethods = createArrayMethods(state);
 
   const store: MorselStore<T> = {
     get config(): T {
@@ -73,6 +64,9 @@ export function createMorselStore<T extends ConfigRecord>(
       const wrapped = options?.once
         ? (event: ChangeEvent): void => {
             set.delete(wrapped);
+            if (set.size === 0) {
+              map.delete(key);
+            }
             listener(event);
           }
         : listener;
@@ -81,6 +75,9 @@ export function createMorselStore<T extends ConfigRecord>(
 
       return () => {
         set.delete(wrapped);
+        if (set.size === 0) {
+          map.delete(key);
+        }
       };
     },
     get<V = unknown>(
@@ -96,45 +93,12 @@ export function createMorselStore<T extends ConfigRecord>(
     has(pathInput: string | readonly (string | number)[]): boolean {
       return getPathValue(state._config, pathInput) !== undefined;
     },
-    async set(
-      pathInput: string | readonly (string | number)[],
-      value: unknown,
-      target?: StoreTarget,
-    ): Promise<void> {
-      return setKey(state, pathInput, value, target, mutability);
-    },
-    async unset(
-      pathInput: string | readonly (string | number)[],
-      target?: DeleteTarget,
-    ): Promise<boolean> {
-      return unsetKey(state, pathInput, target, mutability);
-    },
     all(): T {
       return deepClone(state._config) as T;
     },
     dotify(): Record<string, unknown> {
       return dotifyObject(state._config);
     },
-    async mutateKey(
-      pathInput: string | readonly (string | number)[],
-      value: unknown,
-      target?: StoreTarget,
-    ): Promise<void> {
-      return mutateKeyMutator(state, pathInput, value, target, mutability);
-    },
-    async deleteKey(
-      pathInput: string | readonly (string | number)[],
-      target?: DeleteTarget,
-    ): Promise<boolean> {
-      return deleteKeyMutator(state, pathInput, target, mutability);
-    },
-    push: arrayMethods.push,
-    unshift: arrayMethods.unshift,
-    pop: arrayMethods.pop,
-    shift: arrayMethods.shift,
-    splice: arrayMethods.splice,
-    indexOf: arrayMethods.indexOf,
-    lastIndexOf: arrayMethods.lastIndexOf,
     async stop(): Promise<void> {
       return stopStore(state);
     },
@@ -143,9 +107,8 @@ export function createMorselStore<T extends ConfigRecord>(
     ): Provenance | undefined {
       return resolveProvenance(state._layers, pathInput);
     },
-    async transaction(callback: () => Promise<void>): Promise<void> {
-      return runTransaction(state, mutability, callback);
-    },
+    indexOf: arrayMethods.indexOf,
+    lastIndexOf: arrayMethods.lastIndexOf,
   };
 
   return store;
