@@ -5,6 +5,7 @@ import {
   clearWatcherRegistry,
   createDebugCollector,
   setupTest,
+  waitForDebugContext,
   writeConfig,
 } from '@oclio/test-helpers';
 
@@ -130,7 +131,7 @@ describe('plugin-errors — ENOPLUGIN errors', () => {
       extends: './base.yaml',
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await waitForDebugContext(contexts, (c) => c['code'] === 'ENOPLUGIN');
 
     expect(store!.config).toEqual({ port: 3000 });
     expect(contexts.some((context) => context['code'] === 'ENOPLUGIN')).toBe(

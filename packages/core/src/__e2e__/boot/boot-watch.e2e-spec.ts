@@ -20,18 +20,12 @@ describe('boot-watch — watchConfig specifics', () => {
 
     expect(typeof store!.on).toBe('function');
     expect(typeof store!.get).toBe('function');
-    expect(typeof store!.set).toBe('function');
     expect(typeof store!.has).toBe('function');
-    expect(typeof store!.unset).toBe('function');
     expect(typeof store!.all).toBe('function');
     expect(typeof store!.dotify).toBe('function');
-    expect(typeof store!.push).toBe('function');
-    expect(typeof store!.unshift).toBe('function');
-    expect(typeof store!.pop).toBe('function');
-    expect(typeof store!.shift).toBe('function');
-    expect(typeof store!.splice).toBe('function');
     expect(typeof store!.indexOf).toBe('function');
     expect(typeof store!.lastIndexOf).toBe('function');
+    expect(typeof store!.getProvenance).toBe('function');
     expect(typeof store!.stop).toBe('function');
 
     await store!.stop();

@@ -6,6 +6,7 @@ import {
   clearWatcherRegistry,
   createDebugCollector,
   setupTest,
+  waitForDebugContext,
   waitForRemerge,
   writeConfig,
 } from '@oclio/test-helpers';
@@ -224,13 +225,7 @@ describe('watch-lifecycle-registry — watcher registry & multi-store', () => {
     await writeFile(temporaryPath, '{ invalid', 'utf8');
     await rename(temporaryPath, configPath);
 
-    const deadline = Date.now() + 5000;
-    while (
-      debugContexts.every((context) => context['code'] !== 'EPARSE') &&
-      Date.now() < deadline
-    ) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
+    await waitForDebugContext(debugContexts, (c) => c['code'] === 'EPARSE');
 
     expect(store!.config).toEqual({ port: 3000 });
     expect(debugContexts.some((context) => context['code'] === 'EPARSE')).toBe(

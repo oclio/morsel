@@ -24,7 +24,7 @@ describe('mutability-frozen — frozen mode (default)', () => {
     expect(Object.isFrozen(tools)).toBe(true);
   });
 
-  it('frozen mutation throws: assigning property throws in strict mode', async () => {
+  it('frozen modification throws: assigning property throws in strict mode', async () => {
     const { result } = await setupTest({
       projectConfig: { port: 3000 },
       createGlobalDir: true,
