@@ -77,7 +77,11 @@ describe('createArrayMethods — read-only array methods', () => {
             ? methods.indexOf('name', 'morsel')
             : methods.lastIndexOf('name', 'morsel'),
         ).toThrow(
-          expect.objectContaining({ name: 'MorselError', code: 'EVALIDATE' }),
+          expect.objectContaining({
+            name: 'MorselError',
+            code: 'EVALIDATE',
+            message: expect.stringContaining('"name" is not an array'),
+          }),
         );
       },
     );
