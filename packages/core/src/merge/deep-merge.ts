@@ -22,20 +22,6 @@ function mergeArray(
     : clonedOverride;
 }
 
-/**
- * Deep merge two config records recursively.
- *
- * - Objects: deep merge recursively.
- * - Arrays: `replace` (default) or `concat` per strategy.
- * - Scalars: override wins.
- * - `undefined`: ignored (does not overwrite).
- * - `null`: overwrites (allows reset).
- *
- * @param base - The base config (lower priority).
- * @param override - The override config (higher priority).
- * @param strategy - Array merge strategy.
- * @returns A new merged config record — inputs are not mutated.
- */
 function cloneBaseEntries(base: ConfigRecord): ConfigRecord {
   const result: ConfigRecord = {};
   for (const [key, baseValue] of Object.entries(base)) {
@@ -65,6 +51,20 @@ function mergeOverrideEntry(
   return overrideValue;
 }
 
+/**
+ * Deep merge two config records recursively.
+ *
+ * - Objects: deep merge recursively.
+ * - Arrays: `replace` (default) or `concat` per strategy.
+ * - Scalars: override wins.
+ * - `undefined`: ignored (does not overwrite).
+ * - `null`: overwrites (allows reset).
+ *
+ * @param base - The base config (lower priority).
+ * @param override - The override config (higher priority).
+ * @param strategy - Array merge strategy.
+ * @returns A new merged config record — inputs are not mutated.
+ */
 export function deepMerge(
   base: ConfigRecord,
   override: ConfigRecord,

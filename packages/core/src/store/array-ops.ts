@@ -7,6 +7,15 @@ import type { StoreTarget } from '@/store/types';
 
 type ConfigRecord = Record<string, unknown>;
 
+/**
+ * Resolve a path in the config and assert that the value is an array.
+ *
+ * @param pathInput - Original path input (string or segment array) for error messages.
+ * @param config - Config record to resolve the path in.
+ * @param segments - Parsed path segments.
+ * @returns The array at the given path.
+ * @throws MorselError with code `EVALIDATE` if the value is not an array.
+ */
 export function assertArray(
   pathInput: string | readonly (string | number)[],
   config: Record<string, unknown>,

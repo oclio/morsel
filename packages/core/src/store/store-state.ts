@@ -85,6 +85,12 @@ export interface StoreState<T extends ConfigRecord = ConfigRecord> {
   transactionDirtyKeys: Map<string, Set<string>>;
 }
 
+/**
+ * Add a file path to the watched-files map, keyed by resolved directory.
+ *
+ * @param map - The watched-files map to mutate (directory → basenames).
+ * @param filePath - The file path to add (resolved relative to cwd).
+ */
 export function addWatchedFile(
   map: Map<string, Set<string>>,
   filePath: string,

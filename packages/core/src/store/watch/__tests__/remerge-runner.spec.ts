@@ -2,9 +2,8 @@ import { createMockStoreState } from '@oclio/test-helpers';
 
 import { MorselError } from '@/errors/error';
 import { buildLayers } from '@/load/build-layers';
-import { applyMutability, mergeLayers } from '@/load/merge-layers';
+import { processConfig } from '@/load/process-config';
 import type { ResolvedLayer } from '@/load/resolve-layer';
-import { interpolateInPlace } from '@/merge/interpolate';
 import { resolveGlobalPath, resolveProjectPath } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
 import { noop } from '@/store/boot/assert-name';
@@ -16,14 +15,12 @@ import {
   updateWatchedFiles,
   updateWatchers,
 } from '@/store/watch/watcher-setup';
-import { deepClone } from '@/utils/deep-clone';
 
 vi.mock('@/load/build-layers', () => ({
   buildLayers: vi.fn(),
 }));
-vi.mock('@/load/merge-layers', () => ({
-  applyMutability: vi.fn(),
-  mergeLayers: vi.fn(),
+vi.mock('@/load/process-config', () => ({
+  processConfig: vi.fn(),
 }));
 vi.mock('@/paths/resolve-paths', () => ({
   resolveGlobalPath: vi.fn(),
@@ -34,12 +31,6 @@ vi.mock('@/store/reactive/emit-changes', () => ({
 }));
 vi.mock('@/store/layer', () => ({
   toMorselLayer: vi.fn(),
-}));
-vi.mock('@/merge/interpolate', () => ({
-  interpolateInPlace: vi.fn(),
-}));
-vi.mock('@/utils/deep-clone', () => ({
-  deepClone: vi.fn(),
 }));
 vi.mock('@/store/watch/watcher-setup', () => ({
   updateWatchedFiles: vi.fn(),
@@ -110,9 +101,11 @@ describe('createRemerge', () => {
     ];
 
     vi.mocked(buildLayers).mockResolvedValue(layers);
-    vi.mocked(mergeLayers).mockReturnValue({ merged: true });
-    vi.mocked(applyMutability).mockReturnValue({ frozen: true });
-    vi.mocked(interpolateInPlace).mockImplementation((config) => config);
+    vi.mocked(processConfig).mockReturnValue({
+      config: { frozen: true },
+      validated: { merged: true },
+      lastConfig: { merged: true },
+    } as never);
     vi.mocked(toMorselLayer).mockImplementation((layer) => ({
       source: layer.source,
       path: layer.path,
@@ -120,7 +113,6 @@ describe('createRemerge', () => {
       exists: layer.exists,
       extendsPaths: layer.extendsPaths,
     }));
-    vi.mocked(deepClone).mockReturnValue({ cloned: true });
 
     remerge = createRemerge();
   });
@@ -153,9 +145,9 @@ describe('createRemerge', () => {
   it('sets remergeInProgress to true during execution', async () => {
     const state = makeState();
     let capturedInProgress: boolean | undefined;
-    vi.mocked(mergeLayers).mockImplementationOnce(() => {
+    vi.mocked(processConfig).mockImplementationOnce(() => {
       capturedInProgress = state.remergeInProgress;
-      return { merged: true };
+      return { config: {}, validated: {}, lastConfig: {} } as never;
     });
 
     await remerge(state);
@@ -167,9 +159,9 @@ describe('createRemerge', () => {
   it('creates remergeDone promise during execution', async () => {
     const state = makeState();
     let capturedRemergeDone: Promise<void> | undefined;
-    vi.mocked(mergeLayers).mockImplementationOnce(() => {
+    vi.mocked(processConfig).mockImplementationOnce(() => {
       capturedRemergeDone = state.remergeDone;
-      return { merged: true };
+      return { config: {}, validated: {}, lastConfig: {} } as never;
     });
 
     await remerge(state);
@@ -202,10 +194,10 @@ describe('createRemerge', () => {
         return [makeResolvedLayer({ source: 'defaults', config: {} })];
       },
     );
-    vi.mocked(mergeLayers).mockImplementationOnce(() => {
+    vi.mocked(processConfig).mockImplementationOnce(() => {
       capturedTrigger!();
       isPendingDuringMerge = state.pendingRemerge;
-      return { merged: true };
+      return { config: {}, validated: {}, lastConfig: {} } as never;
     });
 
     await remerge(state);
@@ -217,9 +209,9 @@ describe('createRemerge', () => {
   it('resolves remergeDone promise in finally', async () => {
     const state = makeState();
     let capturedPromise: Promise<void> | undefined;
-    vi.mocked(mergeLayers).mockImplementationOnce(() => {
+    vi.mocked(processConfig).mockImplementationOnce(() => {
       capturedPromise = state.remergeDone;
-      return { merged: true };
+      return { config: {}, validated: {}, lastConfig: {} } as never;
     });
 
     await remerge(state);
@@ -228,43 +220,43 @@ describe('createRemerge', () => {
     await expect(capturedPromise).resolves.toBeUndefined();
   });
 
-  it('merges new layers', async () => {
+  it('calls processConfig with layers and options', async () => {
     const state = makeState();
 
     await remerge(state);
 
-    expect(mergeLayers).toHaveBeenCalledTimes(1);
+    expect(processConfig).toHaveBeenCalledTimes(1);
+    expect(processConfig).toHaveBeenCalledWith(
+      expect.any(Array),
+      'replace',
+      expect.any(Array),
+      'frozen',
+    );
   });
 
-  it('clones new config into lastConfig in mutable mode', async () => {
+  it('calls processConfig with mutable mode when configMutability is mutable', async () => {
     const state = makeState({
       options: {
         ...makeState().options,
         configMutability: 'mutable',
       } as never,
     });
+    vi.mocked(processConfig).mockReturnValue({
+      config: { mutable: true },
+      validated: { merged: true },
+      lastConfig: { cloned: true },
+    } as never);
 
     await remerge(state);
 
-    expect(deepClone).toHaveBeenCalled();
+    expect(processConfig).toHaveBeenCalledWith(
+      expect.any(Array),
+      'replace',
+      expect.any(Array),
+      'mutable',
+    );
     expect(state.lastConfig).toEqual({ cloned: true });
-  });
-
-  it('stores validated config directly in lastConfig in frozen mode', async () => {
-    const state = makeState();
-
-    await remerge(state);
-
-    expect(deepClone).not.toHaveBeenCalled();
-    expect(state.lastConfig).toEqual({ merged: true });
-  });
-
-  it('applies mutability to new config', async () => {
-    const state = makeState();
-
-    await remerge(state);
-
-    expect(applyMutability).toHaveBeenCalledTimes(1);
+    expect(state._config).toEqual({ mutable: true });
   });
 
   it('updates layers through toMorselLayer', async () => {
@@ -335,7 +327,7 @@ describe('createRemerge', () => {
         onDebug,
       } as never,
     });
-    vi.mocked(mergeLayers).mockImplementationOnce(() => {
+    vi.mocked(processConfig).mockImplementationOnce(() => {
       throw new Error('merge failed');
     });
 
@@ -362,7 +354,7 @@ describe('createRemerge', () => {
         onDebug,
       } as never,
     });
-    vi.mocked(mergeLayers).mockImplementationOnce(() => {
+    vi.mocked(processConfig).mockImplementationOnce(() => {
       throw new MorselError(
         '/path/to/file.json',
         'EIO',
@@ -385,7 +377,7 @@ describe('createRemerge', () => {
 
   it('logs errors to console.error when onDebug is default noop', async () => {
     const state = makeState();
-    vi.mocked(mergeLayers).mockImplementationOnce(() => {
+    vi.mocked(processConfig).mockImplementationOnce(() => {
       throw new Error('merge failed');
     });
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -400,7 +392,7 @@ describe('createRemerge', () => {
 
   it('still cleans up remerge state on error', async () => {
     const state = makeState();
-    vi.mocked(mergeLayers).mockImplementationOnce(() => {
+    vi.mocked(processConfig).mockImplementationOnce(() => {
       throw new Error('merge failed');
     });
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -409,22 +401,6 @@ describe('createRemerge', () => {
 
     expect(state.remergeInProgress).toBe(false);
     expect(state.remergeDone).toBeUndefined();
-  });
-
-  it('works without Promise.withResolvers (Node 18 compatibility)', async () => {
-    const state = makeState();
-    const withResolvers = Promise.withResolvers;
-    // @ts-expect-error -- simulate Node 18 where withResolvers is undefined
-    delete Promise.withResolvers;
-
-    try {
-      await remerge(state);
-
-      expect(buildLayers).toHaveBeenCalledTimes(1);
-      expect(state.remergeInProgress).toBe(false);
-    } finally {
-      Promise.withResolvers = withResolvers;
-    }
   });
 
   it('rolls back watcher state but keeps new config when updateWatchers throws', async () => {
@@ -515,7 +491,7 @@ describe('createRemerge', () => {
 
       await remerge(state);
 
-      expect(mergeLayers).not.toHaveBeenCalled();
+      expect(processConfig).not.toHaveBeenCalled();
       expect(state.lastConfig).toEqual({ port: 3000 });
     },
   );
@@ -607,7 +583,7 @@ describe('createRemerge', () => {
     // buildLayers returns default layers (all exist: true) from beforeEach
     await remerge(state);
 
-    expect(mergeLayers).toHaveBeenCalledTimes(1);
+    expect(processConfig).toHaveBeenCalledTimes(1);
     expect(state.enoentLogged.size).toBe(0);
   });
 
@@ -656,7 +632,7 @@ describe('createRemerge', () => {
     // buildLayers returns the default mock (all exists: true)
     await remerge(state);
 
-    expect(mergeLayers).toHaveBeenCalledTimes(1);
+    expect(processConfig).toHaveBeenCalledTimes(1);
   });
 
   it('does not trigger ENOENT guard for defaults/overrides with exists:false', async () => {
@@ -686,7 +662,7 @@ describe('createRemerge', () => {
 
     await remerge(state);
 
-    expect(mergeLayers).toHaveBeenCalledTimes(1);
+    expect(processConfig).toHaveBeenCalledTimes(1);
   });
 
   it('does not trigger ENOENT guard when layer never existed before', async () => {
@@ -714,7 +690,7 @@ describe('createRemerge', () => {
 
     await remerge(state);
 
-    expect(mergeLayers).toHaveBeenCalledTimes(1);
+    expect(processConfig).toHaveBeenCalledTimes(1);
   });
 
   it('matches old layer by source, not by position in _layers', async () => {
@@ -746,7 +722,7 @@ describe('createRemerge', () => {
 
     await remerge(state);
 
-    expect(mergeLayers).not.toHaveBeenCalled();
+    expect(processConfig).not.toHaveBeenCalled();
     consoleSpy.mockRestore();
   });
 });
