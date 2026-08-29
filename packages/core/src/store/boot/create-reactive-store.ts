@@ -72,9 +72,7 @@ export async function createReactiveStore<
 
   const remerge = createRemerge<T>();
 
-  const stateReference_: { current: StoreState<T> | undefined } = {
-    current: undefined,
-  };
+  const stateReference_: { current?: StoreState<T> } = {};
   const triggerRemerge = () => {
     if (stateReference_.current !== undefined) {
       void remerge(stateReference_.current);
