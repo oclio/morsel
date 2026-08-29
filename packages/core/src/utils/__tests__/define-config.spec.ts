@@ -71,76 +71,80 @@ describe('mergeConfig', () => {
     expect(result.cwd).toBe('/override');
   });
 
-  it('deep-merges defaults when both base and overrides have defaults', () => {
-    const base = { name: 'myapp', defaults: { port: 3000, host: 'localhost' } };
-    const overrides = { defaults: { port: 8080 } };
+  it.each([
+    {
+      field: 'defaults' as const,
+      basePresent: true,
+      overridesPresent: true,
+      description: 'deep-merges when both base and overrides have defaults',
+      expectMerge: true,
+      expected: { port: 8080, host: 'localhost' },
+    },
+    {
+      field: 'defaults' as const,
+      basePresent: false,
+      overridesPresent: true,
+      description: 'uses overrides.defaults when base.defaults is undefined',
+      expectMerge: false,
+      expected: { port: 8080 },
+    },
+    {
+      field: 'defaults' as const,
+      basePresent: true,
+      overridesPresent: false,
+      description: 'uses base.defaults when overrides.defaults is undefined',
+      expectMerge: false,
+      expected: { port: 3000, host: 'localhost' },
+    },
+    {
+      field: 'overrides' as const,
+      basePresent: true,
+      overridesPresent: true,
+      description: 'deep-merges when both base and overrides have overrides',
+      expectMerge: true,
+      expected: { port: 8080, host: 'localhost' },
+    },
+    {
+      field: 'overrides' as const,
+      basePresent: false,
+      overridesPresent: true,
+      description: 'uses overrides.overrides when base.overrides is undefined',
+      expectMerge: false,
+      expected: { port: 8080 },
+    },
+    {
+      field: 'overrides' as const,
+      basePresent: true,
+      overridesPresent: false,
+      description: 'uses base.overrides when overrides.overrides is undefined',
+      expectMerge: false,
+      expected: { port: 3000, host: 'localhost' },
+    },
+  ])(
+    '$field: $description',
+    ({ field, basePresent, overridesPresent, expectMerge, expected }) => {
+      const base = {
+        name: 'myapp',
+        ...(basePresent && { [field]: { port: 3000, host: 'localhost' } }),
+      };
+      const overrides = overridesPresent
+        ? { [field]: { port: 8080 } }
+        : { cwd: '/override' };
 
-    const result = mergeConfig(base, overrides);
+      const result = mergeConfig(base as never, overrides as never);
 
-    expect(deepMerge).toHaveBeenCalledWith(
-      { port: 3000, host: 'localhost' },
-      { port: 8080 },
-      'replace',
-    );
-    expect(result.defaults).toEqual({ port: 8080, host: 'localhost' });
-  });
-
-  it('uses overrides.defaults when base.defaults is undefined', () => {
-    const base = { name: 'myapp' };
-    const overrides = { defaults: { port: 8080 } };
-
-    const result = mergeConfig(base, overrides);
-
-    expect(deepMerge).not.toHaveBeenCalled();
-    expect(result.defaults).toEqual({ port: 8080 });
-  });
-
-  it('uses base.defaults when overrides.defaults is undefined', () => {
-    const base = { name: 'myapp', defaults: { port: 3000 } };
-    const overrides = { cwd: '/override' };
-
-    const result = mergeConfig(base, overrides);
-
-    expect(deepMerge).not.toHaveBeenCalled();
-    expect(result.defaults).toEqual({ port: 3000 });
-  });
-
-  it('deep-merges overrides when both base and overrides have overrides', () => {
-    const base = {
-      name: 'myapp',
-      overrides: { port: 3000, host: 'localhost' },
-    };
-    const overrides = { overrides: { port: 8080 } };
-
-    const result = mergeConfig(base, overrides);
-
-    expect(deepMerge).toHaveBeenCalledWith(
-      { port: 3000, host: 'localhost' },
-      { port: 8080 },
-      'replace',
-    );
-    expect(result.overrides).toEqual({ port: 8080, host: 'localhost' });
-  });
-
-  it('uses overrides.overrides when base.overrides is undefined', () => {
-    const base = { name: 'myapp' };
-    const overrides = { overrides: { port: 8080 } };
-
-    const result = mergeConfig(base, overrides);
-
-    expect(deepMerge).not.toHaveBeenCalled();
-    expect(result.overrides).toEqual({ port: 8080 });
-  });
-
-  it('uses base.overrides when overrides.overrides is undefined', () => {
-    const base = { name: 'myapp', overrides: { port: 3000 } };
-    const overrides = { cwd: '/override' };
-
-    const result = mergeConfig(base, overrides);
-
-    expect(deepMerge).not.toHaveBeenCalled();
-    expect(result.overrides).toEqual({ port: 3000 });
-  });
+      if (expectMerge) {
+        expect(deepMerge).toHaveBeenCalledWith(
+          { port: 3000, host: 'localhost' },
+          { port: 8080 },
+          'replace',
+        );
+      } else {
+        expect(deepMerge).not.toHaveBeenCalled();
+      }
+      expect(result[field]).toEqual(expected);
+    },
+  );
 
   it('uses overrides.arrayMerge strategy when provided', () => {
     const base = {

@@ -203,7 +203,6 @@ describe('resolveOptions', () => {
     expect(result.name).toBe(input);
   });
 
-  // Explicit (non-parameterized) tests to kill regex mutants on VALID_NAME
   it('rejects "123app" — must start with letter (^ anchor)', () => {
     expect(() => resolveOptions({ name: '123app' })).toThrow(
       'morsel: name must start with a letter',

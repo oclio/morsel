@@ -128,7 +128,6 @@ export function createRemerge<T extends ConfigRecord>(): (
       store._layers = newMorselLayers;
       store.projectPath = remergeProjectPath;
 
-      // Update watchers after config state is applied.
       // Save old watcher state for rollback if updateWatchers throws.
       const savedWatchedFiles = new Map(store.watchedFiles);
       const savedWatchers = new Set(store.watchers);
