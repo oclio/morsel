@@ -220,19 +220,6 @@ export interface MorselStore<
   getProvenance(
     path: string | readonly (string | number)[],
   ): Provenance | undefined;
-  /**
-  Return the first index of `value` in the array at `path`, or -1.
-  @throws MorselError(EVALIDATE) if the value at `path` is not an array.
-  */
-  indexOf(path: string | readonly (string | number)[], value: unknown): number;
-  /**
-  Return the last index of `value` in the array at `path`, or -1.
-  @throws MorselError(EVALIDATE) if the value at `path` is not an array.
-  */
-  lastIndexOf(
-    path: string | readonly (string | number)[],
-    value: unknown,
-  ): number;
 }
 
 /**

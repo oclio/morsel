@@ -22,8 +22,6 @@ describe('boot-watch — createReactiveStore specifics', () => {
     expect(typeof store!.has).toBe('function');
     expect(typeof store!.all).toBe('function');
     expect(typeof store!.dotify).toBe('function');
-    expect(typeof store!.indexOf).toBe('function');
-    expect(typeof store!.lastIndexOf).toBe('function');
     expect(typeof store!.getProvenance).toBe('function');
     expect(typeof store!.stop).toBe('function');
 

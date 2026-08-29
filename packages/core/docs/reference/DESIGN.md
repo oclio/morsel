@@ -194,7 +194,7 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 - `MorselOptions` — common configuration options (`name`, `cwd`, `defaults`, `overrides`, `globalDir`, etc.).
 - `StoreOptions` — same as `MorselOptions`. Used by `createStore`.
 - `ReactiveStoreOptions` — extends `MorselOptions` with `watchDebounce` and `signal`. Used by `createReactiveStore`.
-- `MorselStore<T>` — static store instance (`config`, `layers`, `get`, `has`, `all`, `dotify`, `getProvenance`, `indexOf`, `lastIndexOf`, `stop`).
+- `MorselStore<T>` — static store instance (`config`, `layers`, `get`, `has`, `all`, `dotify`, `getProvenance`, `stop`).
 - `MorselReactiveStore<T>` — extends `MorselStore` with `on`, `off`, `triggerRemerge`.
 - `MorselLayer` — trace of a resolved layer (`source`, `path`, `config`, `exists`, `extendsPaths`, `hookName`).
 - `MorselError` — base error class with `path`, `code`, and `cause`.

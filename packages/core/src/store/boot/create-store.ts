@@ -9,7 +9,7 @@ import type { ConfigRecord, MorselStore, StoreOptions } from '@/store/types';
  *
  * Loads and merges all layers (defaults → global → project → overrides + hooks),
  * then returns a {@link MorselStore} with `get`, `has`, `all`, `dotify`,
- * `getProvenance`, `indexOf`, `lastIndexOf`, and `stop`.
+ * `getProvenance`, and `stop`.
  *
  * No watchers, no events, no re-merge, no proxy. The config is frozen after boot.
  * Use `createReactiveStore` for live-reload and event-driven access.

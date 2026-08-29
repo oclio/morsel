@@ -139,19 +139,6 @@ export interface MorselStore<
   getProvenance(
     path: string | readonly (string | number)[],
   ): Provenance | undefined;
-  /**
-   * Return the first index of `value` in the array at `path`, or -1.
-   * @throws MorselError(EVALIDATE) if the value at `path` is not an array.
-   */
-  indexOf(path: string | readonly (string | number)[], value: unknown): number;
-  /**
-   * Return the last index of `value` in the array at `path`, or -1.
-   * @throws MorselError(EVALIDATE) if the value at `path` is not an array.
-   */
-  lastIndexOf(
-    path: string | readonly (string | number)[],
-    value: unknown,
-  ): number;
   stop(): Promise<void>;
 }
 
@@ -528,7 +515,7 @@ export function clearRegistry(): void;
 
 #### `stop()`
 
-`stop()` is async (`Promise<void>`). `stopped = true` is assigned **synchronously** at the start, before any `await`. `stop()` awaits `state.remergeDone` to drain any in-flight re-merge, before closing watchers. Watchers whose `refCount` reaches zero are closed. All registered listeners are cleared. `store.config`, `store.layers`, `store.get()`, `store.has()`, `store.all()`, `store.dotify()`, `store.getProvenance()`, `store.indexOf()`, and `store.lastIndexOf()` remain readable after stop at the last known state. Any subsequent call to `store.on()` throws `Error('morsel: store is stopped')`.
+`stop()` is async (`Promise<void>`). `stopped = true` is assigned **synchronously** at the start, before any `await`. `stop()` awaits `state.remergeDone` to drain any in-flight re-merge, before closing watchers. Watchers whose `refCount` reaches zero are closed. All registered listeners are cleared. `store.config`, `store.layers`, `store.get()`, `store.has()`, `store.all()`, `store.dotify()`, and `store.getProvenance()` remain readable after stop at the last known state. Any subsequent call to `store.on()` throws `Error('morsel: store is stopped')`.
 
 #### `signal` — AbortSignal
 
@@ -566,11 +553,11 @@ If `ReactiveStoreOptions.signal` is provided, it is checked **after** hook `init
 
 The package exposes two store constructors:
 
-- **`createStore(options: StoreOptions): Promise<MorselStore>`** — static store. Loads and merges all layers once, returns a `MorselStore` with `get`, `has`, `all`, `dotify`, `getProvenance`, `indexOf`, `lastIndexOf`, and `stop`. No watchers, no events, no proxy, no re-merge. The `config` getter returns `state._config` directly. `stop()` is a noop (no watchers to release). Use for CI, scripts, CLI commands, and one-shot tools.
+- **`createStore(options: StoreOptions): Promise<MorselStore>`** — static store. Loads and merges all layers once, returns a `MorselStore` with `get`, `has`, `all`, `dotify`, `getProvenance`, and `stop`. No watchers, no events, no proxy, no re-merge. The `config` getter returns `state._config` directly. `stop()` is a noop (no watchers to release). Use for CI, scripts, CLI commands, and one-shot tools.
 
 - **`createReactiveStore(options: ReactiveStoreOptions): Promise<MorselReactiveStore>`** — reactive store. Extends `MorselStore` with `on(key, listener, options?)`, `off(key, listener)`, and `triggerRemerge()`. Sets up `fs.watch` watchers, a stable proxy on `config`, and re-merge on file changes. `stop()` releases all watchers and cleans up listeners. Use for long-running apps that need live-reload and key-level events.
 
-**`MorselStore`** (base): `config`, `layers`, `get`, `has`, `all`, `dotify`, `getProvenance`, `indexOf`, `lastIndexOf`, `stop`.
+**`MorselStore`** (base): `config`, `layers`, `get`, `has`, `all`, `dotify`, `getProvenance`, `stop`.
 
 **`MorselReactiveStore`** (extends `MorselStore`): adds `on`, `off`, `triggerRemerge`.
 
