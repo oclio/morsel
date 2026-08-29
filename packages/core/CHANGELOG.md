@@ -1,5 +1,11 @@
 # @oclio/morsel
 
+## 0.11.0
+
+### Minor Changes
+
+- 1f33280: Split `watchConfig` into `createStore` (static, one-shot) and `createReactiveStore` (reactive, with watchers and events). The `watch` and `proxy` flags on options are removed — use the appropriate constructor instead. `MorselStore` no longer exposes `on`/`off`/`triggerRemerge`; use `MorselReactiveStore` for those methods. Removed orphan `indexOf`/`lastIndexOf` from the store API.
+
 ## 0.10.0
 
 ### Minor Changes
