@@ -7,6 +7,7 @@ describe('env-merge-values — $env override value types', () => {
 
   it('$env override with null value — null overwrites via deepMerge', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000, $env: { ci: { port: null } } },
       envName: 'ci',
     });
@@ -16,6 +17,7 @@ describe('env-merge-values — $env override value types', () => {
 
   it('$env override with undefined value — undefined ignored, original preserved', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000, $env: { ci: { port: undefined } } },
       envName: 'ci',
     });
@@ -25,6 +27,7 @@ describe('env-merge-values — $env override value types', () => {
 
   it('$env override with array value — array replaces per arrayMerge strategy', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { tags: ['a', 'b'], $env: { ci: { tags: ['x'] } } },
       envName: 'ci',
     });

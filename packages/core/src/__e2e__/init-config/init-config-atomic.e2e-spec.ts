@@ -12,6 +12,7 @@ describe('init-config-atomic — atomic write', () => {
 
   it('writes atomically without leaving .tmp file behind', async () => {
     const { projectDirectory } = await setupTest({
+      reactive: false,
       projectConfig: {},
       projectFilename: '_setup-test.json',
     });
@@ -37,6 +38,7 @@ describe('init-config-atomic — atomic write', () => {
 
   it('atomic write format: .tmp.<timestamp> then renameSync', async () => {
     const { projectDirectory } = await setupTest({
+      reactive: false,
       projectConfig: {},
       projectFilename: '_setup-test.json',
     });

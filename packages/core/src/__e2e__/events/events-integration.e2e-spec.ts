@@ -21,7 +21,6 @@ describe('events-integration — events from pipeline sources', () => {
     ] as const;
 
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       hooks,
@@ -49,7 +48,6 @@ describe('events-integration — events from pipeline sources', () => {
   it('events when validation transforms config', async () => {
     let validatedValue = 'initial';
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       validationPlugins: [
@@ -80,7 +78,6 @@ describe('events-integration — events from pipeline sources', () => {
 
   it('events when extends added during watch', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -110,7 +107,6 @@ describe('events-integration — events from pipeline sources', () => {
 
   it('events when $env changes during watch (envName fixed)', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000, $env: { ci: { port: 8080 } } },
       createGlobalDir: true,
       envName: 'ci',
@@ -135,7 +131,6 @@ describe('events-integration — events from pipeline sources', () => {
 
   it('events with prev === next (no-op): no event emitted', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -155,7 +150,6 @@ describe('events-integration — events from pipeline sources', () => {
 
   it('events during pending re-merge', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -176,7 +170,6 @@ describe('events-integration — events from pipeline sources', () => {
 
   it('events when multiple files change simultaneously (global + project)', async () => {
     const { store, projectDirectory, globalDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       globalConfig: { host: 'localhost' },
     });

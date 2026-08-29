@@ -20,7 +20,6 @@ describe('watch-lifecycle-rollback — rollback & recovery', () => {
     const { contexts, callback } = createDebugCollector();
 
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       onDebug: callback,
@@ -53,7 +52,6 @@ describe('watch-lifecycle-rollback — rollback & recovery', () => {
     };
 
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       validationPlugins: [{ name: 'port-type', validate }],
@@ -83,7 +81,6 @@ describe('watch-lifecycle-rollback — rollback & recovery', () => {
     const { contexts, callback } = createDebugCollector();
 
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       onDebug: callback,
@@ -113,7 +110,6 @@ describe('watch-lifecycle-rollback — rollback & recovery', () => {
 
   it('config always up to date: store.config reflects latest value', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -128,7 +124,6 @@ describe('watch-lifecycle-rollback — rollback & recovery', () => {
 
   it('layers updated: store.layers reflects re-merge', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });

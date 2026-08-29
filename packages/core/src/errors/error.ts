@@ -15,7 +15,7 @@ export type ErrorCode =
  * Base error thrown by morsel on fs, parse, plugin, validation, or cycle failures.
  *
  * In one-shot mode (`loadConfig`/`loadConfigSync`): thrown to the consumer.
- * In watch mode (`watchConfig`): thrown at boot if the initial load fails;
+ * In watch mode (`createReactiveStore`): thrown at boot if the initial load fails;
  * caught internally on re-merge and routed to `onDebug`/stderr.
  *
  * Programming errors (`name` missing, `on()` after `stop()`) throw

@@ -5,17 +5,16 @@ import {
   writeConfig,
 } from '@oclio/test-helpers';
 
-describe('boot-watch — watchConfig specifics', () => {
+describe('boot-watch — createReactiveStore specifics', () => {
   suppressConsoleError();
 
   beforeEach(() => {
     clearWatcherRegistry();
   });
 
-  it('watchConfig returns store with all methods', async () => {
+  it('createReactiveStore returns store with all methods', async () => {
     const { store } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
     });
 
     expect(typeof store!.on).toBe('function');
@@ -23,18 +22,15 @@ describe('boot-watch — watchConfig specifics', () => {
     expect(typeof store!.has).toBe('function');
     expect(typeof store!.all).toBe('function');
     expect(typeof store!.dotify).toBe('function');
-    expect(typeof store!.indexOf).toBe('function');
-    expect(typeof store!.lastIndexOf).toBe('function');
     expect(typeof store!.getProvenance).toBe('function');
     expect(typeof store!.stop).toBe('function');
 
     await store!.stop();
   });
 
-  it('watchConfig accepts watchDebounce option at boot', async () => {
+  it('createReactiveStore accepts watchDebounce option at boot', async () => {
     const { store } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       watchDebounce: 100,
     });
 
@@ -43,10 +39,9 @@ describe('boot-watch — watchConfig specifics', () => {
     await store!.stop();
   });
 
-  it('watchConfig with projectPath undefined → store boots, no project directory watched', async () => {
+  it('createReactiveStore with projectPath undefined → store boots, no project directory watched', async () => {
     const { store } = await setupTest({
       globalConfig: { port: 3000 },
-      watch: true,
     });
 
     expect(store!.config).toEqual({ port: 3000 });
@@ -54,10 +49,9 @@ describe('boot-watch — watchConfig specifics', () => {
     await store!.stop();
   });
 
-  it('watchConfig with globalPath undefined → store boots, no global directory watched', async () => {
+  it('createReactiveStore with globalPath undefined → store boots, no global directory watched', async () => {
     const { store } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       skipGlobalDirectory: true,
     });
 
@@ -72,7 +66,6 @@ describe('boot-watch — watchConfig specifics', () => {
 
     const { store } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       signal: controller.signal,
     });
 
@@ -88,7 +81,6 @@ describe('boot-watch — watchConfig specifics', () => {
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       signal: controller.signal,
     });
 
@@ -115,7 +107,6 @@ describe('boot-watch — watchConfig specifics', () => {
     await expect(
       setupTest({
         projectConfig: { port: 3000 },
-        watch: true,
         signal: controller.signal,
         hooks: [
           {
@@ -136,7 +127,6 @@ describe('boot-watch — watchConfig specifics', () => {
 
     const { store } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       signal: controller.signal,
       hooks: [
         {

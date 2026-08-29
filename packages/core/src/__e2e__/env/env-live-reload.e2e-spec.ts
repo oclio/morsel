@@ -22,7 +22,6 @@ describe('env-live-reload — watch + $env', () => {
           ci: { port: 8080 },
         },
       },
-      watch: true,
       envName: 'ci',
       createGlobalDir: true,
     });
@@ -46,7 +45,6 @@ describe('env-live-reload — watch + $env', () => {
       projectConfig: {
         port: 3000,
       },
-      watch: true,
       envName: 'ci',
       createGlobalDir: true,
     });
@@ -73,7 +71,6 @@ describe('env-live-reload — watch + $env', () => {
           ci: { port: 8080 },
         },
       },
-      watch: true,
       envName: 'ci',
       createGlobalDir: true,
     });
@@ -100,7 +97,6 @@ describe('env-live-reload — watch + $env', () => {
             production: { label: 'prod' },
           },
         },
-        watch: true,
         createGlobalDir: true,
       });
 

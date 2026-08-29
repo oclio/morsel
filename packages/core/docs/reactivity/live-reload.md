@@ -1,19 +1,19 @@
-# Live-Reload & Watch (`watchConfig`)
+# Live-Reload & Watch (`createReactiveStore`)
 
 Building long-running services (HTTP servers, daemons, background workers) usually requires restarting the process whenever configuration files change.
 
-morsel's `watchConfig` provides robust, zero-downtime **live-reloading with native file watching**, intelligent debouncing, and automatic self-healing.
+morsel's `createReactiveStore` provides robust, zero-downtime **live-reloading with native file watching**, intelligent debouncing, and automatic self-healing.
 
 ---
 
-## Starting the Watcher: `watchConfig`
+## Starting the Watcher: `createReactiveStore`
 
-`watchConfig` returns a promise resolving to a `MorselStore<T>`:
+`createReactiveStore` returns a promise resolving to a `MorselStore<T>`:
 
 ```typescript
-import { watchConfig } from '@oclio/morsel';
+import { createReactiveStore } from '@oclio/morsel';
 
-const store = await watchConfig({
+const store = await createReactiveStore({
   name: 'myapp',
   defaults: {
     port: 3000,
@@ -83,7 +83,7 @@ morsel handles these failures with strict resilience guarantees:
 
 ### 1. Initial Boot vs Runtime Re-merge
 
-- **Boot (First load)**: If the initial file load fails (syntax error, unresolvable plugin), `watchConfig` **throws immediately**. A process cannot start without a valid initial state.
+- **Boot (First load)**: If the initial file load fails (syntax error, unresolvable plugin), `createReactiveStore` **throws immediately**. A process cannot start without a valid initial state.
 - **Runtime Re-merge (fs.watch fire)**: If an edited file contains a syntax error (`EPARSE`) or validation failure (`EVALIDATE`), morsel **catches the error internally**, logs diagnostics via `onDebug`/`stderr`, and **keeps the previous valid configuration state intact**.
 
 ### 2. Directory Deletion & Re-attachment Polling

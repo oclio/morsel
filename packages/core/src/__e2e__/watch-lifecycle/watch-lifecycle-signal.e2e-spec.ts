@@ -17,7 +17,6 @@ describe('watch-lifecycle-signal — AbortSignal integration', () => {
 
     const { store } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       signal: controller.signal,
     });
 
@@ -33,7 +32,6 @@ describe('watch-lifecycle-signal — AbortSignal integration', () => {
 
     const { store } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       signal: controller.signal,
     });
 
@@ -64,7 +62,6 @@ describe('watch-lifecycle-signal — AbortSignal integration', () => {
 
     const { store } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       signal: controller.signal,
       hooks,
     });

@@ -15,7 +15,6 @@ describe('watch-lifecycle-watcher-update — watcher update on re-merge', () => 
   it('config always up to date → store.config reflects latest value', async () => {
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
     });
 
@@ -30,7 +29,6 @@ describe('watch-lifecycle-watcher-update — watcher update on re-merge', () => 
   it('layers updated → layers update with new paths and exists', async () => {
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
     });
 
@@ -55,7 +53,6 @@ describe('watch-lifecycle-watcher-update — watcher update on re-merge', () => 
   it('updateWatchers adds new directories for extends', async () => {
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
     });
 
@@ -79,7 +76,6 @@ describe('watch-lifecycle-watcher-update — watcher update on re-merge', () => 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { extends: './base.json' },
       extraConfigs: [{ filename: 'base.json', content: { port: 4000 } }],
-      watch: true,
       createGlobalDir: true,
     });
 
@@ -100,7 +96,6 @@ describe('watch-lifecycle-watcher-update — watcher update on re-merge', () => 
   it('re-merge emits changes after watcher update success', async () => {
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
     });
 
@@ -128,7 +123,6 @@ describe('watch-lifecycle-watcher-update — watcher update on re-merge', () => 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { extends: './base.json', host: 'localhost' },
       extraConfigs: [{ filename: 'base.json', content: { port: 4000 } }],
-      watch: true,
       createGlobalDir: true,
     });
 

@@ -12,7 +12,6 @@ describe('read-ops-all — all() API', () => {
         server: { host: 'localhost', port: 8080 },
       },
       createGlobalDir: true,
-      watch: true,
     });
 
     const snapshot = store!.all();
@@ -39,7 +38,6 @@ describe('read-ops-all — all() API', () => {
         host: 'localhost',
       },
       createGlobalDir: true,
-      watch: true,
     });
 
     await store!.stop();
@@ -59,7 +57,6 @@ describe('read-ops-all — all() API', () => {
         database: { host: 'db.example.com', port: 5432 },
       },
       createGlobalDir: true,
-      watch: true,
     });
 
     const snapshot = store!.all();
@@ -83,7 +80,6 @@ describe('read-ops-all — all() API', () => {
         nested: { greeting: 'こんにちは' },
       },
       createGlobalDir: true,
-      watch: true,
     });
 
     const snapshot = store!.all();

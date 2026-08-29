@@ -24,6 +24,7 @@ describe('plugin-architecture — core/plugin separation', () => {
     };
 
     const { result } = await setupTest({
+      reactive: false,
       rawFiles: [{ filename: 'myapp.config.json', content: '{"port": 3000}' }],
       createGlobalDir: true,
       formatPlugins: [customJsonPlugin],

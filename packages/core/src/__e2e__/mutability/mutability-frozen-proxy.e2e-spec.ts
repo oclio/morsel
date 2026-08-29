@@ -13,7 +13,6 @@ describe('mutability-frozen-proxy — stable Proxy behavior', () => {
   it('frozen proxy stable: same reference across re-merges', async () => {
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
     });
 
@@ -36,7 +35,6 @@ describe('mutability-frozen-proxy — stable Proxy behavior', () => {
   it('nested proxy stable across re-merges', async () => {
     const { store, projectDirectory } = await setupTest({
       projectConfig: { database: { host: 'localhost' } },
-      watch: true,
       createGlobalDir: true,
     });
 
@@ -68,7 +66,6 @@ describe('mutability-frozen-proxy — stable Proxy behavior', () => {
   it('nested proxy returns undefined gracefully when key removed', async () => {
     const { store, projectDirectory } = await setupTest({
       projectConfig: { database: { host: 'localhost' } },
-      watch: true,
       createGlobalDir: true,
     });
 
@@ -92,7 +89,6 @@ describe('mutability-frozen-proxy — stable Proxy behavior', () => {
   it('array proxy: arrays wrapped in Proxy', async () => {
     const { store } = await setupTest({
       projectConfig: { items: ['a', 'b', 'c'] },
-      watch: true,
       createGlobalDir: true,
     });
 

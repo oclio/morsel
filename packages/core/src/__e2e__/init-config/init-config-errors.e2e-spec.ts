@@ -16,6 +16,7 @@ describe('init-config-errors — error handling', () => {
 
   it('serialize failure → MorselError(EIO) with path and cause', async () => {
     const { projectDirectory } = await setupTest({
+      reactive: false,
       projectConfig: {},
       projectFilename: '_setup-test.json',
     });
@@ -34,6 +35,7 @@ describe('init-config-errors — error handling', () => {
 
   it('write failure → MorselError(EIO) with path and cause', async () => {
     const { directory } = await setupTest({
+      reactive: false,
       projectConfig: {},
       projectFilename: '_setup-test.json',
     });
@@ -52,6 +54,7 @@ describe('init-config-errors — error handling', () => {
 
   it('mkdirSync failure → MorselError(EIO)', async () => {
     const { projectDirectory } = await setupTest({
+      reactive: false,
       projectConfig: {},
       projectFilename: '_setup-test.json',
     });
@@ -72,6 +75,7 @@ describe('init-config-errors — error handling', () => {
 
   it('empty formatPlugins → TypeError', async () => {
     const { projectDirectory } = await setupTest({
+      reactive: false,
       projectConfig: {},
       projectFilename: '_setup-test.json',
     });

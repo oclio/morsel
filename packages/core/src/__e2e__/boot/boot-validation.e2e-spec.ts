@@ -12,6 +12,7 @@ describe('boot-validation — validation plugins', () => {
     });
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       validationPlugins: [{ name: 'enricher', validate }],
     });

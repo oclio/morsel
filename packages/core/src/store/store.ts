@@ -4,7 +4,6 @@ import { getPathValue } from '@/paths/path-access';
 import { stopStore } from '@/store/boot/stop-store';
 import { isWildcardPattern } from '@/store/reactive/match-wildcard';
 import { createStableProxy } from '@/store/reactive/stable-proxy';
-import { createArrayMethods } from '@/store/store-array-methods';
 import { resolveProvenance } from '@/store/store-provenance';
 import type { StoreState } from '@/store/store-state';
 import type {
@@ -12,6 +11,7 @@ import type {
   Listener,
   ListenerOptions,
   MorselLayer,
+  MorselReactiveStore,
   MorselStore,
   Provenance,
 } from '@/store/types';
@@ -20,28 +20,85 @@ import { deepClone } from '@/utils/deep-clone';
 type ConfigRecord = Record<string, unknown>;
 
 /**
- * Create a {@link MorselStore} from internal state and a mutability mode.
- * The store exposes `config`, `layers`, `on`, `get`, `has`, `all`, `dotify`, `getProvenance`, and `stop`.
+ * Shared read methods used by both static and reactive stores.
+ * Getters (`config`, `layers`) are defined by each factory since they differ.
  */
-export function createMorselStore<T extends ConfigRecord>(
+function createBaseMethods<T extends ConfigRecord>(
+  state: StoreState<T>,
+): Pick<MorselStore<T>, 'get' | 'has' | 'all' | 'dotify' | 'getProvenance'> {
+  return {
+    get<V = unknown>(
+      pathInput: string | readonly (string | number)[],
+      defaultValue?: V,
+    ): V {
+      const value = getPathValue(state._config, pathInput);
+      if (value === undefined) {
+        return defaultValue as V;
+      }
+      return value as V;
+    },
+    has(pathInput: string | readonly (string | number)[]): boolean {
+      return getPathValue(state._config, pathInput) !== undefined;
+    },
+    all(): T {
+      return deepClone(state._config) as T;
+    },
+    dotify(): Record<string, unknown> {
+      return dotifyObject(state._config);
+    },
+    getProvenance(
+      pathInput: string | readonly (string | number)[],
+    ): Provenance | undefined {
+      return resolveProvenance(state._layers, pathInput);
+    },
+  };
+}
+
+/**
+ * Create a static {@link MorselStore} — no watchers, no events, no proxy.
+ * Exposes `config`, `layers`, `get`, `has`, `all`, `dotify`, `getProvenance`, and `stop`.
+ */
+export function createStaticMorselStore<T extends ConfigRecord>(
   state: StoreState<T>,
   mutability: 'frozen' | 'mutable',
 ): MorselStore<T> {
-  const proxy = state.options.proxy
-    ? createStableProxy(state, mutability)
-    : undefined;
-  state._proxy = proxy;
-
-  const arrayMethods = createArrayMethods(state);
-
-  const store: MorselStore<T> = {
+  return {
+    ...createBaseMethods(state),
     get config(): T {
       if (state.stopped) {
         state._stoppedConfig ??= applyMutability(state._config, mutability);
         return state._stoppedConfig;
       }
-      if (proxy === undefined) {
-        return state._config;
+      return state._config;
+    },
+    get layers(): MorselLayer[] {
+      return [...state._layers];
+    },
+    async stop(): Promise<void> {
+      state.stopped = true;
+    },
+  };
+}
+
+/**
+ * Create a {@link MorselReactiveStore} — watchers, events, proxy, re-merge.
+ * Extends the static store methods with `on`, `off`, `triggerRemerge`,
+ * a stable proxy on `config`, and real `stop`.
+ */
+export function createReactiveMorselStore<T extends ConfigRecord>(
+  state: StoreState<T>,
+  mutability: 'frozen' | 'mutable',
+  triggerRemerge: () => void,
+): MorselReactiveStore<T> {
+  const proxy = createStableProxy(state, mutability);
+  state._proxy = proxy;
+
+  return {
+    ...createBaseMethods(state),
+    get config(): T {
+      if (state.stopped) {
+        state._stoppedConfig ??= applyMutability(state._config, mutability);
+        return state._stoppedConfig;
       }
       return mutability === 'mutable' ? state._config : proxy;
     },
@@ -80,36 +137,24 @@ export function createMorselStore<T extends ConfigRecord>(
         }
       };
     },
-    get<V = unknown>(
-      pathInput: string | readonly (string | number)[],
-      defaultValue?: V,
-    ): V {
-      const value = getPathValue(state._config, pathInput);
-      if (value === undefined) {
-        return defaultValue as V;
+    off(key: string, listener: Listener): void {
+      if (state.stopped) {
+        throw new Error('morsel: store is stopped');
       }
-      return value as V;
+      const map = isWildcardPattern(key)
+        ? state.wildcardListeners
+        : state.listeners;
+      const set = map.get(key);
+      if (set !== undefined) {
+        set.delete(listener);
+        if (set.size === 0) {
+          map.delete(key);
+        }
+      }
     },
-    has(pathInput: string | readonly (string | number)[]): boolean {
-      return getPathValue(state._config, pathInput) !== undefined;
-    },
-    all(): T {
-      return deepClone(state._config) as T;
-    },
-    dotify(): Record<string, unknown> {
-      return dotifyObject(state._config);
-    },
+    triggerRemerge,
     async stop(): Promise<void> {
       return stopStore(state);
     },
-    getProvenance(
-      pathInput: string | readonly (string | number)[],
-    ): Provenance | undefined {
-      return resolveProvenance(state._layers, pathInput);
-    },
-    indexOf: arrayMethods.indexOf,
-    lastIndexOf: arrayMethods.lastIndexOf,
   };
-
-  return store;
 }

@@ -54,7 +54,6 @@ describe('hooks-errors — hook errors', () => {
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       hooks,
       onDebug: callback,
@@ -92,7 +91,6 @@ describe('hooks-errors — hook errors', () => {
     const { callback } = createDebugCollector();
 
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       hooks,

@@ -11,7 +11,7 @@ import {
   writeConfig,
 } from '@oclio/test-helpers';
 
-import { watchConfig } from '@/index';
+import { createReactiveStore } from '@/index';
 
 describe('watch-lifecycle-registry — watcher registry & multi-store', () => {
   beforeEach(() => {
@@ -25,10 +25,9 @@ describe('watch-lifecycle-registry — watcher registry & multi-store', () => {
       globalDirectory,
     } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
     });
-    const store2 = await watchConfig({
+    const store2 = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,
@@ -49,10 +48,9 @@ describe('watch-lifecycle-registry — watcher registry & multi-store', () => {
       globalDirectory,
     } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
     });
-    const store2 = await watchConfig({
+    const store2 = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,
@@ -98,10 +96,9 @@ describe('watch-lifecycle-registry — watcher registry & multi-store', () => {
       projectFilename: 'app1.config.json',
       projectConfig: { port: 3000 },
       extraConfigs: [{ filename: 'app2.config.json', content: { port: 8080 } }],
-      watch: true,
       createGlobalDir: true,
     });
-    const store2 = await watchConfig({
+    const store2 = await createReactiveStore({
       name: 'app2',
       cwd: projectDirectory,
       globalDir: globalDirectory,
@@ -126,11 +123,10 @@ describe('watch-lifecycle-registry — watcher registry & multi-store', () => {
       globalDirectory,
     } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       watchDebounce: 50,
     });
-    const store2 = await watchConfig({
+    const store2 = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,
@@ -171,7 +167,6 @@ describe('watch-lifecycle-registry — watcher registry & multi-store', () => {
   it('directory deleted: rm -rf watched dir → no crash, config frozen', async () => {
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       defaults: { port: 4000 },
       onDebug: () => {},
@@ -188,7 +183,6 @@ describe('watch-lifecycle-registry — watcher registry & multi-store', () => {
   it('directory recreated: delete then recreate → re-attach', async () => {
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       defaults: { port: 4000 },
       onDebug: () => {},
@@ -215,7 +209,6 @@ describe('watch-lifecycle-registry — watcher registry & multi-store', () => {
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       onDebug: callback,
     });
@@ -250,10 +243,9 @@ describe('watch-lifecycle-registry — watcher registry & multi-store', () => {
       globalDirectory,
     } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
     });
-    const store2 = await watchConfig({
+    const store2 = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,

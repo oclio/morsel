@@ -57,7 +57,7 @@ morsel provides three distinct functions. The function you choose determines the
 ├─────────────────────────┼──────────────────┼─────────────────────────────────────────────────┤
 │ loadConfigSync(options) │ Synchronous      │ CLI tools, build scripts, synchronous boots     │
 │ loadConfig(options)     │ Asynchronous     │ Web services, parallel boots (Promise.all)      │
-│ watchConfig(options)    │ Async + Reactive │ Live-reload servers, reactive daemons, desktop  │
+│ createReactiveStore(options)    │ Async + Reactive │ Live-reload servers, reactive daemons, desktop  │
 └─────────────────────────┴──────────────────┴─────────────────────────────────────────────────┘
 ```
 
@@ -90,14 +90,14 @@ const [{ config: appConfig }, { config: dbConfig }] = await Promise.all([
 ]);
 ```
 
-### 3. Reactive Live-Reload: `watchConfig`
+### 3. Reactive Live-Reload: `createReactiveStore`
 
 Ideal for long-running servers and background services that need to react to configuration changes without restarting:
 
 ```typescript
-import { watchConfig } from '@oclio/morsel';
+import { createReactiveStore } from '@oclio/morsel';
 
-const store = await watchConfig({
+const store = await createReactiveStore({
   name: 'myapp',
   defaults: {
     logLevel: 'info',

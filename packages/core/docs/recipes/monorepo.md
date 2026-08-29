@@ -92,10 +92,10 @@ export function runCli(args: string[]) {
 In long-running backend services, you can reload database connection pools or toggle features dynamically without dropping active connections or restarting the process:
 
 ```typescript
-import { watchConfig } from '@oclio/morsel';
+import { createReactiveStore } from '@oclio/morsel';
 
 async function startServer() {
-  const store = await watchConfig({
+  const store = await createReactiveStore({
     name: 'backend',
     defaults: {
       port: 3000,

@@ -1,7 +1,7 @@
 type ConfigRecord = Record<string, unknown>;
 
 /**
-Options passed to `loadConfig` / `watchConfig` at runtime.
+Options passed to `loadConfig` / `createReactiveStore` at runtime.
 */
 export type RuntimeOptions = ConfigRecord & { readonly name: string };
 
@@ -26,7 +26,7 @@ export interface ConfigResultLike {
 }
 
 /**
-Minimal store interface returned by `watchConfig`.
+Minimal store interface returned by `createReactiveStore`.
 */
 export interface StoreLike {
   readonly config: ConfigRecord;
@@ -50,7 +50,7 @@ Runtime facade exposed by `@oclio/morsel` and consumed by test helpers.
 export interface MorselRuntime {
   loadConfig: (options: RuntimeOptions) => Promise<ConfigResultLike>;
   loadConfigSync?: (options: RuntimeOptions) => ConfigResultLike;
-  watchConfig: (options: RuntimeOptions) => Promise<StoreLike>;
+  createReactiveStore: (options: RuntimeOptions) => Promise<StoreLike>;
   clearRegistry?: () => void;
 }
 
@@ -58,7 +58,7 @@ const state: { runtime: MorselRuntime | undefined } = { runtime: undefined };
 
 /**
  * Register the morsel runtime so that `setupTest` and other helpers can
- * call `loadConfig` / `watchConfig` without a direct dependency on
+ * call `loadConfig` / `createReactiveStore` without a direct dependency on
  * `@oclio/morsel`. Called once in the e2e setup file.
  *
  * @param runtime - The runtime facade to register.

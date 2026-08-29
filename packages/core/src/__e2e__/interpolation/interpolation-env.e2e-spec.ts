@@ -31,6 +31,7 @@ describe('interpolation-env — ${VAR} from process.env', () => {
     setEnvironment('MORSEL_PORT', '8080');
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: '${MORSEL_PORT}' },
       createGlobalDir: true,
     });
@@ -45,6 +46,7 @@ describe('interpolation-env — ${VAR} from process.env', () => {
     Reflect.deleteProperty(process.env, 'MORSEL_MISSING');
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: '${MORSEL_MISSING}' },
       createGlobalDir: true,
     });

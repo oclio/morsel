@@ -7,6 +7,7 @@ describe('boot-merge — merge + prototype protection', () => {
 
   it('arrays are concatenated with arrayMerge: concat', async () => {
     const { result } = await setupTest({
+      reactive: false,
       globalConfig: { tags: ['a', 'b'] },
       projectConfig: { tags: ['c', 'd'] },
       defaults: { tags: ['default'] },
@@ -21,6 +22,7 @@ describe('boot-merge — merge + prototype protection', () => {
 
   it('arrays are replaced, not concatenated', async () => {
     const { result } = await setupTest({
+      reactive: false,
       globalConfig: { tags: ['a', 'b', 'c'] },
       projectConfig: { tags: ['x', 'y'] },
       defaults: { tags: ['default'] },
@@ -31,6 +33,7 @@ describe('boot-merge — merge + prototype protection', () => {
 
   it('__proto__ key in config file silently skipped by deepMerge', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: {
         __proto__: { polluted: true },
         port: 3000,
@@ -46,6 +49,7 @@ describe('boot-merge — merge + prototype protection', () => {
 
   it('literal dotted key in config file is not split into nested object', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { 'foo.bar': 123 },
     });
 

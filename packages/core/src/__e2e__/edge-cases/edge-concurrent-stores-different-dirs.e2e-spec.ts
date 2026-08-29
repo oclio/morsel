@@ -6,7 +6,7 @@ import {
   writeConfig,
 } from '@oclio/test-helpers';
 
-import { watchConfig } from '@/index';
+import { createReactiveStore } from '@/index';
 
 describe('edge-concurrent-stores-different-dirs — independent watchers', () => {
   clearWatcherRegistry();
@@ -25,12 +25,12 @@ describe('edge-concurrent-stores-different-dirs — independent watchers', () =>
     await writeConfig(directoryA, 'myapp.config.json', { port: 3000 });
     await writeConfig(directoryB, 'myapp.config.json', { port: 8080 });
 
-    const storeA = await watchConfig({
+    const storeA = await createReactiveStore({
       name: 'myapp',
       cwd: directoryA,
       globalDir: globalA,
     });
-    const storeB = await watchConfig({
+    const storeB = await createReactiveStore({
       name: 'myapp',
       cwd: directoryB,
       globalDir: globalB,

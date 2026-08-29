@@ -96,7 +96,7 @@ console.log(config.port); // Directly typed property access
 ### Key Differences
 
 - **No Global Mutation**: You instantiate configs cleanly rather than relying on global singleton state.
-- **Async & Reactive Support**: You can use `loadConfig` (async) or `watchConfig` (reactive live-reload).
+- **Async & Reactive Support**: You can use `loadConfig` (async) or `createReactiveStore` (reactive live-reload).
 - **TypeScript Autocomplete**: Access properties naturally as `config.port` without typing strings into `config.get('port')`.
 
 ---

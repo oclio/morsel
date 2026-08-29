@@ -28,7 +28,6 @@ describe('hooks-state — stateless, init, dispose', () => {
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       hooks,
     } as never);
@@ -44,7 +43,7 @@ describe('hooks-state — stateless, init, dispose', () => {
     await store!.stop();
   });
 
-  it('init called once after store creation in watchConfig', async () => {
+  it('init called once after store creation in createReactiveStore', async () => {
     let initCallCount = 0;
     const hooks = [
       {
@@ -59,7 +58,6 @@ describe('hooks-state — stateless, init, dispose', () => {
 
     const { store } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       hooks,
     } as never);
@@ -83,6 +81,7 @@ describe('hooks-state — stateless, init, dispose', () => {
     ];
 
     await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       hooks,
@@ -138,7 +137,6 @@ describe('hooks-state — stateless, init, dispose', () => {
 
     const { store } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       hooks,
     } as never);
@@ -164,7 +162,6 @@ describe('hooks-state — stateless, init, dispose', () => {
     await expect(
       setupTest({
         projectConfig: { port: 3000 },
-        watch: true,
         createGlobalDir: true,
         hooks,
       } as never),
@@ -189,7 +186,6 @@ describe('hooks-state — stateless, init, dispose', () => {
 
     const { store } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       hooks,
     } as never);
@@ -213,6 +209,7 @@ describe('hooks-state — stateless, init, dispose', () => {
     ];
 
     await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       hooks,
@@ -240,7 +237,6 @@ describe('hooks-state — stateless, init, dispose', () => {
 
     const { store } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       hooks,
     } as never);
@@ -266,7 +262,6 @@ describe('hooks-state — stateless, init, dispose', () => {
 
     const { store } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       hooks,
       onDebug: callback,

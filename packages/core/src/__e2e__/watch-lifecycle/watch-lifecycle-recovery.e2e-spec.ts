@@ -20,7 +20,6 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
   it('directory deleted → fs.watch crash, config stays frozen', async () => {
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       defaults: { port: 4000 },
       onDebug: () => {},
@@ -37,7 +36,6 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
   it('directory recreated → future fires captured', async () => {
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       defaults: { port: 4000 },
       onDebug: () => {},
@@ -57,7 +55,6 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
   it('createWatcher when directory does not exist → startRecovery immediate', async () => {
     const { store, globalDirectory: nonexistentGlobal } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       defaults: { port: 3000, host: 'localhost' },
       onDebug: () => {},
     });
@@ -77,7 +74,6 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
   it('retry timer polling every 1 second → reconnection within ~2s', async () => {
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       defaults: { port: 4000 },
       onDebug: () => {},
@@ -98,7 +94,6 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
       globalConfig: { host: '0.0.0.0' },
-      watch: true,
       onDebug: () => {},
     });
 
@@ -123,7 +118,6 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       defaults: { port: 4000 },
       verbose: true,
@@ -142,7 +136,6 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
     const { contexts, callback } = createDebugCollector();
 
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       verbose: true,
@@ -174,7 +167,6 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       defaults: { port: 4000 },
       onDebug: callback,
@@ -198,7 +190,6 @@ describe('watch-lifecycle-recovery — directory deletion & reconnection', () =>
   it('onDebug noop → stderr fallback for re-merge errors', async () => {
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       defaults: { port: 4000 },
     });

@@ -9,12 +9,12 @@ import { jsonPlugin } from '@/plugins/json-plugin';
 import { noop } from '@/store/boot/assert-name';
 import { toMorselLayer } from '@/store/layer';
 import { emitChanges } from '@/store/reactive/emit-changes';
-import type { StoreState } from '@/store/store-state';
-import { createRemerge } from '@/store/watch/remerge-runner';
+import { createRemerge } from '@/store/reactive/remerge-runner';
 import {
   updateWatchedFiles,
   updateWatchers,
-} from '@/store/watch/watcher-setup';
+} from '@/store/reactive/watcher-setup';
+import type { StoreState } from '@/store/store-state';
 
 vi.mock('@/load/build-layers', () => ({
   buildLayers: vi.fn(),
@@ -32,7 +32,7 @@ vi.mock('@/store/reactive/emit-changes', () => ({
 vi.mock('@/store/layer', () => ({
   toMorselLayer: vi.fn(),
 }));
-vi.mock('@/store/watch/watcher-setup', () => ({
+vi.mock('@/store/reactive/watcher-setup', () => ({
   updateWatchedFiles: vi.fn(),
   updateWatchers: vi.fn(),
 }));

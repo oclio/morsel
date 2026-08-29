@@ -15,6 +15,7 @@ describe('env-resolution — $env resolution per layer', () => {
 
   it('overrides keys from $env block matching envName', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: {
         port: 3000,
         host: 'localhost',
@@ -37,6 +38,7 @@ describe('env-resolution — $env resolution per layer', () => {
 
   it('$env.ci nested object merges with file body, not replaces', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: {
         tools: { eslint: true, prettier: true },
         server: { db: { host: 'localhost', port: 5432 } },
@@ -58,6 +60,7 @@ describe('env-resolution — $env resolution per layer', () => {
 
   it('nested $env within $env block is not applied recursively', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: {
         port: 3000,
         $env: {
@@ -78,6 +81,7 @@ describe('env-resolution — $env resolution per layer', () => {
 
   it('each file in extends chain applies its own $env before merge', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: {
         port: 4000,
         host: '0.0.0.0',
@@ -109,6 +113,7 @@ describe('env-resolution — $env resolution per layer', () => {
 
   it('$env in global file resolved during global layer cleanup', async () => {
     const { result } = await setupTest({
+      reactive: false,
       globalConfig: {
         port: 4000,
         $env: {
@@ -128,6 +133,7 @@ describe('env-resolution — $env resolution per layer', () => {
 
   it('defaults and overrides apply $env but do not follow extends', async () => {
     const { result } = await setupTest({
+      reactive: false,
       envName: 'ci',
       defaults: {
         port: 4000,
@@ -157,6 +163,7 @@ describe('env-resolution — $env resolution per layer', () => {
 
   it('$env in all 4 layers resolved independently', async () => {
     const { result } = await setupTest({
+      reactive: false,
       globalConfig: {
         port: 4000,
         $env: { ci: { port: 8080 } },
@@ -194,6 +201,7 @@ describe('env-resolution — $env resolution per layer', () => {
     ];
 
     const { result } = await setupTest({
+      reactive: false,
       hooks,
       envName: 'production',
     });
@@ -230,6 +238,7 @@ describe('env-resolution — $env resolution per layer', () => {
       ];
 
       const { result } = await setupTest({
+        reactive: false,
         hooks,
         onDebug: callback,
       });

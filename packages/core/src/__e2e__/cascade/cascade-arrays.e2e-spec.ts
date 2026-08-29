@@ -7,6 +7,7 @@ describe('cascade-arrays — array merge strategies', () => {
 
   it('concat with missing layer — defaults has no tags, project has tags', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { tags: ['c'] },
       arrayMerge: 'concat',
     });
@@ -18,6 +19,7 @@ describe('cascade-arrays — array merge strategies', () => {
 
   it('concat with empty array — defaults tags:[], project tags:[c]', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { tags: ['c'] },
       defaults: { tags: [] },
       arrayMerge: 'concat',
@@ -30,6 +32,7 @@ describe('cascade-arrays — array merge strategies', () => {
 
   it('replace with empty array — defaults tags:[a,b], project tags:[]', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { tags: [] },
       defaults: { tags: ['a', 'b'] },
     });
@@ -41,6 +44,7 @@ describe('cascade-arrays — array merge strategies', () => {
 
   it('array of objects with concat — objects cloned, not shared by reference', async () => {
     const { result } = await setupTest({
+      reactive: false,
       globalConfig: { tags: [{ a: 1 }] },
       projectConfig: { tags: [{ b: 2 }] },
       arrayMerge: 'concat',
@@ -58,6 +62,7 @@ describe('cascade-arrays — array merge strategies', () => {
 
   it('array of objects with replace — objects cloned', async () => {
     const { result } = await setupTest({
+      reactive: false,
       globalConfig: { tags: [{ a: 1 }] },
       projectConfig: { tags: [{ b: 2 }] },
     });
@@ -72,6 +77,7 @@ describe('cascade-arrays — array merge strategies', () => {
 
   it('array nested in object — array merge applies recursively', async () => {
     const { result } = await setupTest({
+      reactive: false,
       globalConfig: { features: { tags: ['a'] } },
       projectConfig: { features: { tags: ['b'] } },
       arrayMerge: 'concat',
@@ -86,6 +92,7 @@ describe('cascade-arrays — array merge strategies', () => {
 
   it('array of arrays — outer array merged per strategy', async () => {
     const { result } = await setupTest({
+      reactive: false,
       globalConfig: { matrix: [[1, 2]] },
       projectConfig: { matrix: [[3, 4]] },
       arrayMerge: 'concat',

@@ -5,7 +5,7 @@ import {
   writeConfig,
 } from '@oclio/test-helpers';
 
-import { watchConfig } from '@/index';
+import { createReactiveStore } from '@/index';
 
 describe('watch-lifecycle-handle-event — watch event dispatch', () => {
   beforeEach(() => {
@@ -18,7 +18,6 @@ describe('watch-lifecycle-handle-event — watch event dispatch', () => {
       extraConfigs: [
         { filename: 'other.json', content: { host: 'localhost' } },
       ],
-      watch: true,
       createGlobalDir: true,
     });
 
@@ -50,10 +49,9 @@ describe('watch-lifecycle-handle-event — watch event dispatch', () => {
       globalDirectory,
     } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
     });
-    const store2 = await watchConfig({
+    const store2 = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,
@@ -94,11 +92,10 @@ describe('watch-lifecycle-handle-event — watch event dispatch', () => {
       globalDirectory,
     } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       watchDebounce: 50,
     });
-    const store2 = await watchConfig({
+    const store2 = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,

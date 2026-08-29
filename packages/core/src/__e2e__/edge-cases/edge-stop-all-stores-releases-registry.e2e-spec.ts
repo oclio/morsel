@@ -11,7 +11,6 @@ describe('edge-stop-all-stores-releases-registry — registry empty after all st
     const { store } = await setupTest({
       projectConfig: { port: 3000 },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(getRegistry().size).toBeGreaterThan(0);

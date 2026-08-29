@@ -11,9 +11,9 @@ morsel calculates a recursive diff between the old and new configuration states 
 Use `store.on(keyPath, listener)` to listen for changes on any property:
 
 ```typescript
-import { watchConfig } from '@oclio/morsel';
+import { createReactiveStore } from '@oclio/morsel';
 
-const store = await watchConfig({
+const store = await createReactiveStore({
   name: 'myapp',
   defaults: {
     port: 3000,

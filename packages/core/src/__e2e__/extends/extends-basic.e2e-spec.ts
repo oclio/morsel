@@ -15,6 +15,7 @@ describe('extends-basic — basic extends resolution', () => {
 
   it('A extends B → config = deepMerge(B, A), extendsPaths contains B', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -43,6 +44,7 @@ describe('extends-basic — basic extends resolution', () => {
 
   it('A extends B extends C → merge = deepMerge(C, B, A), extendsPaths = [C, B]', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -78,6 +80,7 @@ describe('extends-basic — basic extends resolution', () => {
 
   it('extends resolved from declaring file dir, not cwd', async () => {
     const { directory, projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -104,6 +107,7 @@ describe('extends-basic — basic extends resolution', () => {
 
   it('extends with absolute path resolves as-is', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -134,6 +138,7 @@ describe('extends-basic — basic extends resolution', () => {
     'extends with non-string value (%s) silently ignored',
     async (_label, value) => {
       const { projectDirectory, globalDirectory } = await setupTest({
+        reactive: false,
         projectConfig: { port: 3000 },
       });
 
@@ -154,6 +159,7 @@ describe('extends-basic — basic extends resolution', () => {
 
   it('extends array with non-string entries filtered out silently', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 

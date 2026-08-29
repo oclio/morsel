@@ -73,6 +73,7 @@ describe('hooks-cleanup — reserved key cleanup on hook output', () => {
     ];
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       hooks,

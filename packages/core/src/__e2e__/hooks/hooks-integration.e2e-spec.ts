@@ -142,6 +142,7 @@ describe('hooks-integration — hooks + other pipeline features', () => {
     };
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       hooks,
@@ -174,7 +175,6 @@ describe('hooks-integration — hooks + other pipeline features', () => {
 
     const { store } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       hooks,
       signal: controller.signal,

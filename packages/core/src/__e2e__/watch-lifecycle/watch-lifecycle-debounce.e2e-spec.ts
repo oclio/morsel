@@ -13,7 +13,6 @@ describe('watch-lifecycle-debounce — debounce behavior', () => {
 
   it('default: 3 rapid writes < 300ms → 1 re-merge', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -39,7 +38,6 @@ describe('watch-lifecycle-debounce — debounce behavior', () => {
 
   it('custom: watchDebounce 100 → faster re-merge', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       watchDebounce: 100,
@@ -61,7 +59,6 @@ describe('watch-lifecycle-debounce — debounce behavior', () => {
 
   it('zero: watchDebounce 0 triggers immediate re-merge', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       watchDebounce: 0,
@@ -95,7 +92,6 @@ describe('watch-lifecycle-debounce — debounce behavior', () => {
     ];
 
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       hooks,
@@ -116,7 +112,6 @@ describe('watch-lifecycle-debounce — debounce behavior', () => {
 
   it('stopped check in remerge: if store.stopped, remerge returns early', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });

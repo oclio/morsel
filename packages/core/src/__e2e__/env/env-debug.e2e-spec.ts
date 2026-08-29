@@ -20,6 +20,7 @@ describe('env-debug — debug channels', () => {
       const { messages: debugMessages, callback } = createDebugCollector();
 
       const { result } = await setupTest({
+        reactive: false,
         projectConfig: {
           port: 3000,
           $env: {
@@ -39,6 +40,7 @@ describe('env-debug — debug channels', () => {
   it('$env undefined with onDebug === noop — message goes to stderr', async () => {
     await withEnvironmentVariable('NODE_ENV', undefined, async () => {
       const { result } = await setupTest({
+        reactive: false,
         projectConfig: {
           port: 3000,
           $env: {
@@ -55,6 +57,7 @@ describe('env-debug — debug channels', () => {
   it('$env undefined with no onDebug option — message goes to stderr', async () => {
     await withEnvironmentVariable('NODE_ENV', undefined, async () => {
       const { result } = await setupTest({
+        reactive: false,
         projectConfig: {
           port: 3000,
           $env: {
@@ -70,7 +73,6 @@ describe('env-debug — debug channels', () => {
 
   it('re-merge failure with empty onDebug → no stderr, config kept', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       onDebug: () => {},
@@ -95,7 +97,6 @@ describe('env-debug — debug channels', () => {
 
   it('re-merge failure without onDebug logs to stderr', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });

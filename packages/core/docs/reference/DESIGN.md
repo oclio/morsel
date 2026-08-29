@@ -49,7 +49,7 @@ morsel starts from the premise that a configuration loader must be **lean, robus
 #### Robust by default
 
 - Throw, never silent — typed `MorselError` (`EIO`, `EPARSE`, `ENOPLUGIN`, `EVALIDATE`, `ECYCLE`, `EHOOK`, `EWRITE`) with path + cause.
-- Watch resilience — `watchConfig` throws at boot if the first load fails (no valid fallback state). On re-merge, keeps the last valid state, logs to `stderr`, routes to `onDebug`.
+- Watch resilience — `createReactiveStore` throws at boot if the first load fails (no valid fallback state). On re-merge, keeps the last valid state, logs to `stderr`, routes to `onDebug`.
 - `frozen` by default — the returned configuration is immutable unless `configMutability: 'mutable'` is explicit.
 - Watcher ref-counting — a single `fs.watch` per directory, shared across stores, released when the last store calls `stop()`.
 
@@ -62,14 +62,14 @@ morsel starts from the premise that a configuration loader must be **lean, robus
 
 #### Integrated live-reload
 
-- `watchConfig` — watch + key-level events (dotted notation, recursive diff).
+- `createReactiveStore` — watch + key-level events (dotted notation, recursive diff).
 - 300 ms debounce by default, configurable per store. Concurrent re-merge handled via `pendingRemerge` queue.
 - Directory-level watching + filename filtering — survives atomic deletion/recreation by editors.
 
 #### Ergonomic API
 
-- Distinct sync + async — `loadConfigSync` (sync), `loadConfig` (async), `watchConfig` (async + live-reload). The chosen function determines the behavior, not a `watch: true` flag.
-- Generic typing `loadConfig<T>` / `watchConfig<T>`.
+- Distinct sync + async — `loadConfigSync` (sync), `loadConfig` (async), `createStore` (async, static), `createReactiveStore` (async + live-reload). The chosen function determines the behavior.
+- Generic typing `loadConfig<T>` / `createReactiveStore<T>`.
 - `initConfig` — idempotent project configuration bootstrap with atomic write.
 - `resolvePaths` — deterministic exposure of theoretical paths without I/O.
 
@@ -79,13 +79,11 @@ morsel starts from the premise that a configuration loader must be **lean, robus
 - Answers the #1 config debugging question: "why does my app have this value?" in a single call — no manual layer traversal.
 - No new infrastructure — built on existing `MorselLayer` trace and `getPathValue`. Minimal bundle impact.
 
-#### Headless mode
+#### Static vs reactive stores
 
-- Two orthogonal flags on `WatchOptions` (`watch`, `proxy`, both default `true`) allow disabling reactive features for one-shot use cases (CI, scripts, CLI).
-- `watch: false` skips `collectWatchedFiles` + `setupWatchers` — no `fs.watch` overhead. No re-merge on external file changes.
-- `proxy: false` skips `createStableProxy` — `store.config` returns `state._config` directly. `store.get()`, `store.on()`, and change events are unaffected.
-- Enables `morsel-cli` one-shot commands (`morsel get`) to boot and exit without paying for watchers or proxy overhead.
-- Flags are guards around existing code paths, no new abstractions — negligible bundle impact.
+- `createStore` returns a static `MorselStore` — no watchers, no events, no proxy, no re-merge. The `config` getter returns `state._config` directly. `stop()` is a noop. Use for CI, scripts, CLI one-shot commands.
+- `createReactiveStore` returns a `MorselReactiveStore` that extends `MorselStore` with `on`, `off`, `triggerRemerge`, watchers, and re-merge. Sets up `fs.watch` and a stable proxy on `config`.
+- Splitting the two constructors (instead of `watch`/`proxy` flags) makes the API explicit — the type system enforces that `on`/`off`/`triggerRemerge` are only available on reactive stores.
 
 ---
 
@@ -103,7 +101,7 @@ A layer hook attaches to a specific lifecycle point and produces a `Record<strin
 
 Layer hooks may optionally define `init(ctx)` and `dispose()` methods for stateful use cases (remote config polling, WebSocket subscriptions, etcd watch):
 
-- `init` is called once after the store is created in `watchConfig` — use it to open connections, start pollers, etc. If `init` throws, a `MorselError` (`EHOOK`) is thrown and the store is not returned.
+- `init` is called once after the store is created in `createReactiveStore` — use it to open connections, start pollers, etc. If `init` throws, a `MorselError` (`EHOOK`) is thrown and the store is not returned.
 - `dispose` is called once when the store is stopped via `stop()` — use it to close connections, clear timers, etc. Errors in `dispose` are caught and logged via `onDebug` — they do not block `stop()`.
 - Neither `init` nor `dispose` is called in `loadConfig`/`loadConfigSync` (one-shot, no lifecycle).
 
@@ -111,7 +109,7 @@ Layer hooks may optionally define `init(ctx)` and `dispose()` methods for statef
 
 The `HookContext` provides `triggerRemerge()` — a function that requests a re-merge of the configuration. This enables hooks to react to external changes (remote config updated, etcd key changed) and trigger a fresh merge cycle:
 
-- In `watchConfig`, calling `triggerRemerge()` schedules a re-merge via the store's internal `remerge` function (coalesced via re-merge in-progress and pending flags: if a re-merge is already running, subsequent calls set a pending flag and only one additional re-merge runs after the current one completes).
+- In `createReactiveStore`, calling `triggerRemerge()` schedules a re-merge via the store's internal `remerge` function (coalesced via re-merge in-progress and pending flags: if a re-merge is already running, subsequent calls set a pending flag and only one additional re-merge runs after the current one completes).
 - In `loadConfig`/`loadConfigSync`, `triggerRemerge` is a noop — there is no store lifecycle.
 - Safe to call multiple times — coalesced via the re-merge in-progress and pending flags.
 
@@ -194,8 +192,10 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 ### Public Types & Interfaces
 
 - `MorselOptions` — common configuration options (`name`, `cwd`, `defaults`, `overrides`, `globalDir`, etc.).
-- `WatchOptions` — extends `MorselOptions` with `watchDebounce`, `signal`, `watch`, and `proxy`.
-- `MorselStore<T>` — reactive store instance (`config`, `layers`, `on`, `get`, `has`, `all`, `dotify`, `getProvenance`, `stop`).
+- `StoreOptions` — same as `MorselOptions`. Used by `createStore`.
+- `ReactiveStoreOptions` — extends `MorselOptions` with `watchDebounce` and `signal`. Used by `createReactiveStore`.
+- `MorselStore<T>` — static store instance (`config`, `layers`, `get`, `has`, `all`, `dotify`, `getProvenance`, `stop`).
+- `MorselReactiveStore<T>` — extends `MorselStore` with `on`, `off`, `triggerRemerge`.
 - `MorselLayer` — trace of a resolved layer (`source`, `path`, `config`, `exists`, `extendsPaths`, `hookName`).
 - `MorselError` — base error class with `path`, `code`, and `cause`.
 - `ErrorCode` — union of error codes (`'EIO' | 'EPARSE' | 'ENOPLUGIN' | 'EVALIDATE' | 'ECYCLE' | 'EHOOK'`).
@@ -228,7 +228,8 @@ Debounce (300 ms by default) is managed at the store level, not the watcher leve
 
 - `loadConfig` — asynchronous one-shot loading.
 - `loadConfigSync` — synchronous one-shot loading.
-- `watchConfig` — asynchronous loading with watch and live-reload.
+- `createStore` — asynchronous static loading (no watchers, no events).
+- `createReactiveStore` — asynchronous loading with watch and live-reload.
 - `resolvePaths` — path computation without disk reads.
 - `initConfig` — atomic and idempotent configuration file initialization.
 - `deepMerge` — deterministic deep merge with array strategy handling.
@@ -296,7 +297,7 @@ loadConfigSync(opts) / loadConfig(opts)
     │
     └─ ConfigResult { config, layers }
 
-watchConfig(opts)
+createReactiveStore(opts)
 │
 ├─ [same as loadConfig] ─── initial merge (resolveOptions + buildLayers + processConfig)
 │

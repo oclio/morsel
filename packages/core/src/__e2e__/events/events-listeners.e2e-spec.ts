@@ -12,7 +12,6 @@ describe('events-listeners — listener management', () => {
 
   it('dotted key listener fires when nested scalar changes', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { tools: { eslint: true, prettier: true } },
       createGlobalDir: true,
     });
@@ -38,7 +37,6 @@ describe('events-listeners — listener management', () => {
 
   it('multiple listeners on same key all fire on change', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -63,7 +61,6 @@ describe('events-listeners — listener management', () => {
 
   it('calling unsubscribe stops further events', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -90,7 +87,6 @@ describe('events-listeners — listener management', () => {
 
   it('unsubscribe on wildcard listener stops further wildcard events', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { server: { host: 'localhost', port: 3000 } },
       createGlobalDir: true,
     });
@@ -129,7 +125,6 @@ describe('events-listeners — listener management', () => {
 
   it('calling on() after stop() throws Error', async () => {
     const { store } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -143,7 +138,6 @@ describe('events-listeners — listener management', () => {
 
   it('after stop(), subsequent file changes do not emit events', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });

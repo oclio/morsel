@@ -13,7 +13,6 @@ describe('mutability-mutable-watch — mutable + watch', () => {
   it('mutable reference changes: new reference per re-merge', async () => {
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       configMutability: 'mutable',
     });
@@ -37,7 +36,6 @@ describe('mutability-mutable-watch — mutable + watch', () => {
   it('mutable deep clone diff: consumer modification does not break diff', async () => {
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       configMutability: 'mutable',
     });
@@ -65,7 +63,6 @@ describe('mutability-mutable-watch — mutable + watch', () => {
   it('mutable after stop: config stays mutable and readable', async () => {
     const { store } = await setupTest({
       projectConfig: { port: 3000, host: 'localhost' },
-      watch: true,
       createGlobalDir: true,
       configMutability: 'mutable',
     });

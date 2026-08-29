@@ -17,6 +17,7 @@ describe('validation-pipeline — integration with pipeline', () => {
     };
 
     await setupTest({
+      reactive: false,
       projectConfig: { host: '${MORSEL_HOST}' },
       createGlobalDir: true,
       validationPlugins: [{ name: 'capture', validate }],
@@ -36,6 +37,7 @@ describe('validation-pipeline — integration with pipeline', () => {
     };
 
     await setupTest({
+      reactive: false,
       projectConfig: { port: '${MORSEL_PORT}' },
       createGlobalDir: true,
       validationPlugins: [{ name: 'capture', validate }],
@@ -47,6 +49,7 @@ describe('validation-pipeline — integration with pipeline', () => {
 
   it('validation in loadConfigSync', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: '3000' },
       createGlobalDir: true,
     });
@@ -69,7 +72,7 @@ describe('validation-pipeline — integration with pipeline', () => {
     expect(config).toEqual({ port: 3000 });
   });
 
-  it('validation in watchConfig boot → throws', async () => {
+  it('validation in createReactiveStore boot → throws', async () => {
     const validate = (config: Record<string, unknown>) => {
       if (config['port'] === -1) {
         throw new Error('port must be positive');
@@ -80,7 +83,6 @@ describe('validation-pipeline — integration with pipeline', () => {
     await expect(
       setupTest({
         projectConfig: { port: -1 },
-        watch: true,
         createGlobalDir: true,
         validationPlugins: [{ name: 'positive', validate }],
       } as never),

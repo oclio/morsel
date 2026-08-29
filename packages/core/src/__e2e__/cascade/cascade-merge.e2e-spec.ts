@@ -7,6 +7,7 @@ describe('cascade-merge — merge behavior', () => {
 
   it('nested objects are merged, not replaced', async () => {
     const { result } = await setupTest({
+      reactive: false,
       globalConfig: {
         server: { host: '0.0.0.0', port: 8080 },
       },
@@ -25,6 +26,7 @@ describe('cascade-merge — merge behavior', () => {
 
   it('deep merge at arbitrary depth (4+ levels)', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: {
         a: { b: { c: { e: 'project' } } },
       },
@@ -40,6 +42,7 @@ describe('cascade-merge — merge behavior', () => {
 
   it('defaults < global < project < overrides priority', async () => {
     const { result } = await setupTest({
+      reactive: false,
       globalConfig: {
         port: 8080,
         host: 'global.example.com',
@@ -65,6 +68,7 @@ describe('cascade-merge — merge behavior', () => {
 
   it('null in a higher layer resets the key from lower layers', async () => {
     const { result } = await setupTest({
+      reactive: false,
       globalConfig: {
         host: 'global.example.com',
         port: 8080,
@@ -119,6 +123,7 @@ describe('cascade-merge — merge behavior', () => {
     'null overwrites from $name layer',
     async ({ defaults, globalConfig, projectConfig, overrides, expected }) => {
       const { result } = await setupTest({
+        reactive: false,
         globalConfig,
         projectConfig,
         defaults,
@@ -133,6 +138,7 @@ describe('cascade-merge — merge behavior', () => {
 
   it('undefined in overrides does not overwrite, but other override keys do', async () => {
     const { result } = await setupTest({
+      reactive: false,
       globalConfig: {
         host: 'global.example.com',
         port: 8080,
@@ -191,6 +197,7 @@ describe('cascade-merge — merge behavior', () => {
     'undefined ignored from $name layer',
     async ({ defaults, globalConfig, projectConfig, overrides, expected }) => {
       const { result } = await setupTest({
+        reactive: false,
         globalConfig,
         projectConfig,
         defaults,
@@ -205,6 +212,7 @@ describe('cascade-merge — merge behavior', () => {
 
   it('object replaced by scalar — scalar wins', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: {
         server: 'disabled',
       },
@@ -218,6 +226,7 @@ describe('cascade-merge — merge behavior', () => {
 
   it('scalar replaced by object — object wins', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: {
         port: { value: 3000 },
       },
@@ -231,6 +240,7 @@ describe('cascade-merge — merge behavior', () => {
 
   it('scalar of different type — string wins over number', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: {
         port: '3000',
       },
@@ -244,6 +254,7 @@ describe('cascade-merge — merge behavior', () => {
 
   it('array replaced by object — object wins', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: {
         tags: { x: 1 },
       },
@@ -257,6 +268,7 @@ describe('cascade-merge — merge behavior', () => {
 
   it('object replaced by array — array wins', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: {
         server: ['a', 'b'],
       },
@@ -270,6 +282,7 @@ describe('cascade-merge — merge behavior', () => {
 
   it('array replaced by scalar — scalar wins', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: {
         tags: 'none',
       },
@@ -283,6 +296,7 @@ describe('cascade-merge — merge behavior', () => {
 
   it('key present in defaults only survives in final result', async () => {
     const { result } = await setupTest({
+      reactive: false,
       defaults: { port: 3000, retries: 3 },
     });
 
@@ -293,6 +307,7 @@ describe('cascade-merge — merge behavior', () => {
 
   it('key present in all 4 layers with different values — overrides wins', async () => {
     const { result } = await setupTest({
+      reactive: false,
       globalConfig: {
         port: 8080,
       },

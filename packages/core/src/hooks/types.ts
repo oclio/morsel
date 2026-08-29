@@ -31,7 +31,7 @@ export interface HookContext {
   readonly envName: string | undefined;
   /**
   Request a re-merge of the store. No-op in loadConfig/loadConfigSync
-  (no store lifecycle). In watchConfig, triggers a re-merge cycle.
+  (no store lifecycle). In createReactiveStore, triggers a re-merge cycle.
   Safe to call multiple times — coalesced via re-merge in-progress and
   pending flags: if a re-merge is already running, subsequent calls set
   a pending flag and only one additional re-merge runs after the current
@@ -65,7 +65,7 @@ export interface LayerHook {
     context: HookContext,
   ): Record<string, unknown> | Promise<Record<string, unknown>>;
   /**
-   * Called once after the store is created in watchConfig.
+   * Called once after the store is created in createReactiveStore.
    * Use to open connections, start pollers, etc.
    * Not called in loadConfig/loadConfigSync (one-shot, no lifecycle).
    * If throw → MorselError (code EHOOK).

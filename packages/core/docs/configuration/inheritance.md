@@ -75,7 +75,7 @@ To prevent infinite loops and runaway recursion, morsel implements strict safety
 
 ## Live-Reload & Watch Integration
 
-When running under `watchConfig`:
+When running under `createReactiveStore`:
 
 - morsel registers directory watchers for **every file in the `extends` chain**.
 - If a shared parent configuration (`../shared/base.config.json`) is edited on disk, morsel automatically detects the event, re-merges the entire cascade, and emits granular key-level changes to all active listeners.

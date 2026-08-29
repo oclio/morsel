@@ -2,13 +2,13 @@ import path from 'node:path';
 
 import type { ResolvedLayer } from '@/load/resolve-layer';
 import { jsonPlugin } from '@/plugins/json-plugin';
-import type { StoreState } from '@/store/store-state';
 import {
   collectWatchedFiles,
   setupWatchers,
   updateWatchedFiles,
   updateWatchers,
-} from '@/store/watch/watcher-setup';
+} from '@/store/reactive/watcher-setup';
+import type { StoreState } from '@/store/store-state';
 import { createWatcher, releaseWatcher } from '@/watch/watcher-registry';
 
 vi.mock('@/watch/watcher-registry');

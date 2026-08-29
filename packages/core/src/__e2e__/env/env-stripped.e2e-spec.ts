@@ -7,6 +7,7 @@ describe('env-stripped — $env stripped from result', () => {
 
   it('$env key not in config nor in any layer.config', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: {
         port: 3000,
         $env: {
@@ -30,6 +31,7 @@ describe('env-stripped — $env stripped from result', () => {
 
   it('$env stripped from all 4 layers simultaneously', async () => {
     const { result } = await setupTest({
+      reactive: false,
       globalConfig: {
         port: 8080,
         $env: { ci: { port: 9090 } },

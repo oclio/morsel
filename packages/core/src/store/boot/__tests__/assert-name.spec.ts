@@ -1,7 +1,6 @@
 import { resolveGlobalDirectory } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
 import { resolveOptions } from '@/store/boot/assert-name';
-import type { WatchOptions } from '@/store/types';
 
 vi.mock('@/paths/resolve-paths', () => ({
   resolveGlobalDirectory: vi.fn(),
@@ -57,46 +56,6 @@ describe('resolveOptions', () => {
     expect(result.formatPlugins).toEqual([jsonPlugin]);
     expect(result.validationPlugins).toEqual([]);
     expect(result.hooks).toEqual([]);
-    expect(result.watch).toBe(true);
-    expect(result.proxy).toBe(true);
-  });
-
-  it('defaults watch to true when not provided', () => {
-    vi.mocked(resolveGlobalDirectory).mockReturnValue('/fake/global');
-
-    const result = resolveOptions({ name: 'myapp' });
-
-    expect(result.watch).toBe(true);
-  });
-
-  it('defaults proxy to true when not provided', () => {
-    vi.mocked(resolveGlobalDirectory).mockReturnValue('/fake/global');
-
-    const result = resolveOptions({ name: 'myapp' });
-
-    expect(result.proxy).toBe(true);
-  });
-
-  it('uses provided watch: false', () => {
-    vi.mocked(resolveGlobalDirectory).mockReturnValue('/fake/global');
-
-    const result = resolveOptions({
-      name: 'myapp',
-      watch: false,
-    } as WatchOptions);
-
-    expect(result.watch).toBe(false);
-  });
-
-  it('uses provided proxy: false', () => {
-    vi.mocked(resolveGlobalDirectory).mockReturnValue('/fake/global');
-
-    const result = resolveOptions({
-      name: 'myapp',
-      proxy: false,
-    } as WatchOptions);
-
-    expect(result.proxy).toBe(false);
   });
 
   it('uses provided formatPlugins and validationPlugins', () => {
@@ -244,7 +203,6 @@ describe('resolveOptions', () => {
     expect(result.name).toBe(input);
   });
 
-  // Explicit (non-parameterized) tests to kill regex mutants on VALID_NAME
   it('rejects "123app" — must start with letter (^ anchor)', () => {
     expect(() => resolveOptions({ name: '123app' })).toThrow(
       'morsel: name must start with a letter',

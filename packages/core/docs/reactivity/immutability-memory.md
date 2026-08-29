@@ -8,7 +8,7 @@ morsel addresses this with strict **immutability guarantees** and a **stable del
 
 ## The Default: `configMutability: 'frozen'`
 
-By default, all configurations loaded by morsel (`loadConfigSync`, `loadConfig`, `watchConfig`) are **recursively frozen** (`Object.freeze` applied to every object and array).
+By default, all configurations loaded by morsel (`loadConfigSync`, `loadConfig`, `createReactiveStore`) are **recursively frozen** (`Object.freeze` applied to every object and array).
 
 ```typescript
 import { loadConfigSync } from '@oclio/morsel';
@@ -32,14 +32,14 @@ const { config } = loadConfigSync({
 
 ## Live-Reload: The Stable Delegating Proxy
 
-When using `watchConfig`, storing `const cfg = store.config` in an application service could lead to stale data if `store.config` returned a new object reference on every reload.
+When using `createReactiveStore`, storing `const cfg = store.config` in an application service could lead to stale data if `store.config` returned a new object reference on every reload.
 
 In `frozen` mode, morsel solves this by returning a **Stable Delegating Proxy**:
 
 ```typescript
-import { watchConfig } from '@oclio/morsel';
+import { createReactiveStore } from '@oclio/morsel';
 
-const store = await watchConfig({
+const store = await createReactiveStore({
   name: 'myapp',
   defaults: { port: 3000 },
 });
@@ -79,7 +79,7 @@ const { config } = loadConfigSync({
 config.port = 8080;
 ```
 
-### Difference in `watchConfig` under `mutable` mode
+### Difference in `createReactiveStore` under `mutable` mode
 
 - `store.config` returns a standard plain JavaScript object (no Proxy).
 - On each re-merge, `store.config` is replaced with a **new object reference**.

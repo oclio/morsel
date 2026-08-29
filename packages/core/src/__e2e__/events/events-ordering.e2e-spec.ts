@@ -12,7 +12,6 @@ describe('events-ordering — two-phase ordering', () => {
 
   it('removals fire deepest-first, additions fire shallowest-first', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { a: { b: 1, c: 2 } },
       createGlobalDir: true,
     });
@@ -58,7 +57,6 @@ describe('events-ordering — two-phase ordering', () => {
 
   it('same depth: removals descending alpha, additions ascending alpha', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { a: { b: 1, c: 2 } },
       createGlobalDir: true,
     });
@@ -81,7 +79,6 @@ describe('events-ordering — two-phase ordering', () => {
 
   it('object to object recursive descent: all modified child scalars emitted', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { server: { host: 'localhost', port: 3000 } },
       createGlobalDir: true,
     });
@@ -114,7 +111,6 @@ describe('events-ordering — two-phase ordering', () => {
 
   it('object replaced by scalar: parent modified + all child scalars as removed', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { server: { host: 'localhost', port: 3000 } },
       createGlobalDir: true,
     });
@@ -149,7 +145,6 @@ describe('events-ordering — two-phase ordering', () => {
 
   it('scalar replaced by object: parent modified + all child scalars as added', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { server: 'disabled' },
       createGlobalDir: true,
     });
@@ -187,7 +182,6 @@ describe('events-ordering — two-phase ordering', () => {
 
   it('object added: parent + all child scalars emitted as added', async () => {
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });

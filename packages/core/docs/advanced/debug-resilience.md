@@ -70,7 +70,7 @@ In production or development watch modes, temporary filesystem anomalies happen:
 
 If a developer saves a broken JSON file mid-edit:
 
-- `watchConfig` intercepts the `EPARSE` error.
+- `createReactiveStore` intercepts the `EPARSE` error.
 - The error is logged to `onDebug` / `stderr`.
 - `store.config` **remains frozen at the last known valid state**.
 - Your web server or service continues running without interruption.

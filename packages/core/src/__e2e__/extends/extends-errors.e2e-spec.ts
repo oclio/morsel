@@ -8,7 +8,7 @@ import {
   writeConfig,
 } from '@oclio/test-helpers';
 
-import { loadConfig, watchConfig } from '@/index';
+import { createReactiveStore, loadConfig } from '@/index';
 
 describe('extends-errors — cycle and depth errors', () => {
   beforeEach(() => {
@@ -17,6 +17,7 @@ describe('extends-errors — cycle and depth errors', () => {
 
   it('self cycle: A extends A → ECYCLE', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -39,6 +40,7 @@ describe('extends-errors — cycle and depth errors', () => {
 
   it('cycle: A extends B extends A → ECYCLE', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -68,6 +70,7 @@ describe('extends-errors — cycle and depth errors', () => {
 
   it('cycle live reload: cycle via edit keeps config, onDebug routed', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -79,7 +82,7 @@ describe('extends-errors — cycle and depth errors', () => {
 
     const { contexts, callback } = createDebugCollector();
 
-    const store = await watchConfig({
+    const store = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,
@@ -107,6 +110,7 @@ describe('extends-errors — cycle and depth errors', () => {
 
   it('cycle recovery: fix cycle via edit → config updates', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -119,7 +123,7 @@ describe('extends-errors — cycle and depth errors', () => {
 
     const { callback } = createDebugCollector();
 
-    const store = await watchConfig({
+    const store = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,
@@ -145,6 +149,7 @@ describe('extends-errors — cycle and depth errors', () => {
 
   it('max depth: chain > 10 → ECYCLE', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -174,6 +179,7 @@ describe('extends-errors — cycle and depth errors', () => {
 
   it('max depth exact: 10 levels succeeds, 11 fails', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -201,6 +207,7 @@ describe('extends-errors — cycle and depth errors', () => {
 
   it('max depth live reload: chain >10 via edit keeps config', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -208,7 +215,7 @@ describe('extends-errors — cycle and depth errors', () => {
 
     const { contexts, callback } = createDebugCollector();
 
-    const store = await watchConfig({
+    const store = await createReactiveStore({
       name: 'myapp',
       cwd: projectDirectory,
       globalDir: globalDirectory,
@@ -240,6 +247,7 @@ describe('extends-errors — cycle and depth errors', () => {
 
   it('extends to non-JSON file with no plugin → ENOPLUGIN', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 

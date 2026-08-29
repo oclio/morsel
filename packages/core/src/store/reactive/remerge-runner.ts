@@ -6,11 +6,11 @@ import { resolveGlobalPath, resolveProjectPath } from '@/paths/resolve-paths';
 import { noop } from '@/store/boot/assert-name';
 import { toMorselLayer } from '@/store/layer';
 import { emitChanges } from '@/store/reactive/emit-changes';
-import type { StoreState } from '@/store/store-state';
 import {
   updateWatchedFiles,
   updateWatchers,
-} from '@/store/watch/watcher-setup';
+} from '@/store/reactive/watcher-setup';
+import type { StoreState } from '@/store/store-state';
 
 type ConfigRecord = Record<string, unknown>;
 
@@ -81,10 +81,9 @@ export function createRemerge<T extends ConfigRecord>(): (
       return;
     }
     store.remergeInProgress = true;
-    let resolveRemergeDone!: (value: undefined) => void;
-    const remergeDone = new Promise<undefined>((resolve) => {
-      resolveRemergeDone = resolve;
-    });
+    const { promise, resolve: resolveRemergeDone } =
+      Promise.withResolvers<undefined>();
+    const remergeDone = promise;
     store.remergeDone = remergeDone;
 
     try {
@@ -129,7 +128,6 @@ export function createRemerge<T extends ConfigRecord>(): (
       store._layers = newMorselLayers;
       store.projectPath = remergeProjectPath;
 
-      // Update watchers after config state is applied.
       // Save old watcher state for rollback if updateWatchers throws.
       const savedWatchedFiles = new Map(store.watchedFiles);
       const savedWatchers = new Set(store.watchers);

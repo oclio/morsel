@@ -7,6 +7,7 @@ describe('mutability-frozen — frozen mode (default)', () => {
 
   it('frozen default: Object.isFrozen(config) is true', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -16,6 +17,7 @@ describe('mutability-frozen — frozen mode (default)', () => {
 
   it('frozen nested: recursive freeze, nested objects frozen', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { tools: { eslint: true, prettier: false } },
       createGlobalDir: true,
     });
@@ -26,6 +28,7 @@ describe('mutability-frozen — frozen mode (default)', () => {
 
   it('frozen modification throws: assigning property throws in strict mode', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -37,6 +40,7 @@ describe('mutability-frozen — frozen mode (default)', () => {
 
   it('frozen delete blocked → TypeError', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
     });
@@ -48,6 +52,7 @@ describe('mutability-frozen — frozen mode (default)', () => {
 
   it('frozen arrays frozen: arrays in config are also frozen', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { items: ['a', 'b', 'c'] },
       createGlobalDir: true,
     });

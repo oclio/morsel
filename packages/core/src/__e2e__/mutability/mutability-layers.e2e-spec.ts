@@ -7,6 +7,7 @@ describe('mutability-layers — layer audit trace', () => {
 
   it('layers always frozen regardless of configMutability', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000, nested: { key: 'val' } },
       createGlobalDir: true,
       configMutability: 'mutable',
@@ -20,6 +21,7 @@ describe('mutability-layers — layer audit trace', () => {
 
   it('layers readable in mutable mode — audit trace preserved', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       configMutability: 'mutable',

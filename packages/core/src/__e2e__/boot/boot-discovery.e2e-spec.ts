@@ -7,6 +7,7 @@ describe('boot-discovery — path resolution', () => {
 
   it('discovers project file in .config/ subdirectory', async () => {
     const { result } = await setupTest({
+      reactive: false,
       extraConfigs: [
         { filename: '.config/myapp.json', content: { port: 3000 } },
       ],
@@ -17,6 +18,7 @@ describe('boot-discovery — path resolution', () => {
 
   it('prefers <cwd>/<name>.config.* over <cwd>/.config/<name>.* when both exist', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
       extraConfigs: [
         { filename: '.config/myapp.json', content: { port: 9000 } },
@@ -28,6 +30,7 @@ describe('boot-discovery — path resolution', () => {
 
   it('globalDir pointing to nonexistent directory → global layer exists:false, config:{}', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -42,6 +45,7 @@ describe('boot-discovery — path resolution', () => {
 
   it('global layer exists:false, config = defaults + project + overrides', async () => {
     const { result } = await setupTest({
+      reactive: false,
       createGlobalDir: true,
       projectConfig: { host: 'localhost' },
       defaults: { port: 3000 },
@@ -71,6 +75,7 @@ describe('boot-discovery — path resolution', () => {
 
   it('project layer exists:false, config:{}, path:undefined', async () => {
     const { result } = await setupTest({
+      reactive: false,
       globalConfig: { host: '0.0.0.0' },
       defaults: { port: 3000 },
       overrides: { debug: true },
@@ -98,7 +103,7 @@ describe('boot-discovery — path resolution', () => {
   });
 
   it('empty {} config file → layer exists, config empty, no error', async () => {
-    const { result } = await setupTest({ projectConfig: {} });
+    const { result } = await setupTest({ reactive: false, projectConfig: {} });
 
     expect(result!.config).toEqual({});
     const projectLayer = result!.layers.find(
@@ -111,6 +116,7 @@ describe('boot-discovery — path resolution', () => {
 
   it('overlapping nested keys: overrides win per-key via deep merge, not full replace', async () => {
     const { result } = await setupTest({
+      reactive: false,
       rootAsCwd: true,
       defaults: {
         server: { host: 'localhost', port: 3000 },
@@ -154,6 +160,7 @@ describe('boot-discovery — path resolution', () => {
 
   it('global present + project absent → global config used, project layer exists:false', async () => {
     const { result } = await setupTest({
+      reactive: false,
       globalConfig: { host: '0.0.0.0', port: 8080 },
       defaults: { port: 3000 },
     });
@@ -178,6 +185,7 @@ describe('boot-discovery — path resolution', () => {
     };
 
     const { result } = await setupTest({
+      reactive: false,
       rawFiles: [{ filename: 'myapp.config.yaml', content: 'port: 4000' }],
       formatPlugins: [yamlPlugin],
     });

@@ -4,7 +4,10 @@ import { applyMutability } from '@/load/merge-layers';
 import { stopStore } from '@/store/boot/stop-store';
 import { emitChanges } from '@/store/reactive/emit-changes';
 import { createStableProxy } from '@/store/reactive/stable-proxy';
-import { createMorselStore } from '@/store/store';
+import {
+  createReactiveMorselStore,
+  createStaticMorselStore,
+} from '@/store/store';
 import { resolveProvenance } from '@/store/store-provenance';
 import type { StoreState } from '@/store/store-state';
 
@@ -21,17 +24,19 @@ vi.mock('@/store/store-provenance', () => ({
   resolveProvenance: vi.fn(),
 }));
 
+const noopTrigger = () => {};
+
 function createState<T extends Record<string, unknown>>(
   overrides: Partial<StoreState<T>> = {},
 ): StoreState<T> {
   return createMockStoreState<T>({
     _config: { foo: 'bar' } as unknown as T,
-    options: { hooks: [], proxy: true },
+    options: { hooks: [] },
     ...overrides,
   }) as unknown as StoreState<T>;
 }
 
-describe('createMorselStore', () => {
+describe('createReactiveMorselStore', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(createStableProxy).mockReturnValue({ proxied: true } as never);
@@ -41,7 +46,7 @@ describe('createMorselStore', () => {
   describe('config getter', () => {
     it('returns proxy when not stopped', () => {
       const state = createState();
-      const store = createMorselStore(state, 'frozen');
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
 
       expect(store.config).toEqual({ proxied: true });
     });
@@ -49,7 +54,7 @@ describe('createMorselStore', () => {
     it('returns state._config directly in mutable mode', () => {
       const config = { foo: 'bar' } as never;
       const state = createState({ _config: config });
-      const store = createMorselStore(state, 'mutable');
+      const store = createReactiveMorselStore(state, 'mutable', noopTrigger);
 
       expect(store.config).toBe(config);
     });
@@ -58,7 +63,7 @@ describe('createMorselStore', () => {
       const state = createState({ stopped: true, _stoppedConfig: undefined });
       vi.mocked(applyMutability).mockReturnValue({ frozen: true } as never);
 
-      const store = createMorselStore(state, 'frozen');
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
 
       expect(store.config).toEqual({ frozen: true });
       expect(applyMutability).toHaveBeenCalledWith(state._config, 'frozen');
@@ -68,7 +73,7 @@ describe('createMorselStore', () => {
       const state = createState({ stopped: true, _stoppedConfig: undefined });
       vi.mocked(applyMutability).mockReturnValue({ frozen: true } as never);
 
-      const store = createMorselStore(state, 'frozen');
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
 
       const first = store.config;
       const second = store.config;
@@ -82,49 +87,10 @@ describe('createMorselStore', () => {
       const cached = { cached: true } as never;
       const state = createState({ stopped: true, _stoppedConfig: cached });
 
-      const store = createMorselStore(state, 'frozen');
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
 
       expect(store.config).toBe(cached);
       expect(applyMutability).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('proxy: false', () => {
-    it('does not call createStableProxy when proxy is false', () => {
-      const state = createState({
-        options: { hooks: [], proxy: false } as never,
-      });
-
-      createMorselStore(state, 'frozen');
-
-      expect(createStableProxy).not.toHaveBeenCalled();
-    });
-
-    it('returns state._config directly when proxy is false', () => {
-      const config = { foo: 'bar' } as never;
-      const state = createState({
-        _config: config,
-        options: { hooks: [], proxy: false } as never,
-      });
-
-      const store = createMorselStore(state, 'frozen');
-
-      expect(store.config).toBe(config);
-    });
-
-    it('returns state._config when proxy is false and stopped', () => {
-      const config = { foo: 'bar' } as never;
-      const state = createState({
-        _config: config,
-        stopped: true,
-        _stoppedConfig: undefined,
-        options: { hooks: [], proxy: false } as never,
-      });
-      vi.mocked(applyMutability).mockReturnValue(config);
-
-      const store = createMorselStore(state, 'frozen');
-
-      expect(store.config).toEqual(config);
     });
   });
 
@@ -135,7 +101,7 @@ describe('createMorselStore', () => {
       ];
       const state = createState({ _layers: layers as never });
 
-      const store = createMorselStore(state, 'frozen');
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
 
       expect(store.layers).not.toBe(layers);
       expect(store.layers).toEqual(layers);
@@ -145,7 +111,7 @@ describe('createMorselStore', () => {
   describe('on', () => {
     it('registers listener and returns unsubscribe function', () => {
       const state = createState();
-      const store = createMorselStore(state, 'frozen');
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
 
       const listener = vi.fn();
       const unsub = store.on('foo', listener);
@@ -157,7 +123,7 @@ describe('createMorselStore', () => {
 
     it('creates new set for first listener on a key', () => {
       const state = createState();
-      const store = createMorselStore(state, 'frozen');
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
 
       store.on('foo', vi.fn());
 
@@ -166,7 +132,7 @@ describe('createMorselStore', () => {
 
     it('adds to existing set for subsequent listeners on same key', () => {
       const state = createState();
-      const store = createMorselStore(state, 'frozen');
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
 
       const listener1 = vi.fn();
       const listener2 = vi.fn();
@@ -178,7 +144,7 @@ describe('createMorselStore', () => {
 
     it('unsubscribe removes listener from set', () => {
       const state = createState();
-      const store = createMorselStore(state, 'frozen');
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
 
       const listener = vi.fn();
       const unsub = store.on('foo', listener);
@@ -188,9 +154,24 @@ describe('createMorselStore', () => {
       expect(state.listeners.get('foo')).toBeUndefined();
     });
 
+    it('unsubscribe keeps set when other listeners remain', () => {
+      const state = createState();
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
+
+      const listener1 = vi.fn();
+      const listener2 = vi.fn();
+      const unsub1 = store.on('foo', listener1);
+      store.on('foo', listener2);
+
+      unsub1();
+
+      expect(state.listeners.get('foo')!.size).toBe(1);
+      expect(state.listeners.get('foo')!.has(listener2)).toBe(true);
+    });
+
     it('throws when store is stopped', () => {
       const state = createState({ stopped: true });
-      const store = createMorselStore(state, 'frozen');
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
 
       expect(() => store.on('foo', vi.fn())).toThrow(
         'morsel: store is stopped',
@@ -199,7 +180,7 @@ describe('createMorselStore', () => {
 
     it('registers wildcard pattern listener in wildcardListeners map', () => {
       const state = createState();
-      const store = createMorselStore(state, 'frozen');
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
 
       const listener = vi.fn();
       store.on('foo.*', listener);
@@ -211,7 +192,7 @@ describe('createMorselStore', () => {
 
     it('registers ** wildcard listener in wildcardListeners map', () => {
       const state = createState();
-      const store = createMorselStore(state, 'frozen');
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
 
       const listener = vi.fn();
       store.on('**', listener);
@@ -222,7 +203,7 @@ describe('createMorselStore', () => {
 
     it('auto-unsubscribes after first event when once is true', () => {
       const state = createState();
-      const store = createMorselStore(state, 'frozen');
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
 
       const listener = vi.fn();
       store.on('foo', listener, { once: true });
@@ -244,9 +225,30 @@ describe('createMorselStore', () => {
       expect(state.listeners.get('foo')).toBeUndefined();
     });
 
+    it('once auto-unsubscribe keeps set when other listeners remain', () => {
+      const state = createState();
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
+
+      const onceListener = vi.fn();
+      const persistentListener = vi.fn();
+      store.on('foo', onceListener, { once: true });
+      store.on('foo', persistentListener);
+
+      emitChanges(
+        { foo: 0 },
+        { foo: 1 },
+        state.listeners,
+        state.wildcardListeners,
+      );
+
+      expect(onceListener).toHaveBeenCalledTimes(1);
+      expect(state.listeners.get('foo')!.size).toBe(1);
+      expect(state.listeners.get('foo')!.has(persistentListener)).toBe(true);
+    });
+
     it('auto-unsubscribes wildcard listener after first event when once is true', () => {
       const state = createState();
-      const store = createMorselStore(state, 'frozen');
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
 
       const listener = vi.fn();
       store.on('foo.*', listener, { once: true });
@@ -270,7 +272,7 @@ describe('createMorselStore', () => {
 
     it('manual unsubscribe works with once listener', () => {
       const state = createState();
-      const store = createMorselStore(state, 'frozen');
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
 
       const listener = vi.fn();
       const unsub = store.on('foo', listener, { once: true });
@@ -282,7 +284,7 @@ describe('createMorselStore', () => {
 
     it('does not auto-unsubscribe when once is not set', () => {
       const state = createState();
-      const store = createMorselStore(state, 'frozen');
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
 
       const listener = vi.fn();
       store.on('foo', listener);
@@ -306,7 +308,7 @@ describe('createMorselStore', () => {
 
     it('keeps set in map when once listener fires but other listeners remain', () => {
       const state = createState();
-      const store = createMorselStore(state, 'frozen');
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
 
       const onceListener = vi.fn();
       const persistentListener = vi.fn();
@@ -328,7 +330,7 @@ describe('createMorselStore', () => {
 
     it('keeps set in map when one listener unsubscribes but others remain', () => {
       const state = createState();
-      const store = createMorselStore(state, 'frozen');
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
 
       const listener1 = vi.fn();
       const listener2 = vi.fn();
@@ -345,11 +347,77 @@ describe('createMorselStore', () => {
     });
   });
 
+  describe('off', () => {
+    it('removes listener from set', () => {
+      const state = createState();
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
+
+      const listener = vi.fn();
+      store.on('foo', listener);
+      store.off('foo', listener);
+
+      expect(state.listeners.get('foo')).toBeUndefined();
+    });
+
+    it('keeps set when other listeners remain', () => {
+      const state = createState();
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
+
+      const listener1 = vi.fn();
+      const listener2 = vi.fn();
+      store.on('foo', listener1);
+      store.on('foo', listener2);
+      store.off('foo', listener1);
+
+      expect(state.listeners.get('foo')!.size).toBe(1);
+      expect(state.listeners.get('foo')!.has(listener2)).toBe(true);
+    });
+
+    it('removes wildcard listener from wildcardListeners map', () => {
+      const state = createState();
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
+
+      const listener = vi.fn();
+      store.on('foo.*', listener);
+      store.off('foo.*', listener);
+
+      expect(state.wildcardListeners.get('foo.*')).toBeUndefined();
+    });
+
+    it('throws when store is stopped', () => {
+      const state = createState({ stopped: true });
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
+
+      expect(() => store.off('foo', vi.fn())).toThrow(
+        'morsel: store is stopped',
+      );
+    });
+
+    it('is noop for unknown key', () => {
+      const state = createState();
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
+
+      expect(() => store.off('unknown', vi.fn())).not.toThrow();
+    });
+  });
+
+  describe('triggerRemerge', () => {
+    it('calls the provided triggerRemerge function', () => {
+      const trigger = vi.fn();
+      const state = createState();
+      const store = createReactiveMorselStore(state, 'frozen', trigger);
+
+      store.triggerRemerge();
+
+      expect(trigger).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('stop', () => {
     it('delegates to stopStore with state', async () => {
       vi.mocked(stopStore).mockResolvedValue(undefined);
       const state = createState();
-      const store = createMorselStore(state, 'frozen');
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
 
       await store.stop();
 
@@ -362,14 +430,14 @@ describe('createMorselStore', () => {
       const state = createState({
         _config: { server: { port: 3000 } } as never,
       });
-      const store = createMorselStore(state, 'mutable');
+      const store = createReactiveMorselStore(state, 'mutable', noopTrigger);
 
       expect(store.get('server.port')).toBe(3000);
     });
 
     it('returns default value for missing path', () => {
       const state = createState({ _config: { server: {} } as never });
-      const store = createMorselStore(state, 'mutable');
+      const store = createReactiveMorselStore(state, 'mutable', noopTrigger);
 
       expect(store.get('server.host', 'fallback')).toBe('fallback');
     });
@@ -385,7 +453,7 @@ describe('createMorselStore', () => {
       { config: { server: {} }, path: 'server.host', expected: false },
     ])('returns $expected for $path', ({ config, path, expected }) => {
       const state = createState({ _config: config as never });
-      const store = createMorselStore(state, 'mutable');
+      const store = createReactiveMorselStore(state, 'mutable', noopTrigger);
 
       expect(store.has(path)).toBe(expected);
     });
@@ -395,7 +463,7 @@ describe('createMorselStore', () => {
     it('returns a deep clone of the config', () => {
       const config = { server: { port: 3000 } } as never;
       const state = createState({ _config: config });
-      const store = createMorselStore(state, 'mutable');
+      const store = createReactiveMorselStore(state, 'mutable', noopTrigger);
 
       const snapshot = store.all();
 
@@ -412,7 +480,7 @@ describe('createMorselStore', () => {
       const state = createState({
         _config: { server: { port: 3000, host: 'localhost' } } as never,
       });
-      const store = createMorselStore(state, 'mutable');
+      const store = createReactiveMorselStore(state, 'mutable', noopTrigger);
 
       expect(store.dotify()).toEqual({
         'server.port': 3000,
@@ -433,7 +501,7 @@ describe('createMorselStore', () => {
         file: undefined,
         overridden: [],
       } as never);
-      const store = createMorselStore(state, 'frozen');
+      const store = createReactiveMorselStore(state, 'frozen', noopTrigger);
 
       const result = store.getProvenance('server.port');
 
@@ -451,7 +519,7 @@ describe('createMorselStore', () => {
     it('creates stable proxy on initialization', () => {
       const state = createState();
 
-      createMorselStore(state, 'frozen');
+      createReactiveMorselStore(state, 'frozen', noopTrigger);
 
       expect(createStableProxy).toHaveBeenCalledWith(state, 'frozen');
     });
@@ -461,9 +529,76 @@ describe('createMorselStore', () => {
       const proxyValue = { proxied: true } as never;
       vi.mocked(createStableProxy).mockReturnValue(proxyValue);
 
-      createMorselStore(state, 'frozen');
+      createReactiveMorselStore(state, 'frozen', noopTrigger);
 
       expect(state._proxy).toBe(proxyValue);
+    });
+  });
+});
+
+describe('createStaticMorselStore', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(applyMutability).mockImplementation((config) => config);
+  });
+
+  describe('config getter', () => {
+    it('returns state._config directly (no proxy)', () => {
+      const config = { foo: 'bar' } as never;
+      const state = createState({ _config: config });
+      vi.mocked(applyMutability).mockReturnValue({ frozen: true } as never);
+
+      const store = createStaticMorselStore(state, 'frozen');
+
+      expect(store.config).toBe(config);
+      expect(applyMutability).not.toHaveBeenCalled();
+      expect(createStableProxy).not.toHaveBeenCalled();
+    });
+
+    it('returns stopped config when stopped', () => {
+      const state = createState({ stopped: true, _stoppedConfig: undefined });
+      vi.mocked(applyMutability).mockReturnValue({ frozen: true } as never);
+
+      const store = createStaticMorselStore(state, 'frozen');
+
+      expect(store.config).toEqual({ frozen: true });
+    });
+  });
+
+  describe('stop', () => {
+    it('sets stopped to true', async () => {
+      const state = createState();
+      const store = createStaticMorselStore(state, 'frozen');
+
+      await store.stop();
+
+      expect(state.stopped).toBe(true);
+      expect(stopStore).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('layers getter', () => {
+    it('returns a shallow copy of state layers', () => {
+      const layers = [
+        { source: 'defaults', path: undefined, config: {}, exists: true },
+      ];
+      const state = createState({ _layers: layers as never });
+
+      const store = createStaticMorselStore(state, 'frozen');
+
+      expect(store.layers).not.toBe(layers);
+      expect(store.layers).toEqual(layers);
+    });
+  });
+
+  describe('get', () => {
+    it('returns value by dotted path', () => {
+      const state = createState({
+        _config: { server: { port: 3000 } } as never,
+      });
+      const store = createStaticMorselStore(state, 'mutable');
+
+      expect(store.get('server.port')).toBe(3000);
     });
   });
 });

@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { clearWatcherRegistry, setupTest } from '@oclio/test-helpers';
 
-import { loadConfig, MorselError, watchConfig } from '@/index';
+import { createReactiveStore, loadConfig, MorselError } from '@/index';
 
 describe('boot-errors — error cases at boot', () => {
   beforeEach(() => {
@@ -12,6 +12,7 @@ describe('boot-errors — error cases at boot', () => {
 
   it('throws MorselError(EPARSE) on invalid JSON via loadConfig', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -31,8 +32,9 @@ describe('boot-errors — error cases at boot', () => {
     });
   });
 
-  it('throws MorselError(EPARSE) on invalid JSON via watchConfig', async () => {
+  it('throws MorselError(EPARSE) on invalid JSON via createReactiveStore', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -40,7 +42,7 @@ describe('boot-errors — error cases at boot', () => {
     await writeFile(configPath, '{ invalid json !!!', 'utf8');
 
     await expect(
-      watchConfig({
+      createReactiveStore({
         name: 'myapp',
         cwd: projectDirectory,
         globalDir: globalDirectory,
@@ -50,6 +52,7 @@ describe('boot-errors — error cases at boot', () => {
 
   it('throws MorselError(EPARSE) on empty 0-byte file', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 
@@ -67,6 +70,7 @@ describe('boot-errors — error cases at boot', () => {
 
   it('MorselError has path, code, and cause', async () => {
     const { projectDirectory, globalDirectory } = await setupTest({
+      reactive: false,
       projectConfig: { port: 3000 },
     });
 

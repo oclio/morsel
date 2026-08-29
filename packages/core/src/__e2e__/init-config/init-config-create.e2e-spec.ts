@@ -12,6 +12,7 @@ describe('init-config-create — basic file creation', () => {
 
   it('writes ./<name>.config.json and returns the path', async () => {
     const { projectDirectory } = await setupTest({
+      reactive: false,
       projectConfig: {},
       projectFilename: '_setup-test.json',
     });
@@ -34,6 +35,7 @@ describe('init-config-create — basic file creation', () => {
 
   it('writes {} when neither content nor fallbackContent provided', async () => {
     const { projectDirectory } = await setupTest({
+      reactive: false,
       projectConfig: {},
       projectFilename: '_setup-test.json',
     });
@@ -54,6 +56,7 @@ describe('init-config-create — basic file creation', () => {
 
   it('writes fallbackContent when content is not provided', async () => {
     const { projectDirectory } = await setupTest({
+      reactive: false,
       projectConfig: {},
       projectFilename: '_setup-test.json',
     });
@@ -75,6 +78,7 @@ describe('init-config-create — basic file creation', () => {
 
   it('content takes priority over fallbackContent when both provided', async () => {
     const { projectDirectory } = await setupTest({
+      reactive: false,
       projectConfig: {},
       projectFilename: '_setup-test.json',
     });
@@ -95,6 +99,7 @@ describe('init-config-create — basic file creation', () => {
 
   it('mkdir: cwd does not exist → mkdirSync creates parents', async () => {
     const { directory } = await setupTest({
+      reactive: false,
       projectConfig: {},
       projectFilename: '_setup-test.json',
     });

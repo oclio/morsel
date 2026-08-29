@@ -13,7 +13,6 @@ describe('read-ops-has — has() API', () => {
         database: { host: 'db.example.com' },
       },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.has('port')).toBe(true);
@@ -27,7 +26,6 @@ describe('read-ops-has — has() API', () => {
     const { store } = await setupTest({
       defaults: { port: 3000 },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.has('missing')).toBe(false);
@@ -40,7 +38,6 @@ describe('read-ops-has — has() API', () => {
     const { store } = await setupTest({
       defaults: { port: 3000, server: { host: 'localhost' } },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.has('server.missing.nested')).toBe(false);
@@ -55,7 +52,6 @@ describe('read-ops-has — has() API', () => {
         server: { host: 'localhost', port: 3000 },
       },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.has('server.host')).toBe(true);
@@ -71,7 +67,6 @@ describe('read-ops-has — has() API', () => {
         users: [{ name: 'Alice' }, { name: 'Bob' }],
       },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.has('users[0].name')).toBe(true);
@@ -89,7 +84,6 @@ describe('read-ops-has — has() API', () => {
         users: [{ name: 'Alice' }],
       },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.has(['server', 'host'])).toBe(true);
@@ -108,7 +102,6 @@ describe('read-ops-has — has() API', () => {
         host: 'localhost',
       },
       createGlobalDir: true,
-      watch: true,
     });
 
     expect(store!.has('port')).toBe(true);

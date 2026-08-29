@@ -26,6 +26,7 @@ describe('env-match — envName matching edge cases', () => {
     const { messages: debugMessages, callback } = createDebugCollector();
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: {
         port: 3000,
         $env: {
@@ -45,6 +46,7 @@ describe('env-match — envName matching edge cases', () => {
     const { messages: debugMessages, callback } = createDebugCollector();
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: {
         port: 3000,
         $env: {
@@ -64,6 +66,7 @@ describe('env-match — envName matching edge cases', () => {
     const { messages: debugMessages, callback } = createDebugCollector();
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: {
         port: 3000,
         $env: {},
@@ -78,6 +81,7 @@ describe('env-match — envName matching edge cases', () => {
 
   it('envName empty string — matches nothing in $env', async () => {
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: {
         port: 3000,
         $env: {
@@ -94,6 +98,7 @@ describe('env-match — envName matching edge cases', () => {
     process.env['NODE_ENV'] = 'ci';
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: {
         port: 3000,
         $env: {
@@ -115,6 +120,7 @@ describe('env-match — envName matching edge cases', () => {
       const { messages: debugMessages, callback } = createDebugCollector();
 
       const { result } = await setupTest({
+        reactive: false,
         projectConfig: {
           port: 3000,
           $env: value,
@@ -134,6 +140,7 @@ describe('env-match — envName matching edge cases', () => {
     const { messages: debugMessages, callback } = createDebugCollector();
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: {
         port: 3000,
         $env: {
@@ -152,6 +159,7 @@ describe('env-match — envName matching edge cases', () => {
     const { messages: debugMessages, callback } = createDebugCollector();
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: {
         port: 3000,
         $env: {
@@ -170,6 +178,7 @@ describe('env-match — envName matching edge cases', () => {
     const { messages: debugMessages, callback } = createDebugCollector();
 
     const { result } = await setupTest({
+      reactive: false,
       projectConfig: {
         port: 3000,
         $env: {

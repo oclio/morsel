@@ -5,7 +5,7 @@ import type { ArrayMergeStrategy } from '@/merge/deep-merge';
 import { resolveGlobalDirectory } from '@/paths/resolve-paths';
 import { jsonPlugin } from '@/plugins/json-plugin';
 import type { FormatPlugin, ValidationPlugin } from '@/plugins/types';
-import type { MorselOptions, WatchOptions } from '@/store/types';
+import type { MorselOptions } from '@/store/types';
 
 type ConfigRecord = Record<string, unknown>;
 
@@ -26,8 +26,6 @@ export interface ResolvedOptions {
   readonly formatPlugins: readonly FormatPlugin[];
   readonly validationPlugins: readonly ValidationPlugin[];
   readonly hooks: readonly Hook[];
-  readonly watch: boolean;
-  readonly proxy: boolean;
 }
 
 /**
@@ -80,7 +78,5 @@ export function resolveOptions<
     formatPlugins: options.formatPlugins ?? [jsonPlugin],
     validationPlugins: options.validationPlugins ?? [],
     hooks: options.hooks ?? [],
-    watch: (options as WatchOptions<T>).watch ?? true,
-    proxy: (options as WatchOptions<T>).proxy ?? true,
   };
 }

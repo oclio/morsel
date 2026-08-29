@@ -27,7 +27,6 @@ describe('validation-remerge — watch re-merge', () => {
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       validationPlugins: [{ name: 'port-type', validate }],
       onDebug: callback,
@@ -64,7 +63,6 @@ describe('validation-remerge — watch re-merge', () => {
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       validationPlugins: [{ name: 'port-type', validate }],
       onDebug: callback,
@@ -103,7 +101,6 @@ describe('validation-remerge — watch re-merge', () => {
     const { contexts, callback } = createDebugCollector();
 
     const { store, projectDirectory } = await setupTest({
-      watch: true,
       projectConfig: { port: 3000 },
       createGlobalDir: true,
       validationPlugins: [validationPlugin],

@@ -2,6 +2,7 @@ import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
+  assertRemerge,
   clearWatcherRegistry,
   createDebugCollector,
   setupTest,
@@ -29,6 +30,7 @@ describe('plugin-errors — ENOPLUGIN errors', () => {
 
   it('project file with unsupported extension silently ignored (not discovered)', async () => {
     const { result } = await setupTest({
+      reactive: false,
       rawFiles: [{ filename: 'myapp.config.yaml', content: 'port: 3000' }],
       createGlobalDir: true,
     });
@@ -114,7 +116,6 @@ describe('plugin-errors — ENOPLUGIN errors', () => {
 
     const { store, projectDirectory } = await setupTest({
       projectConfig: { port: 3000 },
-      watch: true,
       createGlobalDir: true,
       onDebug: callback,
     });
@@ -142,9 +143,7 @@ describe('plugin-errors — ENOPLUGIN errors', () => {
       port: 8080,
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    expect(store!.config).toEqual({ port: 8080 });
+    await assertRemerge(store!, { port: 8080 });
 
     await store!.stop();
   });
